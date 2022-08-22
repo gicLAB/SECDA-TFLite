@@ -1,2 +1,2 @@
 # SECDA-TFLite
-WIP (Initial Release Due 22nd August 2022)
+WIP (Initial release due 22nd August 2022)
