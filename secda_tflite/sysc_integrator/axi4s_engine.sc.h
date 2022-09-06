@@ -4,7 +4,6 @@
 #include <systemc.h>
 #include "sysc_types.h"
 
-
 SC_MODULE(AXIS_ENGINE) {
   sc_in<bool> clock;
   sc_in<bool> reset;
@@ -16,8 +15,7 @@ SC_MODULE(AXIS_ENGINE) {
 
   void DMA_MMS2() {
     while (1) {
-      while (!send)
-        wait();
+      while (!send) wait();
       for (int i = 0; i < input_len; i++) {
         int d = DMA_input_buffer[i + input_offset];
         din1.write({d, 1});
@@ -32,14 +30,12 @@ SC_MODULE(AXIS_ENGINE) {
 
   void DMA_S2MM() {
     while (1) {
-      while (!recv)
-        wait();
+      while (!recv) wait();
       bool last = false;
       int i = 0;
       do {
         DATA d = dout1.read();
-        while (i >= output_len)
-          wait();
+        while (i >= output_len) wait();
         last = d.tlast;
         int k = d.data;
         DMA_output_buffer[output_offset + i++] = d.data;
@@ -66,8 +62,8 @@ SC_MODULE(AXIS_ENGINE) {
     reset_signal_is(reset, true);
   }
 
-  int *DMA_input_buffer;
-  int *DMA_output_buffer;
+  int* DMA_input_buffer;
+  int* DMA_output_buffer;
 
   int input_len;
   int input_offset;

@@ -1,7 +1,6 @@
 
 #include "profiler.h"
 
-
 ClockCycles::ClockCycles(string _name) {
   name = _name;
   value = 0;

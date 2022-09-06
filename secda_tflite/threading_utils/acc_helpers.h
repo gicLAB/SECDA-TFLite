@@ -12,7 +12,6 @@
 #include <iostream>
 #include <typeinfo>
 
-// TODO - Generalise
 struct times {
   std::chrono::duration<long long int, std::ratio<1, 1000000000>> t;
   std::string name;
@@ -31,6 +30,7 @@ struct del_params {
   bool unmap;
   int delegated_nodes;
   int layer;
+  int start_count;
   int* acc;
 
   struct MultiThreadContext mt_context;
@@ -41,6 +41,7 @@ struct del_params {
     unmap = false;
     delegated_nodes = 0;
     layer = 0;
+    start_count=0;
     // mt_context = new MultiThreadContext();
   };
 };

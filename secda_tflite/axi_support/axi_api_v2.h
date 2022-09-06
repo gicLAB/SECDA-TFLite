@@ -108,6 +108,12 @@ T* mm_alloc_r(unsigned int address, unsigned int buffer_size) {
   return reinterpret_cast<T*>(mm);
 }
 
+// struct mm_dma {
+// #ifdef SYSC
+//   AXI4MM_ENGINE* mmdma;
+// #endif
+// };
+
 // ================================================================================
 // Stream DMA API
 // ================================================================================
