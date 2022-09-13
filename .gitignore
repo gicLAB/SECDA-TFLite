@@ -1,4 +1,5 @@
 SECDA-TFLite.code-workspace
 secda_tflite_accelerator/Vivado_projects
 secda_tflite_accelerator/HLS_projects
+tutorial/toy_accelerator/sim_delegate/accelerator_old
 sync.bat
