@@ -31,7 +31,7 @@ We highly recommend using this container to immediately start developing acceler
 **Instructions**
 * First pull the docker image: 
 ```
-docker pull judeharis97/secda-tflite-toolkit:v1:
+docker pull judeharis97/secda-tflite-toolkit:v1
 ```
 * Simply create a container of the downloaded image using the following command: 
 ```
