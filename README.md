@@ -39,7 +39,7 @@ docker run -it -d --name secda-tflite judeharis97/secda-tflite-toolkit:v1
 ```
 
 * Once the container is created and launched, you can access it through [VSCode's attach to container functionality](https://code.visualstudio.com/docs/remote/attach-container)
-* Load VSCode workspace at `/root/Workspace/tensorflow/tensorflow.code-workspace`
+* Load VSCode workspace at `/root/Workspace/tensorflow/tensorflow.code-workspace` using "open workspace from file" option in the VSCode File menu.
 * Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.
 * These configurations are stored within '/root/Workspace/tensorflow/.vscode/launch.json' (to launch) and /root/Workspace/tensorflow/.vscode/task.json (to compile), you can edit these to change the parameters to compile and launch the the end to end simulation.
 * There is three configuration already prepared to run the VM,SA and FC-GEMM accelerator with the simulation delegates
