@@ -4,8 +4,22 @@ The SECDA-TFLite toolkit leverages the TFLite delegate system to provide a robus
 Ultimately, this increases hardware accelerator developers' productivity, as they can begin developing and refining their design more quickly.
 
 
-# Paper (WIP)
-Currently under review
+# Paper
+Our research paper covers the the SECDA-TFLite toolkit in detail including case studies where we design and integrate new DNN accelerator using our toolkit. If you are using the SECDA-TFLite toolkit in research, we kindly request a reference to the following:
+
+```
+@article{Haris2023JPDC,
+    title = {SECDA-TFLite: A toolkit for efficient development of FPGA-based DNN accelerators for edge inference},
+    author = {Jude Haris and Perry Gibson and José Cano and Nicolas {Bohm Agostini} and David Kaeli},
+    journal = {Journal of Parallel and Distributed Computing},
+    volume = {173},
+    pages = {140-151},
+    year = {2023},
+    issn = {0743-7315},
+    doi = {https://doi.org/10.1016/j.jpdc.2022.11.005},
+    url = {https://www.sciencedirect.com/science/article/pii/S0743731522002301}
+}
+```
 
 
 # Accelerator Designs
