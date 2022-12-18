@@ -40,6 +40,10 @@ stream_dma::stream_dma(unsigned int _dma_addr, unsigned int _input,
   string name("DMA" + to_string(id));
   dmad = new AXIS_ENGINE(&name[0]);
   dmad->id = id;
+  dmad->write_len = 0;
+  dmad->write_offset = 0;
+  dmad->read_len = 0;
+  dmad->read_offset = 0;
   dma_init(_dma_addr, _input, _input_size, _output, _output_size);
 }
 
@@ -47,6 +51,10 @@ stream_dma::stream_dma() : id(s_id++) {
   string name("DMA" + to_string(id));
   dmad = new AXIS_ENGINE(&name[0]);
   dmad->id = id;
+  dmad->write_len = 0;
+  dmad->write_offset = 0;
+  dmad->read_len = 0;
+  dmad->read_offset = 0;
 };
 
 void stream_dma::dma_init(unsigned int _dma_addr, unsigned int _input,
