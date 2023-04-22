@@ -1,0 +1,4 @@
+[submodule "tensorflow"]
+	path = tensorflow
+	url = https://github.com/judeharis/tensorflow
+	branch = secda-tflite-v1
