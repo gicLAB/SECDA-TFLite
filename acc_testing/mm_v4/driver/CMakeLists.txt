@@ -1,0 +1,18 @@
+
+
+if(BUILD_ARM)
+    use_cross_compiler()
+    include_directories(${acc_testing_SOURCE_DIR}/secda_tflite/)
+    add_executable(MMDriverPYNQ mm_driver.cc)
+    target_link_libraries(MMDriverPYNQ PUBLIC api_v2)
+    target_compile_options(MMDriverPYNQ PUBLIC ${ARM_FLAGS})
+    install(TARGETS MMDriverPYNQ DESTINATION ${CMAKE_SOURCE_DIR}/out/bin)
+else()
+    use_host_compiler()
+    include_directories(${acc_testing_SOURCE_DIR}/secda_tflite/)
+    include_directories(${acc_testing_SOURCE_DIR}/mm_v4/)
+    add_executable(MMDriver mm_driver.cc)
+    target_compile_options(MMDriver PUBLIC -fPIC -DSYSC)
+    target_link_libraries(MMDriver PUBLIC MMV4)
+    install(TARGETS MMDriver DESTINATION ${CMAKE_SOURCE_DIR}/out/bin)
+endif()
