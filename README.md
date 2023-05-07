@@ -8,6 +8,18 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
 * Accelerator Design source code can be found inside the respective simulation delegate
   * Note: we use the same source files for HLS, we manually define __SYNTHESIS__ before HLS
 
+### Setup repo
+```
+git clone https://github.com/judeharis/SECDA-TFLite.git
+cd SECDA-TFLite
+git submodule init
+git submodule update
+cd tensorflow 
+git checkout secda-tflite-v1
+./configure
+```
+* The default configuration is good as along as you have atleast python-3.7+
+
 ### Setup Bazel
 ```
 sudo apt install apt-transport-https curl gnupg -y && \
@@ -22,6 +34,7 @@ sudo ln -s /usr/bin/bazel-3.7.2 /usr/bin/bazel
 ```
 cd tensorflow
 bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
+bazel run //tensorflow/lite/examples/systemc:hello_systemc
 ```
 
 
