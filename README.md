@@ -16,7 +16,6 @@ git submodule init
 git submodule update
 cd tensorflow 
 git checkout secda-tflite-v1
-./configure
 ```
 * The default configuration is good as along as you have atleast python-3.7+
 
@@ -30,6 +29,11 @@ sudo apt update && sudo apt install bazel-3.7.2 -y && \
 sudo ln -s /usr/bin/bazel-3.7.2 /usr/bin/bazel
 ```
 
+###  Configure Tensorflow
+```
+cd tensorflow 
+./configure
+```
 ### Test Bazel
 ```
 cd tensorflow
