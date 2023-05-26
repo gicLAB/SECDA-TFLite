@@ -7,7 +7,8 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
 # Internal Developer Info
 * Accelerator Design source code can be found inside the respective simulation delegate
   * Note: we use the same source files for HLS, we manually define __SYNTHESIS__ before HLS
-
+ 
+## Create dev environment on Host machine 
 ### Setup repo
 ```
 git clone https://github.com/judeharis/SECDA-TFLite.git
@@ -17,7 +18,6 @@ git submodule update
 cd tensorflow 
 git checkout secda-tflite-v1
 ```
-* The default configuration is good as along as you have atleast python-3.7+
 
 ### Setup Bazel
 ```
@@ -29,23 +29,51 @@ sudo apt update && sudo apt install bazel-3.7.2 -y && \
 sudo ln -s /usr/bin/bazel-3.7.2 /usr/bin/bazel
 ```
 
-###  Configure Tensorflow
+### Setup miniconda environment needed for Tensorflow build process (Working with Ubuntu 22.04) 
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+conda config --set auto_activate_base false
+conda create -n secda-tflite python -y
+conda activate secda-tflite
+pip3 install numpy
+```
+
+###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflite environment)
 ```
 cd tensorflow 
 ./configure
-```
-### Test Bazel
-```
-cd tensorflow
 bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
 bazel run //tensorflow/lite/examples/systemc:hello_systemc
 ```
 
 
-## Optional
+### Optional
 ```
 sudo apt-get -y install gdb
 ```
+
+## Create dev environment via Dockerfile
+Ensure docker is up and running and current user is part of docker group
+``` 
+sudo usermod -aG docker $USER
+```
+Following scripts to build and run the docker container ready for development:
+```
+./build-docker.sh
+./start-docker.sh
+```
+
+Finally you need to configure Tensorflow from within the container
+```
+./start-docker.sh
+cd tensorflow 
+./configure
+bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
+bazel run //tensorflow/lite/examples/systemc:hello_systemc
+```
+
 
 
 
