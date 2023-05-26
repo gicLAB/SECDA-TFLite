@@ -13,6 +13,8 @@ RUN apt update && apt install -y clang-14 lld-14 clang-format-14 && \
 RUN apt update && apt install -y crossbuild-essential-armhf libz-dev
 RUN apt update && apt install -y crossbuild-essential-arm64
 RUN apt update &&  apt-get install gdb -y
+RUN apt install software-properties-common -y
+RUN apt update && apt install -y python3.10 python3-pip python3-venv python3-dev
 
 # Install Bazel
 RUN apt install apt-transport-https curl gnupg -y && \
@@ -67,6 +69,11 @@ RUN useradd -m --uid $USER_ID developer && \
 
 USER developer
 WORKDIR /home/developer
+
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
+RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
+RUN pip3 install numpy
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> .bashrc
 

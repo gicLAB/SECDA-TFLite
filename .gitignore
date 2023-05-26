@@ -1,3 +1,6 @@
 old_data
-SECDA-TFLite.code-workspace
+*.code-workspace
 acc_testing
+*.csv
+*.data
+*.vscode
