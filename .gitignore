@@ -5,3 +5,6 @@ acc_testing
 *.data
 *.vscode
 clone_test
+ramulator_integration
+src/sync_backwards.bat
+src/secda_delegates/versions
