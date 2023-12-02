@@ -36,12 +36,8 @@ void ACCNAME::Input_Handler() {
       int rhs_length = din1.read().data.to_int();
       // int lhs_length = lengths.range(31, 16);
 
-
-
       if (rhs_take) ra = din1.read().data.to_int();
       if (lhs_take) {
-        lhs_read_len = lhs_length / 4;
-        lhs_sum_len = rhs_length;
         r_max = rhs_count;
         l_max = lhs_count;
       }
@@ -60,12 +56,6 @@ void ACCNAME::Input_Handler() {
       read_inputs.write(0);
       inS.write(5);
       wait();
-
-      // inS.write(6);
-      // if (lhs_take) {
-      //   r_max = rhs_count;
-      //   l_max = lhs_count;
-      // }
       DWAIT(3);
 
     } else {
@@ -78,7 +68,7 @@ void ACCNAME::Input_Handler() {
       out_check.write(1);
       inS.write(7);
       wait();
-      while (!lhs_loaded.read()) wait();
+      while (schedule.read()) wait();
     }
   }
 }

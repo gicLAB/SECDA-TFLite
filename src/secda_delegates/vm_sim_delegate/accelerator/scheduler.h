@@ -30,55 +30,6 @@ void ACCNAME::load_weights(int r_pointer, int d) {
   }
 }
 
-void ACCNAME::load_lhs() {
-  //   int la = 0;
-  //   int lb = 0;
-  //   int ra = 0;
-  //   int rb = 0;
-
-  //   for (int i = 0; i < lhs_read_len; i++) {
-  // #pragma HLS pipeline II = 1
-  //     ACC_DTYPE<32> data1 = glhsdata1a[i];
-  //     ACC_DTYPE<32> data2 = glhsdata2a[i];
-  //     ACC_DTYPE<32> data3 = glhsdata3a[i];
-  //     ACC_DTYPE<32> data4 = glhsdata4a[i];
-  //     lb++;
-  //     lhsdata1a[la] = data1;
-  //     lhsdata1b[la] = data1;
-  //     lhsdata1c[la] = data1;
-  //     lhsdata1d[la] = data1;
-  //     lhsdata2a[la] = data2;
-  //     lhsdata2b[la] = data2;
-  //     lhsdata2c[la] = data2;
-  //     lhsdata2d[la] = data2;
-  //     lhsdata3a[la] = data3;
-  //     lhsdata3b[la] = data3;
-  //     lhsdata3c[la] = data3;
-  //     lhsdata3d[la] = data3;
-  //     lhsdata4a[la] = data4;
-  //     lhsdata4b[la] = data4;
-  //     lhsdata4c[la] = data4;
-  //     lhsdata4d[la] = data4;
-  //     la = lb;
-  //     DWAIT();
-  //   }
-
-  //   for (int i = 0; i < lhs_sum_len; i++) {
-  // #pragma HLS pipeline II = 1
-  //     rb++;
-  //     lhs_sum1[ra] = blhs_sum1[ra];
-  //     lhs_sum2[ra] = blhs_sum2[ra];
-  //     lhs_sum3[ra] = blhs_sum3[ra];
-  //     lhs_sum4[ra] = blhs_sum4[ra];
-  //     crf1[ra] = bcrf1[ra];
-  //     crf2[ra] = bcrf2[ra];
-  //     crf3[ra] = bcrf3[ra];
-  //     crf4[ra] = bcrf4[ra];
-  //     crx[ra] = bcrx[ra];
-  //     ra = rb;
-  //     DWAIT();
-  //   }
-}
 
 void ACCNAME::schedule_gemm_unit(int unit_counter, int l_pointer, int l,
                                  int r) {
@@ -88,37 +39,16 @@ void ACCNAME::schedule_gemm_unit(int unit_counter, int l_pointer, int l,
   int y3 = rhs_sum3[r];
   int y4 = rhs_sum4[r];
 
-  int x1;
-  int x2;
-  int x3;
-  int x4;
-  int z1;
-  int z2;
-  int z3;
-  int z4;
-  int ex1;
+  int x1 = lhs_sum1[l];
+  int x2 = lhs_sum2[l];
+  int x3 = lhs_sum3[l];
+  int x4 = lhs_sum4[l];
 
-  if (use_ping) {
-    x1 = lhs_sum1[l];
-    x2 = lhs_sum2[l];
-    x3 = lhs_sum3[l];
-    x4 = lhs_sum4[l];
-    z1 = crf1[l];
-    z2 = crf2[l];
-    z3 = crf3[l];
-    z4 = crf4[l];
-    ex1 = crx[l];
-  } else {
-    x1 = blhs_sum1[l];
-    x2 = blhs_sum2[l];
-    x3 = blhs_sum3[l];
-    x4 = blhs_sum4[l];
-    z1 = bcrf1[l];
-    z2 = bcrf2[l];
-    z3 = bcrf3[l];
-    z4 = bcrf4[l];
-    ex1 = bcrx[l];
-  }
+  int z1 = crf1[l];
+  int z2 = crf2[l];
+  int z3 = crf3[l];
+  int z4 = crf4[l];
+  int ex1 = crx[l];
 
   DWAIT(14);
   if (unit_counter == 0) {
@@ -228,19 +158,10 @@ void ACCNAME::Scheduler() {
   gemm_unit_3_l_pointer.write(0);
   gemm_unit_4_l_pointer.write(0);
   schS.write(0);
-  lhs_loaded.write(0);
   wait();
   while (1) {
     schS.write(10);
     while (!schedule.read()) wait();
-
-    load_lhs();
-    DWAIT();
-    use_ping.write(ping.read());
-    lhs_loaded.write(1);
-    DWAIT();
-
-    while (!lhs_loaded) wait();
 
     schS.write(1);
     int dm = depth / 4;
@@ -267,7 +188,6 @@ void ACCNAME::Scheduler() {
     }
     schS.write(7);
     schedule.write(0);
-    lhs_loaded.write(0);
     schS.write(8);
     wait();
   }

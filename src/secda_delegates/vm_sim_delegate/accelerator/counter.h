@@ -4,14 +4,9 @@ void ACCNAME::Read_Cycle_Counter() {
     while (read_inputs) {
       read_cycles->value++;
       cycles_layer->value++;
-      // std::cout << "Simulation time: " << sc_time_stamp() << std::endl;
-
       DWAIT();
     }
     cycles_layer->value++;
-    unsigned int start = sc_time_stamp().value() / 1000;
-    // print simulation time
-    // std::cout << "Simulation time: " << sc_time_stamp() << std::endl;
     wait();
   }
 }

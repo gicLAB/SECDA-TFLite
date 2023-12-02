@@ -20,9 +20,8 @@ void ACCNAME::Worker1() {
     gemm_unit_1_ready.write(1);
     w1S.write(3);
     wait();
-    VM_PE(lhsdata1a, lhsdata2a, lhsdata3a, lhsdata4a, glhsdata1a, glhsdata2a,
-          glhsdata3a, glhsdata4a, rhs1a_1, rhs1b_1, rhs1c_1, rhs1d_1, out, d,
-          l_pointer, 0);
+    VM_PE(lhsdata1a, lhsdata2a, lhsdata3a, lhsdata4a, rhs1a_1, rhs1b_1, rhs1c_1,
+          rhs1d_1, out, d, l_pointer, 0);
     w1S.write(4);
     gemm_unit_1_iwuse.write(0);
 
@@ -66,9 +65,8 @@ void ACCNAME::Worker2() {
     gemm_unit_2_ready.write(1);
     w2S.write(3);
     wait();
-    VM_PE(lhsdata1b, lhsdata2b, lhsdata3b, lhsdata4b, glhsdata1b, glhsdata2b,
-          glhsdata3b, glhsdata4b, rhs2a_1, rhs2b_1, rhs2c_1, rhs2d_1, out, d,
-          l_pointer, 1);
+    VM_PE(lhsdata1b, lhsdata2b, lhsdata3b, lhsdata4b, rhs2a_1, rhs2b_1, rhs2c_1,
+          rhs2d_1, out, d, l_pointer, 1);
     w2S.write(4);
     gemm_unit_2_iwuse.write(0);
 
@@ -112,9 +110,8 @@ void ACCNAME::Worker3() {
     gemm_unit_3_ready.write(1);
     w3S.write(3);
     wait();
-    VM_PE(lhsdata1c, lhsdata2c, lhsdata3c, lhsdata4c, glhsdata1c, glhsdata2c,
-          glhsdata3c, glhsdata4c, rhs3a_1, rhs3b_1, rhs3c_1, rhs3d_1, out, d,
-          l_pointer, 2);
+    VM_PE(lhsdata1c, lhsdata2c, lhsdata3c, lhsdata4c, rhs3a_1, rhs3b_1, rhs3c_1,
+          rhs3d_1, out, d, l_pointer, 2);
     w3S.write(4);
     gemm_unit_3_iwuse.write(0);
 
@@ -158,9 +155,8 @@ void ACCNAME::Worker4() {
     gemm_unit_4_ready.write(1);
     w4S.write(3);
     wait();
-    VM_PE(lhsdata1d, lhsdata2d, lhsdata3d, lhsdata4d, glhsdata1d, glhsdata2d,
-          glhsdata3d, glhsdata4d, rhs4a_1, rhs4b_1, rhs4c_1, rhs4d_1, out, d,
-          l_pointer, 3);
+    VM_PE(lhsdata1d, lhsdata2d, lhsdata3d, lhsdata4d, rhs4a_1, rhs4b_1, rhs4c_1,
+          rhs4d_1, out, d, l_pointer, 3);
     w4S.write(4);
     gemm_unit_4_iwuse.write(0);
 

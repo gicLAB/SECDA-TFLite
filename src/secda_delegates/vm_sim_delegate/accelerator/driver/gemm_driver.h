@@ -31,26 +31,17 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   int in_sum_length = rrow_steps / 4;
   uint32_t h = 1;
   uint32_t l = in_sum_length;
+  uint32_t rl = rrow_steps * rdepth / 4;;
   // l = l << 16;
   // l += rrow_steps * rdepth / 4;
-  uint32_t rl = rrow_steps * rdepth / 4;
-
-  // drv.massign<int, uint32_t>(in0, &h, inl0, 0, 1);
   in0[inl0++] = h;
-  // drv.massign<int, uint32_t>(in0, &l, inl0, 0, 1);
   in0[inl0++] = 0;
-  // drv.massign<int, uint32_t>(in0, &l, inl0, 0, 1);
   in0[inl0++] = l;
   in0[inl0++] = rl;
-  // drv.massign<int, int>(in0, &drv.ra, inl0, 0, 1);
   in0[inl0++] = drv.ra;
 
   for (int c = 0; c < rows_step; c += 4) {
     for (int i = 0; i < rdepth / 4; i++) {
-      drv.massign<int, int>(in0, drv.inb_0, inl0, i + drv.in_id, 3);
-      drv.massign<int, int>(in1, drv.inb_1, inl1, i + drv.in_id, 3);
-      drv.massign<int, int>(in2, drv.inb_2, inl2, i + drv.in_id, 3);
-      drv.massign<int, int>(in3, drv.inb_3, inl3, i + drv.in_id, 4);
       in0[inl0++] = drv.inb_0[i + drv.in_id];
       in1[inl1++] = drv.inb_1[i + drv.in_id];
       in2[inl2++] = drv.inb_2[i + drv.in_id];
@@ -59,10 +50,6 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
     drv.in_id += rdepth / 4;
   }
   for (int i = 0; i < in_sum_length; i++) {
-    drv.massign<int, int>(in0, p_rhs_sums1, inl0, i, 3);
-    drv.massign<int, int>(in1, p_rhs_sums2, inl1, i, 3);
-    drv.massign<int, int>(in2, p_rhs_sums3, inl2, i, 3);
-    drv.massign<int, int>(in3, p_rhs_sums4, inl3, i, 4);
     in0[inl0++] = (p_rhs_sums1[i] + offdepth) * drv.lhs_offset;
     in1[inl1++] = (p_rhs_sums2[i] + offdepth) * drv.lhs_offset;
     in2[inl2++] = (p_rhs_sums3[i] + offdepth) * drv.lhs_offset;
@@ -74,7 +61,6 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   drv.mdma->dmas[2].dma_start_send(inl2);
   drv.mdma->dmas[3].dma_start_send(inl3);
   drv.mdma->multi_dma_wait_send();
-  
   // drv.profile->saveProfile(drv.acc->profiling_vars);
 }
 
@@ -100,9 +86,9 @@ void Load_Weight_Data(acc_container &drv, int8_t *results, int output_stride,
   count = count << 16;
   count += rrows_step;
   uint32_t l = rcols_step * rdepth_step / 4;
+  uint32_t rl = wt_sums_len;
   // l = l << 16;
   // l += wt_sums_len;
-  uint32_t rl = wt_sums_len;
   h += rdepth_step;
   h = h << 8;
   h += 0;
@@ -116,11 +102,8 @@ void Load_Weight_Data(acc_container &drv, int8_t *results, int output_stride,
   in0[inl0++] = l;
   in0[inl0++] = rl;
 
+
   for (int i = 0; i < data_length / 16; i++) {
-    drv.massign<int, int>(in0, drv.wb_0, inl0, i + w_dex, 3);
-    drv.massign<int, int>(in1, drv.wb_1, inl1, i + w_dex, 3);
-    drv.massign<int, int>(in2, drv.wb_2, inl2, i + w_dex, 3);
-    drv.massign<int, int>(in3, drv.wb_3, inl3, i + w_dex, 4);
     in0[inl0++] = drv.wb_0[w_dex + i];
     in1[inl1++] = drv.wb_1[w_dex + i];
     in2[inl2++] = drv.wb_2[w_dex + i];
@@ -138,30 +121,20 @@ void Load_Weight_Data(acc_container &drv, int8_t *results, int output_stride,
   int *wsums4 = reinterpret_cast<int *>(&drv.wt_sum4[start_dex]);
 
   for (int i = 0; i < wt_sums_len; i++) {
-    drv.massign<int, int>(in0, wsums1, inl0, i, 3);
-    drv.massign<int, int>(in1, wsums2, inl1, i, 3);
-    drv.massign<int, int>(in2, wsums3, inl2, i, 3);
-    drv.massign<int, int>(in3, wsums4, inl3, i, 4);
     in0[inl0++] = (wsums1[i] * drv.rhs_offset) + drv.bias[b_c++];
     in1[inl1++] = (wsums2[i] * drv.rhs_offset) + drv.bias[b_c++];
     in2[inl2++] = (wsums3[i] * drv.rhs_offset) + drv.bias[b_c++];
     in3[inl3++] = (wsums4[i] * drv.rhs_offset) + drv.bias[b_c++];
 
-    drv.massign<int, int>(in0, &drv.crf[0], inl0, crf_c, 2);
     in0[inl0++] = drv.crf[crf_c++];
-    drv.massign<int, int>(in1, &drv.crf[0], inl1, crf_c, 2);
     in1[inl1++] = drv.crf[crf_c++];
-    drv.massign<int, int>(in2, &drv.crf[0], inl2, crf_c, 2);
     in2[inl2++] = drv.crf[crf_c++];
-    drv.massign<int, int>(in3, &drv.crf[0], inl3, crf_c, 2);
     in3[inl3++] = drv.crf[crf_c++];
-
     int8_t w0 = drv.crx[crx_c++];
     int8_t w1 = drv.crx[crx_c++];
     int8_t w2 = drv.crx[crx_c++];
     int8_t w3 = drv.crx[crx_c++];
     int8_t ex[] = {w0, w1, w2, w3};
-    drv.massign<int, int8_t>(in0, ex, inl0, 0, 11);
     in0[inl0++] = *(int *)(ex);
   }
   drv.w_c += data_length / 4;
@@ -215,14 +188,6 @@ void Store_Results(acc_container &drv) {
 
   for (int i = 0; i < drows; i += 4) {
     for (int j = 0; j < cols_step; j++) {
-      drv.massign<int8_t, int8_t>(base, bo0, (i + 0) * output_stride + j, out0,
-                                  4);
-      drv.massign<int8_t, int8_t>(base, bo1, (i + 1) * output_stride + j, out1,
-                                  4);
-      drv.massign<int8_t, int8_t>(base, bo2, (i + 2) * output_stride + j, out2,
-                                  4);
-      drv.massign<int8_t, int8_t>(base, bo3, (i + 3) * output_stride + j, out3,
-                                  4);
       base[(i + 0) * output_stride + j] = bo0[out0++];
       base[(i + 1) * output_stride + j] = bo1[out1++];
       base[(i + 2) * output_stride + j] = bo2[out2++];
@@ -236,12 +201,6 @@ void Store_Results(acc_container &drv) {
 
   if ((rows_step % 4) == 3) {
     for (int j = 0; j < cols_step; j++) {
-      drv.massign<int8_t, int8_t>(base, bo0, (drows + 0) * output_stride + j,
-                                  out0, 4);
-      drv.massign<int8_t, int8_t>(base, bo1, (drows + 1) * output_stride + j,
-                                  out1, 4);
-      drv.massign<int8_t, int8_t>(base, bo2, (drows + 2) * output_stride + j,
-                                  out2, 4);
       base[(drows + 0) * output_stride + j] = bo0[out0++];
       base[(drows + 1) * output_stride + j] = bo1[out1++];
       base[(drows + 2) * output_stride + j] = bo2[out2++];
@@ -251,10 +210,6 @@ void Store_Results(acc_container &drv) {
     out2 += colsr;
   } else if ((rows_step % 4) == 2) {
     for (int j = 0; j < cols_step; j++) {
-      drv.massign<int8_t, int8_t>(base, bo0, (drows + 0) * output_stride + j,
-                                  out0, 4);
-      drv.massign<int8_t, int8_t>(base, bo1, (drows + 1) * output_stride + j,
-                                  out1, 4);
       base[(drows + 0) * output_stride + j] = bo0[out0++];
       base[(drows + 1) * output_stride + j] = bo1[out1++];
     }
@@ -262,8 +217,6 @@ void Store_Results(acc_container &drv) {
     out1 += colsr;
   } else if ((rows_step % 4) == 1) {
     for (int j = 0; j < cols_step; j++) {
-      drv.massign<int8_t, int8_t>(base, bo0, (drows + 0) * output_stride + j,
-                                  out0, 4);
       base[(drows + 0) * output_stride + j] = bo0[out0++];
     }
     out0 += colsr;
@@ -302,18 +255,16 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
     int rows_step = std::min(row_inc, rows - r);
     drv.w_c = 0;
     // Load Inputs into the accelerator
-    // Load_Input_Data(drv, r, rrows_step, depth, rdepth);
+    Load_Input_Data(drv, r, rrows_step, depth, rdepth);
     for (int c = 0; c < rcols; c += col_inc) {
       int rcols_step = std::min(col_inc, rcols - c);
       int cols_step = std::min(col_inc, cols - c);
-      // Load_Weight_Compute_Store(drv, results, output_stride, c, rcols_step, r,
-                                // rrows_step, rdepth, rows_step, cols_step);
+      Load_Weight_Compute_Store(drv, results, output_stride, c, rcols_step, r,
+                                rrows_step, rdepth, rows_step, cols_step);
       drv.t.layer_weight_tile++;
     }
     drv.t.layer_input_tile++;
   }
-  // print layer_weight_tile and layer_input_tile
-  cout << "itile: " << drv.t.layer_input_tile  << ", wtile: " << drv.t.layer_weight_tile << endl;
 }
 
 void Entry(acc_container &drv, int8_t *dst) {
@@ -326,10 +277,7 @@ void Entry(acc_container &drv, int8_t *dst) {
   int rdepth = roundUp(drv.depth, 16);
   int output_stride = drv.cols;
 
-  // print layer
-  cout << "layer: " << drv.t.layer << endl;
-
-  #ifdef DELEGATE_VERBOSE
+  // #ifdef DELEGATE_VERBOSE
   cerr << "VM" << endl;
   cerr << "===========================" << endl;
   cerr << "Pre-ACC Info" << endl;
@@ -338,11 +286,10 @@ void Entry(acc_container &drv, int8_t *dst) {
   cerr << "rrows: " << rrows << " rows: " << rows << endl;
   cerr << "output_stride: " << output_stride << endl;
   cerr << "===========================" << endl;
-  #endif
+  // #endif
 
-  // drv.load_inject_dram_cycles();
   TileGEMM(drv, output_stride, depth, rdepth, rows, rrows, cols, rcols, dst);
-  drv.profile->saveProfile(drv.acc->profiling_vars);
+  // drv.profile->saveProfile(drv.acc->profiling_vars);
 
 #ifdef DELEGATE_DEBUG
   mkdir("aData", 0777);

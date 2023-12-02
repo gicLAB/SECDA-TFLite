@@ -102,14 +102,14 @@ void sysC_binder(ACCNAME* acc, multi_dma* mdma, sysC_sigs* scs) {
     mdma->dmas[i].dmad->clock(scs->clk_fast);
     mdma->dmas[i].dmad->reset(scs->sig_reset);
   }
-  mdma->dmas[0].dmad->rm.dout1(scs->dout1);
-  mdma->dmas[1].dmad->rm.dout1(scs->dout2);
-  mdma->dmas[2].dmad->rm.dout1(scs->dout3);
-  mdma->dmas[3].dmad->rm.dout1(scs->dout4);
-  mdma->dmas[0].dmad->rm.din1(scs->din1);
-  mdma->dmas[1].dmad->rm.din1(scs->din2);
-  mdma->dmas[2].dmad->rm.din1(scs->din3);
-  mdma->dmas[3].dmad->rm.din1(scs->din4);
+  mdma->dmas[0].dmad->dout1(scs->dout1);
+  mdma->dmas[1].dmad->dout1(scs->dout2);
+  mdma->dmas[2].dmad->dout1(scs->dout3);
+  mdma->dmas[3].dmad->dout1(scs->dout4);
+  mdma->dmas[0].dmad->din1(scs->din1);
+  mdma->dmas[1].dmad->din1(scs->din2);
+  mdma->dmas[2].dmad->din1(scs->din3);
+  mdma->dmas[3].dmad->din1(scs->din4);
 
 
   acc->dout1(scs->dout1);

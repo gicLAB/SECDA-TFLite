@@ -501,14 +501,6 @@ public:
       drv.use_sim = options_.use_simmode;
       drv.layer = dparams.layer;
 
-      mdma->dmas[0].dmad->rm.use_sim = options_.use_simmode;
-      mdma->dmas[0].dmad->rm.layer = dparams.layer;
-      mdma->dmas[1].dmad->rm.use_sim = options_.use_simmode;
-      mdma->dmas[1].dmad->rm.layer = dparams.layer;
-      mdma->dmas[2].dmad->rm.use_sim = options_.use_simmode;
-      mdma->dmas[2].dmad->rm.layer = dparams.layer;
-      mdma->dmas[3].dmad->rm.use_sim = options_.use_simmode;
-      mdma->dmas[3].dmad->rm.layer = dparams.layer;
 
       drv.clear_traces();
 

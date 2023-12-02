@@ -8,3 +8,4 @@ clone_test
 ramulator_integration
 src/sync_backwards.bat
 src/secda_delegates/versions
+src/secda_delegates/vm_sim_delegate_ram

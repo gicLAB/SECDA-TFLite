@@ -1,7 +1,6 @@
 void ACCNAME::VM_PE(ACC_DTYPE<32> *l1, ACC_DTYPE<32> *l2, ACC_DTYPE<32> *l3,
-                    ACC_DTYPE<32> *l4, ACC_DTYPE<32> *b1, ACC_DTYPE<32> *b2,
-                    ACC_DTYPE<32> *b3, ACC_DTYPE<32> *b4, ACC_DTYPE<32> *r1,
-                    ACC_DTYPE<32> *r2, ACC_DTYPE<32> *r3, ACC_DTYPE<32> *r4,
+                    ACC_DTYPE<32> *l4, ACC_DTYPE<32> *r1, ACC_DTYPE<32> *r2,
+                    ACC_DTYPE<32> *r3, ACC_DTYPE<32> *r4,
                     ACC_DTYPE<32> out[][4], int d, int l_pointer, int wID) {
   ACC_DTYPE<32> lhs_read[4];
   ACC_DTYPE<32> rhs_read[4];
@@ -29,19 +28,12 @@ void ACCNAME::VM_PE(ACC_DTYPE<32> *l1, ACC_DTYPE<32> *l2, ACC_DTYPE<32> *l3,
 
   DWAIT(4);
   for (int rin = 0; rin < d; rin++) {
-#pragma HLS loop_tripcount min = 64 max = 64 avg = 64
+#pragma HLS loop_tripcount min=64 max=64 avg=64
 #pragma HLS pipeline II = 1
-    if (use_ping.read()) {
-      lhs_read[0] = l1[rin + l_pointer];
-      lhs_read[1] = l2[rin + l_pointer];
-      lhs_read[2] = l3[rin + l_pointer];
-      lhs_read[3] = l4[rin + l_pointer];
-    } else {
-      lhs_read[0] = b1[rin + l_pointer];
-      lhs_read[1] = b2[rin + l_pointer];
-      lhs_read[2] = b3[rin + l_pointer];
-      lhs_read[3] = b4[rin + l_pointer];
-    }
+    lhs_read[0] = l1[rin + l_pointer];
+    lhs_read[1] = l2[rin + l_pointer];
+    lhs_read[2] = l3[rin + l_pointer];
+    lhs_read[3] = l4[rin + l_pointer];
     rhs_read[0] = r1[rin];
     rhs_read[1] = r2[rin];
     rhs_read[2] = r3[rin];

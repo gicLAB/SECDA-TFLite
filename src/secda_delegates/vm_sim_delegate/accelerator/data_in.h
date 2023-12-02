@@ -1,7 +1,7 @@
 void ACCNAME::Data_In() {
   int llength = 0;
   int rlength = 0;
-  ping.write(true);
+
   wait();
   while (1) {
     while (!read_inputs.read()) wait();
@@ -20,46 +20,22 @@ void ACCNAME::Data_In() {
         ACC_DTYPE<32> data3 = din3.read().data.to_int();
         ACC_DTYPE<32> data4 = din4.read().data.to_int();
         lb++;
-        // glhsdata1a[la] = data1;
-        // glhsdata2a[la] = data2;
-        // glhsdata3a[la] = data3;
-        // glhsdata4a[la] = data4;
-        if (ping.read()) {
-          glhsdata1a[la] = data1;
-          glhsdata1b[la] = data1;
-          glhsdata1c[la] = data1;
-          glhsdata1d[la] = data1;
-          glhsdata2a[la] = data2;
-          glhsdata2b[la] = data2;
-          glhsdata2c[la] = data2;
-          glhsdata2d[la] = data2;
-          glhsdata3a[la] = data3;
-          glhsdata3b[la] = data3;
-          glhsdata3c[la] = data3;
-          glhsdata3d[la] = data3;
-          glhsdata4a[la] = data4;
-          glhsdata4b[la] = data4;
-          glhsdata4c[la] = data4;
-          glhsdata4d[la] = data4;
-        } else {
-          lhsdata1a[la] = data1;
-          lhsdata1b[la] = data1;
-          lhsdata1c[la] = data1;
-          lhsdata1d[la] = data1;
-          lhsdata2a[la] = data2;
-          lhsdata2b[la] = data2;
-          lhsdata2c[la] = data2;
-          lhsdata2d[la] = data2;
-          lhsdata3a[la] = data3;
-          lhsdata3b[la] = data3;
-          lhsdata3c[la] = data3;
-          lhsdata3d[la] = data3;
-          lhsdata4a[la] = data4;
-          lhsdata4b[la] = data4;
-          lhsdata4c[la] = data4;
-          lhsdata4d[la] = data4;
-        }
-
+        lhsdata1a[la] = data1;
+        lhsdata1b[la] = data1;
+        lhsdata1c[la] = data1;
+        lhsdata1d[la] = data1;
+        lhsdata2a[la] = data2;
+        lhsdata2b[la] = data2;
+        lhsdata2c[la] = data2;
+        lhsdata2d[la] = data2;
+        lhsdata3a[la] = data3;
+        lhsdata3b[la] = data3;
+        lhsdata3c[la] = data3;
+        lhsdata3d[la] = data3;
+        lhsdata4a[la] = data4;
+        lhsdata4b[la] = data4;
+        lhsdata4c[la] = data4;
+        lhsdata4d[la] = data4;
         la = lb;
 #ifndef __SYNTHESIS__
         inputbuf_p->value = la;
@@ -77,32 +53,13 @@ void ACCNAME::Data_In() {
         ACC_DTYPE<32> rfs4 = din4.read().data.to_int();
         ACC_DTYPE<32> exs = din1.read().data.to_int();
         rb++;
-
-        if (ping) {
-          blhs_sum1[ra] = wsums1;
-          blhs_sum2[ra] = wsums2;
-          blhs_sum3[ra] = wsums3;
-          blhs_sum4[ra] = wsums4;
-          bcrf1[ra] = rfs1;
-          bcrf2[ra] = rfs2;
-          bcrf3[ra] = rfs3;
-          bcrf4[ra] = rfs4;
-          bcrx[ra] = exs;
-        } else {
-          lhs_sum1[ra] = wsums1;
-          lhs_sum2[ra] = wsums2;
-          lhs_sum3[ra] = wsums3;
-          lhs_sum4[ra] = wsums4;
-          crf1[ra] = rfs1;
-          crf2[ra] = rfs2;
-          crf3[ra] = rfs3;
-          crf4[ra] = rfs4;
-          crx[ra] = exs;
-        }
+        lhs_sum1[ra] = wsums1;
+        lhs_sum2[ra] = wsums2;
+        lhs_sum3[ra] = wsums3;
+        lhs_sum4[ra] = wsums4;
         ra = rb;
         DWAIT();
       }
-      ping.write(!ping);
     }
 
     DWAIT();
