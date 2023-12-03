@@ -126,6 +126,7 @@ void ACCNAME::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j], prs[j],
                                                msks[j], sms[j]);
       sc_int<32> f1_a1 = ret_accum1 + ra;
+      int res = f1_a1;
       if (f1_a1 > MAX8) f1_a1 = MAX8;
       else if (f1_a1 < MIN8) f1_a1 = MIN8;
       r[j * 4 + i] = f1_a1.range(7, 0);

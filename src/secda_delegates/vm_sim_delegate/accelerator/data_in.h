@@ -4,7 +4,8 @@ void ACCNAME::Data_In() {
 
   wait();
   while (1) {
-    while (!read_inputs.read()) wait();
+    while (!read_inputs.read())
+      wait();
     llength = llen.read();
     rlength = rlen.read();
     int la = 0;
@@ -57,6 +58,11 @@ void ACCNAME::Data_In() {
         lhs_sum2[ra] = wsums2;
         lhs_sum3[ra] = wsums3;
         lhs_sum4[ra] = wsums4;
+        crf1[ra] = rfs1;
+        crf2[ra] = rfs2;
+        crf3[ra] = rfs3;
+        crf4[ra] = rfs4;
+        crx[ra] = exs;
         ra = rb;
         DWAIT();
       }
@@ -95,6 +101,7 @@ void ACCNAME::Data_In() {
       }
     }
     d_in1.write(0);
-    while (read_inputs.read()) wait();
+    while (read_inputs.read())
+      wait();
   }
 }

@@ -60,6 +60,16 @@ cc_library(
 
 
 cc_binary(
+    name = "eval_model_plus_tconv_sim_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
+        ":tconv_sim_delegate_provider", 
+    ],
+)
+
+cc_binary(
     name = "label_image_plus_tconv_sim_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),

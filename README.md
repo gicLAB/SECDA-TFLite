@@ -15,6 +15,8 @@ git clone https://github.com/judeharis/SECDA-TFLite.git
 cd SECDA-TFLite
 git submodule init
 git submodule update
+cd scripts
+./create_symlink.sh # you might have to make this script executetable "chmod +x ./create_symlink.sh
 cd tensorflow 
 git checkout secda-tflite-v1
 ```

@@ -55,7 +55,15 @@ cc_library(
     alwayslink = 1,
 )
 
-
+cc_binary(
+    name = "eval_model_plus_vm_sim_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
+        ":vm_sim_delegate_provider", 
+    ],
+)
 
 cc_binary(
     name = "label_image_plus_vm_sim_delegate",
@@ -82,9 +90,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":vm_sim_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval_lib",
+        ":vm_sim_delegate_provider",
     ],
 )
 

@@ -57,12 +57,22 @@ cc_library(
 
 
 cc_binary(
+    name = "eval_model_plus_rvta_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
+        ":rvta_delegate_provider",
+    ],
+)
+
+cc_binary(
     name = "label_image_plus_rvta_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/examples/label_image:label_image_lib",
-        ":rvta_delegate_provider",
+        ":rvta_delegate_provider", 
     ],
 )
 

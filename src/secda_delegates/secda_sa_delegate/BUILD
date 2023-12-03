@@ -57,6 +57,16 @@ cc_library(
 
 
 cc_binary(
+    name = "eval_model_plus_secda_sa_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
+        ":secda_sa_delegate_provider", 
+    ],
+)
+
+cc_binary(
     name = "label_image_plus_secda_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
@@ -81,9 +91,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":secda_sa_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval_lib",
+        ":secda_sa_delegate_provider",
     ],
 )
 
@@ -92,9 +102,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":secda_sa_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/imagenet_image_classification:run_eval_lib",
+        ":secda_sa_delegate_provider",
     ],
 )
 

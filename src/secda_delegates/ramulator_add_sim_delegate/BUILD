@@ -57,12 +57,22 @@ cc_library(
 
 
 cc_binary(
+    name = "eval_model_plus_ramulator_add_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
+        ":ramulator_add_delegate_provider",
+    ],
+)
+
+cc_binary(
     name = "label_image_plus_ramulator_add_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/examples/label_image:label_image_lib",
-        ":ramulator_add_delegate_provider",
+        ":ramulator_add_delegate_provider", 
     ],
 )
 

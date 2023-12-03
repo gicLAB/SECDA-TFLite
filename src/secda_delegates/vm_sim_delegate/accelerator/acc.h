@@ -404,7 +404,8 @@ SC_MODULE(ACCNAME) {
 
   ACCNAME(sc_module_name name_)
       : sc_module(name_), WRQ1(512), WRQ2(512), WRQ3(512), WRQ4(512) {
-    SC_CTHREAD(Input_Handler, clock.pos());
+
+    SC_CTHREAD(Input_Handler, clock);
     reset_signal_is(reset, true);
 
     SC_CTHREAD(Worker1, clock);

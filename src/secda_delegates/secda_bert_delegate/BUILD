@@ -57,6 +57,16 @@ cc_library(
 
 
 cc_binary(
+    name = "eval_model_plus_secda_bert_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
+        ":secda_bert_delegate_provider", 
+    ],
+)
+
+cc_binary(
     name = "label_image_plus_secda_bert_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),

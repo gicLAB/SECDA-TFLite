@@ -146,7 +146,8 @@ public:
 
       int temp_out_id;
       bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
-      if (!req_temp_out) out_tid++;
+      if (!req_temp_out)
+        out_tid++;
 
       TF_LITE_ENSURE_STATUS(AllocateTemporaryTensorsIfRequired(
           context, node, is_hybrid, data->is_hybrid_per_channel, im2col_bytes,
@@ -183,7 +184,8 @@ public:
       output_size->data[2] = out_width;
       output_size->data[3] = channels_out;
       auto output_status = context->ResizeTensor(context, output, output_size);
-      if (output_status != kTfLiteOk) return output_status;
+      if (output_status != kTfLiteOk)
+        return output_status;
 
       if (data->need_im2col) {
         node->temporaries->data[data->im2col_index] = data->im2col_id;
@@ -203,7 +205,8 @@ public:
         im2col->allocation_type = kTfLiteArenaRw;
         auto im2col_status =
             context->ResizeTensor(context, im2col, im2col_size);
-        if (im2col_status != kTfLiteOk) return im2col_status;
+        if (im2col_status != kTfLiteOk)
+          return im2col_status;
       }
 
       if (data->need_hwcn_weights) {
@@ -223,7 +226,8 @@ public:
         hwcn_weights->allocation_type = kTfLiteArenaRwPersistent;
         auto hwcn_weights_status =
             context->ResizeTensor(context, hwcn_weights, hwcn_weights_size);
-        if (hwcn_weights_status != kTfLiteOk) return hwcn_weights_status;
+        if (hwcn_weights_status != kTfLiteOk)
+          return hwcn_weights_status;
 
         data->have_weights_been_transposed = false;
       }
@@ -246,7 +250,8 @@ public:
         im2col->allocation_type = kTfLiteArenaRw;
         auto im2col_status =
             context->ResizeTensor(context, im2col, im2col_size);
-        if (im2col_status != kTfLiteOk) return im2col_status;
+        if (im2col_status != kTfLiteOk)
+          return im2col_status;
       }
 
       if (req_temp_out) {
@@ -262,7 +267,8 @@ public:
         temp_out_tensor->allocation_type = kTfLiteArenaRw;
         auto temp_out_tensor_status = context->ResizeTensor(
             context, temp_out_tensor, temp_out_tensor_size);
-        if (temp_out_tensor_status != kTfLiteOk) return temp_out_tensor_status;
+        if (temp_out_tensor_status != kTfLiteOk)
+          return temp_out_tensor_status;
       }
 
       biases[i] = bias->data.i32;
@@ -484,6 +490,9 @@ public:
       // Calls the gemm_driver to offload the CONV2D operation
       // tflite_sasim::Entry(drv, ts_lhs_params, ts_rhs_params, ts_dst_params);
       tflite_sasim::Entry(drv, output_data);
+      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
+      //                   "_del_out_acc.csv",
+      //               output_data, gemm_input_cols, filter_rows);
       dparams.layer++;
       dparams.delegated_nodes--;
     }
@@ -526,18 +535,22 @@ public:
                                  const TfLiteNode *node,
                                  TfLiteContext *context) const override {
     // Only supports CONV2D op
-    if (kTfLiteBuiltinConv2d != registration->builtin_code) return false;
+    if (kTfLiteBuiltinConv2d != registration->builtin_code)
+      return false;
 
     // This delegate only supports int8 types
-    if (node->inputs->size != 3) return false;
+    if (node->inputs->size != 3)
+      return false;
     for (int i = 0; i < 2; ++i) {
       auto &tensor = context->tensors[node->inputs->data[i]];
-      if (tensor.type != kTfLiteInt8) return false;
+      if (tensor.type != kTfLiteInt8)
+        return false;
     }
 
     // Ensures bias tensor is supports int32 type
     auto &tensor = context->tensors[node->inputs->data[2]];
-    if (tensor.type != kTfLiteInt32) return false;
+    if (tensor.type != kTfLiteInt32)
+      return false;
 
     // Adds node for delegation
     dparams.delegated_nodes++;
