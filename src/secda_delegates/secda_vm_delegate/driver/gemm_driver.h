@@ -99,6 +99,7 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   in0[inl0++] = l;
   in0[inl0++] = drv.ra;
 
+#ifndef ACC_NEON
   prf_start(1);
   for (int c = 0; c < rows_step; c += 4) {
     for (int i = 0; i < rdepth / 4; i++) {
@@ -556,4 +557,5 @@ void Entry(acc_container &drv, int8_t *dst) {
 #endif
 }
 } // namespace tflite_secda_vm
+
 #endif // GEMM_DRIVER

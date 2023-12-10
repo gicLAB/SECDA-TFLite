@@ -9,4 +9,6 @@ ramulator_integration
 src/sync_backwards.bat
 src/secda_delegates/versions
 src/secda_delegates/vm_sim_delegate_ram
+hardware_automation/generated
+hardware_automation/secda_tflite_acc_srcs
 scripts/delegate_generation/generated
