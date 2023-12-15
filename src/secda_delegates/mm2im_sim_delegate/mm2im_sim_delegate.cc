@@ -611,7 +611,7 @@ public:
                         "_del_out_cpu.csv",
                     output_data, scratch_cols, scratch_rows);
 
-      // mm2im_driver::Entry(drv);
+      mm2im_driver::Entry(drv);
 
       // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
       //                   "_del_accgemm.csv",

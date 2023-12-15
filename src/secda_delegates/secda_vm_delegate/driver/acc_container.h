@@ -30,6 +30,7 @@ using namespace std::chrono;
 #define prf_start(N)
 #define prf_end(N, X)
 #endif
+#define TSCALE microseconds
 
 // Used for tracking output locations
 struct store_params {
@@ -42,8 +43,8 @@ struct store_params {
 };
 
 struct vm_times {
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_rhs;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_lhs;
+  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_inputs;
+  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_weights;
   std::chrono::duration<long long int, std::ratio<1, 1000000000>> vm_acc;
   std::chrono::duration<long long int, std::ratio<1, 1000000000>> store;
   std::chrono::duration<long long int, std::ratio<1, 1000000000>> ipack;
@@ -53,20 +54,20 @@ struct vm_times {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
     cout << "conv_total, "
-         << chrono::duration_cast<chrono::nanoseconds>(conv_total).count()
+         << chrono::duration_cast<chrono::TSCALE>(conv_total).count()
          << endl;
     cout << "ipack, "
-         << chrono::duration_cast<chrono::nanoseconds>(ipack).count() << endl;
-    cout << "load_rhs, "
-         << chrono::duration_cast<chrono::nanoseconds>(load_rhs).count()
+         << chrono::duration_cast<chrono::TSCALE>(ipack).count() << endl;
+    cout << "load_inputs, "
+         << chrono::duration_cast<chrono::TSCALE>(load_inputs).count()
          << endl;
-    cout << "load_lhs, "
-         << chrono::duration_cast<chrono::nanoseconds>(load_lhs).count()
+    cout << "load_weights, "
+         << chrono::duration_cast<chrono::TSCALE>(load_weights).count()
          << endl;
     cout << "vm_acc, "
-         << chrono::duration_cast<chrono::nanoseconds>(vm_acc).count() << endl;
+         << chrono::duration_cast<chrono::TSCALE>(vm_acc).count() << endl;
     cout << "store, "
-         << chrono::duration_cast<chrono::nanoseconds>(store).count() << endl;
+         << chrono::duration_cast<chrono::TSCALE>(store).count() << endl;
     cout << "================================================" << endl;
 
     std::ofstream offile("runs.csv", std::ios::app);
@@ -94,6 +95,7 @@ struct gemm_details {
 };
 
 struct acc_container {
+  int *acc;
   // DMAs Pointer
   struct multi_dma *mdma;
 
@@ -164,7 +166,7 @@ struct acc_container {
   }
 
   template <typename D, typename S>
-  void memRW(D *dst,  int d_dex,S *src, int s_dex, int ins) {
+  void memRW(D *dst, int d_dex, S *src, int s_dex, int ins) {
     auto dst_addr = (void *)(&dst[d_dex]);
     auto src_addr = (void *)(&src[s_dex]);
     ofstream file;
@@ -239,30 +241,12 @@ struct acc_container {
     return true;
   }
 
-  bool Set_Results() {
-    if (!(dsr.cID == dsr.rID && dsr.sID > dsr.cID)) return false;
+  void Set_Results() {
     int s_buf = find_dbuf(dfs[0], dsr.cID);
     mdma->multi_dma_change_end(dfs[0].dbuf_set[s_buf].offset);
     mdma->multi_dma_start_recv(recv_len);
-    mdma->multi_dma_change_start_4(0);
-
-    // int *in0 = mdma->dmas[0].dma_get_inbuffer();
-    // int inl0 = 0;
-    // in0[inl0++] = -1;
-    // mdma->dmas[0].dma_start_send(inl0);
-    // mdma->multi_dma_wait_send();
-
     dsr.cID++;
-    return true;
   }
-
-  // void Set_Results() {
-
-  //   int s_buf = find_dbuf(dfs[0], dsr.cID);
-  //   mdma->multi_dma_change_end(dfs[0].dbuf_set[s_buf].offset);
-  //   mdma->multi_dma_start_recv(recv_len);
-  //   dsr.cID++;
-  // }
 
   void Recieve_Results() { mdma->multi_dma_wait_recv_4(); }
 };

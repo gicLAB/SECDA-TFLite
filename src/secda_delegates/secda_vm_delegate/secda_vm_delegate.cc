@@ -4,10 +4,10 @@
 
 #include <utility>
 
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/secda_delegates/secda_vm_delegate/driver/gemm_driver.h"
 #include "tensorflow/lite/delegates/utils/secda_delegates/secda_vm_delegate/util.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 
 #define DMA_BC 1
@@ -19,13 +19,14 @@ static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
 static struct del_params dparams;
 static struct vm_times vm_t;
 struct store_params st_params[DMA_BC];
+
 struct dma_buffer_set dfs[4] = {
-    {DMA_BC, 204800, dma_in0},
-    {DMA_BC, 204800, dma_in1},
-    {DMA_BC, 204800, dma_in2},
-    {DMA_BC, 204800, dma_in3},
+    {DMA_BC, (DMA_BL/DMA_BC), dma_in0},
+    {DMA_BC, (DMA_BL/DMA_BC), dma_in1},
+    {DMA_BC, (DMA_BL/DMA_BC), dma_in2},
+    {DMA_BC, (DMA_BL/DMA_BC), dma_in3},
 };
-int recv_len = 204800 / DMA_BC;
+int recv_len = (DMA_BL/DMA_BC);
 
 namespace tflite {
 namespace secda_vm_test {
@@ -388,6 +389,7 @@ public:
 
       struct acc_container drv(wb_0, wb_1, wb_2, wb_3, wt_sum1[i], wt_sum2[i],
                                wt_sum3[i], wt_sum4[i], crf[i], crx[i]);
+      drv.acc = dparams.acc;
       drv.mdma = &mdma;
       drv.st_params = st_params;
       drv.dfs = dfs;
@@ -553,8 +555,7 @@ void TfLiteSecdaVMDelegateDelete(TfLiteDelegate *delegate) {
     std::cout << "===========================" << std::endl;
     dparams.unmap = true;
     vm_t.print();
-    for (int i = 0; i < 4; i++)
-      dfs[i].free();
+    for (int i = 0; i < 4; i++) dfs[i].free();
   }
   std::cout << "===========================" << std::endl;
   std::cout << "Deleted" << std::endl;

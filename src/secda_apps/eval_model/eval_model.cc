@@ -212,8 +212,8 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
   }
 }
 
-void processOutput(tflite::Interpreter *interpreter, int output, float threshold,
-                   int number_of_results, Settings *settings) {
+void processOutput(tflite::Interpreter *interpreter, int output,
+                   float threshold, int number_of_results, Settings *settings) {
   std::vector<std::pair<float, int>> top_results;
   TfLiteIntArray *output_dims = interpreter->tensor(output)->dims;
   auto output_size = output_dims->data[output_dims->size - 1];
@@ -399,7 +399,7 @@ void RunInference(Settings *settings,
                  image_channels);
 
   //  Manual Inputs v2
-  // Load_Data_NPY(interpreter, settings->input_npy_name);
+  Load_Data_NPY(interpreter, settings->input_npy_name);
 
   // Manual Start
   // std::cout << "Press Enter to Go";

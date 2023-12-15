@@ -27,9 +27,9 @@ typedef struct _SDATA {
 #define DWAIT(x)
 #endif
 
-#define IN_BUF_LEN 1024
+#define IN_BUF_LEN 2048
 #define WE_BUF_LEN 2048
-#define GWE_BUF_LEN (8192)
+#define GWE_BUF_LEN 8192
 #define WSUMS_BUF_LEN 512
 #define ISUMS_BUF_LEN 512
 #define SUMS_BUF_LEN 512
@@ -180,30 +180,6 @@ SC_MODULE(ACCNAME) {
   ACC_DTYPE<32> lhsdata2d[IN_BUF_LEN];
   ACC_DTYPE<32> lhsdata3d[IN_BUF_LEN];
   ACC_DTYPE<32> lhsdata4d[IN_BUF_LEN];
-
-  // Global 1 Inputs
-  ACC_DTYPE<32> glhsdata1a[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata2a[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata3a[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata4a[IN_BUF_LEN];
-
-  // GEMM 2 Inputs
-  ACC_DTYPE<32> glhsdata1b[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata2b[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata3b[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata4b[IN_BUF_LEN];
-
-  // GEMM 3 Inputs
-  ACC_DTYPE<32> glhsdata1c[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata2c[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata3c[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata4c[IN_BUF_LEN];
-
-  // GEMM 4 Inputs
-  ACC_DTYPE<32> glhsdata1d[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata2d[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata3d[IN_BUF_LEN];
-  ACC_DTYPE<32> glhsdata4d[IN_BUF_LEN];
 
   // Global Weights
   ACC_DTYPE<32> rhsdata1[GWE_BUF_LEN];

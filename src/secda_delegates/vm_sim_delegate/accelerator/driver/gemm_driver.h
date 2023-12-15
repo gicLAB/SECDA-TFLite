@@ -31,7 +31,7 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   int in_sum_length = rrow_steps / 4;
   uint32_t h = 1;
   uint32_t l = in_sum_length;
-  uint32_t rl = rrow_steps * rdepth / 4;;
+  uint32_t rl = rrow_steps * rdepth / 4;
   // l = l << 16;
   // l += rrow_steps * rdepth / 4;
   in0[inl0++] = h;
@@ -101,7 +101,6 @@ void Load_Weight_Data(acc_container &drv, int8_t *results, int output_stride,
   in0[inl0++] = count;
   in0[inl0++] = l;
   in0[inl0++] = rl;
-
 
   for (int i = 0; i < data_length / 16; i++) {
     in0[inl0++] = drv.wb_0[w_dex + i];
@@ -277,7 +276,7 @@ void Entry(acc_container &drv, int8_t *dst) {
   int rdepth = roundUp(drv.depth, 16);
   int output_stride = drv.cols;
 
-  // #ifdef DELEGATE_VERBOSE
+#ifdef DELEGATE_VERBOSE
   cerr << "VM" << endl;
   cerr << "===========================" << endl;
   cerr << "Pre-ACC Info" << endl;
@@ -286,7 +285,7 @@ void Entry(acc_container &drv, int8_t *dst) {
   cerr << "rrows: " << rrows << " rows: " << rows << endl;
   cerr << "output_stride: " << output_stride << endl;
   cerr << "===========================" << endl;
-  // #endif
+#endif
 
   TileGEMM(drv, output_stride, depth, rdepth, rows, rrows, cols, rcols, dst);
   // drv.profile->saveProfile(drv.acc->profiling_vars);

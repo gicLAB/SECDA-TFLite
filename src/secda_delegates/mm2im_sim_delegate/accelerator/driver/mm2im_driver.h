@@ -16,6 +16,7 @@
 int weight_transfered = 0;
 int input_transfered = 0;
 int colmap_transfered = 0;
+int tiling_factor = 0;
 
 int inputload_called = 0;
 namespace mm2im_driver {
@@ -231,6 +232,7 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
     // Start Schedule
     StartSchedule(drv);
     for (int o_1 = 0; o_1 < drv.o1; o_1++) {
+      tiling_factor++;
       TOG(cerr << "Sending rows: " << starting << " to " << drv.o1_ends[o_1] + 1
                << endl;);
       int rows_to_send = drv.o1_ends[o_1] + 1 - starting;
@@ -300,6 +302,7 @@ void Entry(acc_container &drv) {
   cerr << "input_transfered: " << input_transfered * 4 << endl;
   cerr << "colmap_transfered: " << colmap_transfered * 4 << endl;
   cerr << "inputload_called: " << inputload_called << endl;
+  cerr << "tiling_factor: " << tiling_factor << endl;
 }
 
 } // namespace mm2im_driver

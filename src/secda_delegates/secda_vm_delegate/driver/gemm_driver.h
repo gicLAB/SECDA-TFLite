@@ -30,6 +30,13 @@
 #define dma_out3 0x1c800000
 #define DMA_BL 4194304
 
+#define IN_BUF_LEN 2048
+#define WE_BUF_LEN 2048
+#define GWE_BUF_LEN 8192
+#define WSUMS_BUF_LEN 512
+#define ISUMS_BUF_LEN 512
+#define SUMS_BUF_LEN 512
+
 namespace tflite_secda_vm {
 
 struct Load_LHS_Data_Task : Task {
@@ -92,15 +99,17 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   int in_sum_length = rrow_steps / 4;
   uint32_t h = 1;
   uint32_t l = in_sum_length;
-  l = l << 16;
-  l += rrow_steps * rdepth / 4;
+  uint32_t rl = rrow_steps * rdepth / 4;
+  // l = l << 16;
+  // l += rrow_steps * rdepth / 4;
   in0[inl0++] = h;
   in0[inl0++] = 0;
   in0[inl0++] = l;
+  in0[inl0++] = rl;
   in0[inl0++] = drv.ra;
 
-#ifndef ACC_NEON
   prf_start(1);
+#ifndef ACC_NEON
   for (int c = 0; c < rows_step; c += 4) {
     for (int i = 0; i < rdepth / 4; i++) {
       in0[inl0++] = drv.inb_0[i + drv.in_id];
@@ -206,8 +215,9 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
   count = count << 16;
   count += rrows_step;
   uint32_t l = rcols_step * rdepth_step / 4;
-  l = l << 16;
-  l += wt_sums_len;
+  uint32_t rl = wt_sums_len;
+  // l = l << 16;
+  // l += wt_sums_len;
   h += rdepth_step;
   h = h << 8;
   h += 0;
@@ -219,28 +229,8 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
   in0[inl0++] = h;
   in0[inl0++] = count;
   in0[inl0++] = l;
+  in0[inl0++] = rl;
 
-  // int task_count = drv.thread_count;
-  // int task_count = 1;
-  // if (task_count > 1) {
-  //   int sta = 0;
-  //   int end = data_length / 16;
-  //   int step = roundUp(end / task_count, 4);
-  //   std::vector<Task *> tasks;
-  //   auto *workers_pool = drv.mt_context->workers_pool();
-  //   INT_DP data =
-  //       INT_DP(in0, in1, in2, in3, drv.wb_0, drv.wb_1, drv.wb_2, drv.wb_3);
-  //   for (int i = 0; i < task_count; i++) {
-  //     int c_end = std::min(end, sta + step);
-  //     tasks.push_back(new Load_LHS_Data_Task(sta, c_end, w_dex, data));
-  //     sta += c_end;
-  //   }
-  //   workers_pool->Execute(tasks);
-  //   inl0 += data_length / 16;
-  //   inl1 += data_length / 16;
-  //   inl2 += data_length / 16;
-  //   inl3 += data_length / 16;
-  // } else {
 #ifndef ACC_NEON
   for (int i = 0; i < data_length / 16; i++) {
     in0[inl0++] = drv.wb_0[w_dex + i];
@@ -260,7 +250,6 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
     inl3 += 4;
   }
 #endif
-  // }
 
   int b_c = c;
   int crf_c = c;
@@ -423,55 +412,56 @@ void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
                                int output_stride, int c, int rcols_step, int r,
                                int rrows_step, int rdepth_step, int rows_step,
                                int cols_step) {
-  int free_buf = 0;
-  if (drv.lhs_start) {
-    free_buf = check_for_free_dbuf(drv.dfs[0]);
-    Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
-                     rrows_step, rdepth_step, rows_step, cols_step);
-    drv.Start_Transfer();
-    drv.Set_Results();
-    Start_Schedule(drv);
-    drv.lhs_start = false;
-  } else {
-    bool gemm_done = drv.Check_Done();
-    free_buf = check_for_free_dbuf(drv.dfs[0]);
-    if (free_buf != -1) {
-      Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
-                       rrows_step, rdepth_step, rows_step, cols_step);
-      if (gemm_done) {
-        Store_Results(drv);
-        drv.Start_Transfer();
-        drv.Set_Results();
-        Start_Schedule(drv);
-        drv.Start_Transfer();
-      } else drv.Start_Transfer();
-    } else {
-      drv.Start_Transfer();
-      if (!gemm_done) drv.Recieve_Results();
-      Store_Results(drv);
-      if (drv.dsr.sID > drv.dsr.rID) {
-        drv.Set_Results();
-        Start_Schedule(drv);
-        free_buf = check_for_free_dbuf(drv.dfs[0]);
-        Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
-                         r, rrows_step, rdepth_step, rows_step, cols_step);
-      } else {
-        if (drv.dsr.dID > drv.dsr.sID) {
-          drv.Start_Transfer();
-          free_buf = check_for_free_dbuf(drv.dfs[0]);
-          Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
-                           r, rrows_step, rdepth_step, rows_step, cols_step);
-        } else {
-          free_buf = check_for_free_dbuf(drv.dfs[0]);
-          Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
-                           r, rrows_step, rdepth_step, rows_step, cols_step);
-          drv.Start_Transfer();
-          drv.Set_Results();
-          Start_Schedule(drv);
-        }
-      }
-    }
-  }
+  int free_buf = check_for_free_dbuf(drv.dfs[0]);
+  Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
+                   rrows_step, rdepth_step, rows_step, cols_step);
+  drv.Start_Transfer();
+  drv.Set_Results();
+  Start_Schedule(drv);
+  drv.Recieve_Results();
+  Store_Results(drv);
+
+  // int free_buf = 0;
+  // if (drv.lhs_start) {
+  //   free_buf = check_for_free_dbuf(drv.dfs[0]);
+  //   Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
+  //                    rrows_step, rdepth_step, rows_step, cols_step);
+  //   drv.Start_Transfer();
+  //   drv.Set_Results();
+  //   Start_Schedule(drv);
+  //   drv.lhs_start = false;
+  // } else {
+  //   bool gemm_done = drv.Check_Done();
+  //   free_buf = check_for_free_dbuf(drv.dfs[0]);
+  //   if (free_buf != -1) {
+  //     Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
+  //                      rrows_step, rdepth_step, rows_step, cols_step);
+  //     if (gemm_done) {
+  //       Store_Results(drv);
+  //       drv.Start_Transfer();
+  //       drv.Set_Results();
+  //       Start_Schedule(drv);
+  //     }
+  //   } else {
+  //     if (!gemm_done) drv.Recieve_Results();
+  //     Store_Results(drv);
+  //     if (drv.dsr.dID > drv.dsr.sID) {
+  //       drv.Start_Transfer();
+  //       drv.Set_Results();
+  //       Start_Schedule(drv);
+  //       free_buf = check_for_free_dbuf(drv.dfs[0]);
+  //       Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
+  //                        r, rrows_step, rdepth_step, rows_step, cols_step);
+  //     } else {
+  //       free_buf = check_for_free_dbuf(drv.dfs[0]);
+  //       Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
+  //                        r, rrows_step, rdepth_step, rows_step, cols_step);
+  //       drv.Start_Transfer();
+  //       drv.Set_Results();
+  //       Start_Schedule(drv);
+  //     }
+  //   }
+  // }
 }
 
 void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
@@ -479,14 +469,14 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   prf_start(1);
   drv.t.layer_weight_tile = 0;
   drv.t.layer_input_tile = 0;
-  int acc_weight_buffer_size = 1024 * 16;
-  int acc_input_buffer_size = 8192 * 16;
+  int acc_weight_buffer_size = IN_BUF_LEN * 16;
+  int acc_input_buffer_size = GWE_BUF_LEN * 16;
   int max_cols = acc_weight_buffer_size / rdepth;
   max_cols = max_cols - (max_cols % 4);
-  int col_inc = std::min(std::min(rcols, max_cols), 1024);
+  int col_inc = std::min(std::min(rcols, max_cols), WSUMS_BUF_LEN);
   int max_rows = acc_input_buffer_size / rdepth;
   max_rows = max_rows - (max_rows % 4);
-  int row_inc = std::min(std::min(rrows, max_rows), 2048);
+  int row_inc = std::min(std::min(rrows, max_rows), ISUMS_BUF_LEN);
 
   for (int r = 0; r < rrows; r += row_inc) {
     int rrows_step = std::min(row_inc, rrows - r);
@@ -501,16 +491,15 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
                                 rrows_step, rdepth, rows_step, cols_step);
       drv.t.layer_weight_tile++;
     }
-    while (drv.dsr.dID != drv.dsr.rID) {
-      drv.Start_Transfer();
-      drv.Recieve_Results();
-      drv.Start_Transfer();
-      Store_Results(drv);
-      if (drv.dsr.sID > drv.dsr.rID) {
-        drv.Set_Results();
-        Start_Schedule(drv);
-      }
-    }
+    // while (drv.dsr.dID != drv.dsr.rID) {
+    //   drv.Recieve_Results();
+    //   Store_Results(drv);
+    //   if (drv.dsr.dID != drv.dsr.sID) {
+    //     drv.Start_Transfer();
+    //     drv.Set_Results();
+    //     Start_Schedule(drv);
+    //   }
+    // }
     drv.mdma->multi_dma_change_start_4(0);
     drv.t.layer_input_tile++;
   }
