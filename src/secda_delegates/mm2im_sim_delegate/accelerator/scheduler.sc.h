@@ -68,6 +68,8 @@ void ACCNAME::FIFO_Loader() {
       }
       DWAIT();
 
+
+      // I want to replace the following two sets of loops with call to process_cal_id
       for (int j = 0; j < col_indice_len; j++) {
         for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
@@ -82,6 +84,7 @@ void ACCNAME::FIFO_Loader() {
         }
         DWAIT(4);
       }
+
     }
 
     load_fifo.write(false);
@@ -93,14 +96,14 @@ void ACCNAME::FIFO_Loader() {
 void ACCNAME::load_inp_PEs() {
   // load & process one row inputs to PE at a time
 
+  config_PEs();
+  DWAIT(1);
+
   // scheduleS.write(61);
   load_fifo.write(true);
   for (int r = 0; r < number_of_rows; r++) {
     // send the cols_indices to perform vector product with the input row
-    int col_indice_start = col_indice_starts[r];
     int col_indice_len = col_indice_lens[r];
-    int orow = r * depth;
-
     // scheduleS.write(62);
     start_compute(col_indice_len);
     // scheduleS.write(63);

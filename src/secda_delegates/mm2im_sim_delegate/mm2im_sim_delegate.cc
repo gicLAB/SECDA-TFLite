@@ -143,7 +143,7 @@ public:
                 padding, rows, cols, depth, out1, out2, out3, pt, pb, pl, pr);
       cerr << "====================================" << endl;
       // Input Params
-      int ra = 26;
+      int ra = 26; // TODO: Make this dynamic
       int rhs_offset = 0;
       int lhs_offset = 0;
       int output_height = out1;
@@ -303,10 +303,10 @@ public:
                    kernel_size, in3);
       preload_weights(swapped_weight, depth, rows, acc_wt_sum, acc_weight);
 
-      col2im_mapping_v3(amp.o3, amp.o1, amp.o2, amp.ks, amp.ks, amp.pt, amp.pl,
+      col2im_mapping_v3(amp.oc, amp.oh, amp.ow, amp.ks, amp.ks, amp.pt, amp.pl,
                         amp.pb, amp.pr, amp.sx, amp.sy, acc_dex_map);
       amp.dex_map = acc_dex_map;
-      amp.MM2IM_o1_map();
+      amp.MM2IM_oh_map();
       mm2im_params.push_back(amp);
     }
 
@@ -500,15 +500,16 @@ public:
       drv.ic = par->ic;
       drv.f = par->f;
       drv.ks = par->ks;
-      drv.o1 = par->o1;
-      drv.o2 = par->o2;
-      drv.o3 = par->o3;
+      drv.oh = par->oh;
+      drv.ow = par->ow;
+      drv.oc = par->oc;
       drv.sx = par->sx;
       drv.sy = par->sy;
       drv.pt = par->pt;
       drv.pl = par->pl;
       drv.pb = par->pb;
       drv.pr = par->pr;
+      drv.width_col = par->width_col;
       drv.rows = par->rows;
       drv.cols = par->cols;
       drv.depth = par->depth;
@@ -527,10 +528,10 @@ public:
       drv.mm2im_map = &par->mm2im_map;
       drv.col_dexs = &par->col_dexs;
       drv.out_dexs = &par->out_dexs;
-      drv.o1_lengths = &par->o1_lengths[0];
-      drv.o1_starts = &par->o1_starts[0];
-      drv.o1_ends = &par->o1_ends[0];
-      drv.o1_map = &par->o1_map;
+      drv.oh_lengths = &par->oh_lengths[0];
+      drv.oh_starts = &par->oh_starts[0];
+      drv.oh_ends = &par->oh_ends[0];
+      drv.oh_map = &par->oh_map;
 
       // drv.output_data = acc_dst; // output_data
       drv.output_data = output_data;

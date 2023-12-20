@@ -1,8 +1,8 @@
 #ifndef ACCNAME_H
 #define ACCNAME_H
 
-#include "acc_config.h"
-#include "pe_module.h"
+#include "acc_config.sc.h"
+#include "pe_module.sc.h"
 
 SC_MODULE(ACCNAME) {
   sc_in<bool> clock;
@@ -91,6 +91,16 @@ SC_MODULE(ACCNAME) {
 
 
   // Pattern vars
+  int  oh;
+  int  ow;
+  int  kernel_size;
+  int  stride_x;
+  int  stride_y;
+  int  pt;
+  int  pl;
+  int  width_col;
+  int srow;
+
   int in_size;
   int k_size;
   int curr_row;
@@ -155,6 +165,8 @@ SC_MODULE(ACCNAME) {
   void activate_PEs();
 
   void deactivate_PEs();
+
+  void config_PEs();
 
   void load_wgt_PEs();
 

@@ -48,12 +48,12 @@ struct acc_container {
 
   // mm2im map
   vector<vector<int>> *mm2im_map;
-  vector<vector<vector<int>>> *o1_map;
+  vector<vector<vector<int>>> *oh_map;
   // vector<vector<int>> mm2im_map;
-  // vector<vector<vector<int>>> o1_map;
-  int *o1_lengths;
-  int *o1_starts;
-  int *o1_ends;
+  // vector<vector<vector<int>>> oh_map;
+  int *oh_lengths;
+  int *oh_starts;
+  int *oh_ends;
 
   // vector<vector<int>> col_dexs;
   // vector<vector<int>> out_dexs;
@@ -75,15 +75,16 @@ struct acc_container {
   int ic = 0;
   int f = 0;
   int ks = 0;
-  int o1 = 0;
-  int o2 = 0;
-  int o3 = 0;
+  int oh = 0;
+  int ow = 0;
+  int oc = 0;
   int sx = 0;
   int sy = 0;
   int pt = 0;
   int pl = 0;
   int pb = 0;
   int pr = 0;
+  int width_col = 0;
   int rows = 0;
   int cols = 0;
   int depth = 0;
@@ -95,17 +96,17 @@ struct acc_container {
 
   void validate() {
     int padded_depth = roundUp(depth, 16);
-    int padded_out_width = o2 + pl + pr;
+    int padded_out_width = ow + pl + pr;
     int noOfStepsX = nofSteps(padded_out_width, sx, ks);
-    int max_input_rows_per_o1 = noOfStepsX * ceiling(ks, sy);
+    int max_input_rows_per_oh = noOfStepsX * ceiling(ks, sy);
 
-    int PE_COUNT_val = o3;
+    int PE_COUNT_val = oc;
     int PE_WGTCOLBUF_SIZE_val = ks * ks * padded_depth / UF;
     int PE_WGTCOLSUMBUF_SIZE_val = ks * ks;
     int PE_INPROWBUF_SIZE_val = padded_depth / UF;
-    int PE_OUTBUF_SIZE_val = ks * ks * max_input_rows_per_o1;
+    int PE_OUTBUF_SIZE_val = ks * ks * max_input_rows_per_oh;
     int PE_POUTDEXBUF_SIZE_val = ks * ks;
-    int PE_ACC_BUF_SIZE_val = o1 * o2;
+    int PE_ACC_BUF_SIZE_val = oh * ow;
     assert(PE_COUNT_val >= PE_COUNT);
     assert(PE_WGTCOLBUF_SIZE_val <= PE_WGTCOLBUF_SIZE);
     assert(PE_WGTCOLSUMBUF_SIZE_val <= PE_WGTCOLSUMBUF_SIZE);

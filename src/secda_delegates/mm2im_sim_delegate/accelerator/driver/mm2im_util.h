@@ -231,7 +231,8 @@ void calParams(int stride_x, int stride_y, int filters, int kernel_size,
 
 struct mm2im_params {
   int sx, sy, f, ks, ih, iw, ic = 0;
-  int rows, cols, depth, o1, o2, o3, pt, pb, pl, pr = 0;
+  int rows, cols, depth, oh, ow, oc, pt, pb, pl, pr = 0;
+  int width_col = 0;
   bool padding_type = false;
   int8_t *input_data;
   int8_t *weight_data;
@@ -245,10 +246,10 @@ struct mm2im_params {
   bool compute = false;
 
   vector<vector<int>> mm2im_map;
-  vector<vector<vector<int>>> o1_map;
-  vector<int> o1_starts;
-  vector<int> o1_ends;
-  vector<int> o1_lengths;
+  vector<vector<vector<int>>> oh_map;
+  vector<int> oh_starts;
+  vector<int> oh_ends;
+  vector<int> oh_lengths;
 
   vector<vector<int>> col_dexs;
   vector<vector<int>> out_dexs;
@@ -260,14 +261,15 @@ struct mm2im_params {
   unsigned int output_cols;
 
   mm2im_params(int _sx, int _sy, int _f, int _ks, int _ih, int _iw, int _ic,
-               int _rows, int _cols, int _depth, int _o1, int _o2, int _o3,
+               int _rows, int _cols, int _depth, int _oh, int _ow, int _oc,
                int _pt, int _pb, int _pl, int _pr, bool _padding_type)
       : sx(_sx), sy(_sy), f(_f), ks(_ks), ih(_ih), iw(_iw), ic(_ic),
-        rows(_rows), cols(_cols), depth(_depth), o1(_o1), o2(_o2), o3(_o3),
+        rows(_rows), cols(_cols), depth(_depth), oh(_oh), ow(_ow), oc(_oc),
         pt(_pt), pb(_pb), pl(_pl), pr(_pr), padding_type(_padding_type) {
-    output_size = o1 * o2 * o3;
-    output_rows = o1 * o2;
-    output_cols = o3;
+    output_size = oh * ow * oc;
+    output_rows = oh * ow;
+    output_cols = oc;
+    width_col = (ow + pl + pr - ks) / sy + 1; 
   }
 
   void create_MM2IM_map() {
@@ -296,20 +298,20 @@ struct mm2im_params {
     int k = 0;
   }
 
-  void MM2IM_o1_map() {
+  void MM2IM_oh_map() {
     create_MM2IM_map();
     create_col_indices_map();
 
-    // We create o1_map for each row, map is used by the accelerator
+    // We create oh_map for each row, map is used by the accelerator
     for (int o_3 = 0; o_3 < output_cols; o_3++) {
       int f_hi = std::numeric_limits<int>::min();
       int f_lo = std::numeric_limits<int>::max();
-      for (int o_1 = 0; o_1 < o1; o_1++) {
+      for (int o_1 = 0; o_1 < oh; o_1++) {
         int hi = std::numeric_limits<int>::min();
         int lo = std::numeric_limits<int>::max();
-        vector<vector<int>> o1_row_map;
-        for (int o_2 = 0; o_2 < o2; o_2++) {
-          int o_dex = ((o_1 * o2) + o_2) * output_cols + o_3;
+        vector<vector<int>> oh_row_map;
+        for (int o_2 = 0; o_2 < ow; o_2++) {
+          int o_dex = ((o_1 * ow) + o_2) * output_cols + o_3;
           int size = mm2im_map[o_dex].size();
           for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
             int orow = mm2im_map[o_dex][i] % rows;
@@ -321,9 +323,9 @@ struct mm2im_params {
           }
         }
 
-        for (int o_2 = 0; o_2 < o2; o_2++) {
+        for (int o_2 = 0; o_2 < ow; o_2++) {
           vector<int> output_map;
-          int o_dex = ((o_1 * o2) + o_2) * output_cols + o_3;
+          int o_dex = ((o_1 * ow) + o_2) * output_cols + o_3;
           for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
             int orow = mm2im_map[o_dex][i] % rows;
             int ocol = mm2im_map[o_dex][i] / rows;
@@ -331,20 +333,20 @@ struct mm2im_params {
             output_map.push_back(ocol - lo);
             output_map.push_back(orow);
           }
-          o1_row_map.push_back(output_map);
+          oh_row_map.push_back(output_map);
         }
 
-        if (o_3 == 0) o1_map.push_back(o1_row_map);
-        o1_ends.push_back(hi);
-        o1_starts.push_back(lo);
-        o1_lengths.push_back(hi - lo);
+        if (o_3 == 0) oh_map.push_back(oh_row_map);
+        oh_ends.push_back(hi);
+        oh_starts.push_back(lo);
+        oh_lengths.push_back(hi - lo);
       }
     }
   };
 
   void MM2IM_compute() {
     create_MM2IM_map();
-    unsigned int output_size = o1 * o2 * o3;
+    unsigned int output_size = oh * ow * oc;
     for (int k = 0; k < output_size; k++) {
       int32_t sum = 0;
       for (int j = 0; j < mm2im_map[k].size(); j++) {
@@ -361,9 +363,9 @@ struct mm2im_params {
         // int offset = 0;
         sum += offset;
       }
-      int bias = bias_data[k % o3];
-      int crf_data = crf[k % o3];
-      int crx_data = crx[k % o3];
+      int bias = bias_data[k % oc];
+      int crf_data = crf[k % oc];
+      int crx_data = crx[k % oc];
 
       int qm_ret =
           ra + CPU_Quantised_Multiplier(sum + bias, crf_data, crx_data);

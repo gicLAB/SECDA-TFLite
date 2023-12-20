@@ -2,7 +2,7 @@
 #ifndef PE_MODULE_H
 #define PE_MODULE_H
 
-#include "acc_config.h"
+#include "acc_config.sc.h"
 
 #define varsn(x) vars.vars_##x
 
@@ -45,8 +45,45 @@ SC_MODULE(PE) {
   sc_out_sig computeS;
   sc_out_sig sendS;
 
-  int compute_count = 0;
-  int outcount = 0;
+  int pouts;
+  int out_indices[PE_POUTDEXBUF_SIZE];
+  int col_indices[PE_POUTDEXBUF_SIZE];
+  int col_indices_offsets[PE_POUTDEXBUF_SIZE];
+
+  sc_in<int> oh;
+  sc_in<int> ow;
+  sc_in<int> kernel_size;
+  sc_in<int> stride_x;
+  sc_in<int> stride_y;
+  sc_in<int> pt;
+  sc_in<int> pl;
+  sc_in<int> width_col;
+  sc_in<int> srow;
+  sc_in<int> num_rows;
+
+  int crow;
+
+  void process_cal_id() {
+    int cal_col = crow % width_col;
+    int cal_row = crow / width_col;
+    int h_pad = -pt + (stride_y * cal_row);
+    int w_pad = -pl + (stride_x * cal_col);
+    int im_dex = (h_pad * ow + w_pad);
+    int row = 0;
+    pouts = 0;
+    for (int ih = 0; ih < kernel_size; ih++) {
+      for (int iw = 0; iw < kernel_size; iw++) {
+        if (ih + h_pad >= 0 and ih + h_pad < oh and iw + w_pad >= 0 and
+            iw + w_pad < ow) {
+          col_indices[pouts] = row;
+          out_indices[pouts++] = im_dex;
+        }
+        im_dex += 1;
+        row += 1;
+      }
+      im_dex += (ow - kernel_size);
+    }
+  }
 
   int Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
     sc_int<64> pl;
@@ -139,10 +176,6 @@ SC_MODULE(PE) {
         wgt_col_sum[c] = col_dexs_fifo_in.read();
         DWAIT(2);
         for (int d = 0; d < depth; d++) {
-          // for (int u = 0; u < UF; u++) {
-          //   wgt_cols_buf[i][u] = wgt_fifo_in.read();
-          //   DWAIT(2);
-          // }
           bUF data = wgt_fifo_in.read();
           data.retreive(wgt_cols_buf, i);
           DWAIT();
@@ -155,10 +188,11 @@ SC_MODULE(PE) {
       wait();
 
       computeS.write(4);
-      // PE is active
+      // PE is active (activate_PEs() called)
       while (online) {
         computeS.write(5);
 
+        // waiting for start_compute() call
         while (!compute) {
           computeS.write(51);
           if (!online) break;
@@ -260,7 +294,7 @@ SC_MODULE(PE) {
     out_done.write(false);
     send_done.write(false);
     sendS.write(0);
-    outcount = 0;
+
     wait();
     while (1) {
       while (!out.read() && !send.read()) {
@@ -361,6 +395,18 @@ SC_MODULE(PE) {
     this->send_done(vars.send_done);
     this->computeS(vars.computeS);
     this->sendS(vars.sendS);
+
+    this->oh(vars.oh);
+    this->ow(vars.ow);
+    this->kernel_size(vars.kernel_size);
+    this->stride_x(vars.stride_x);
+    this->stride_y(vars.stride_y);
+    this->pt(vars.pt);
+    this->pl(vars.pl);
+    this->width_col(vars.width_col);
+
+    this->srow(vars.srow);
+    this->num_rows(vars.num_rows);
   }
 
   SC_HAS_PROCESS(PE);

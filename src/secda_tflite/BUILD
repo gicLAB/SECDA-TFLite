@@ -18,6 +18,7 @@ cc_library(
         # "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_fpga",
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
 
     ],
 )

@@ -13,6 +13,6 @@ scripts/delegate_generation/generated
 scripts/results/*
 scripts/filesForFPGA/*
 hardware_automation/generated
-hardware_automation/secda_tflite_acc_srcs
+hardware_automation/acc_srcs
 scripts/experiment_prep/generated
 src/secda_delegates/secda_vm_delegate/driver/gemm_driver_v1_03.h

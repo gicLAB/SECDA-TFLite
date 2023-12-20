@@ -6,6 +6,7 @@ void ACCNAME::start_compute(int col_indice_len) {
     vars[i].col_size.write(col_indice_len);
     vars[i].compute.write(true);
     vars[i].out.write(true);
+
   }
 }
 
@@ -28,6 +29,14 @@ void ACCNAME::stop_compute() {
     vars[i].compute.write(false);
     vars[i].reset_compute.write(true);
     vars[i].out.write(false);
+  }
+}
+
+void ACCNAME::config_PEs() {
+  for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+    vars[i].srow.write(srow);
+    vars[i].num_rows.write(number_of_rows);
   }
 }
 
@@ -95,6 +104,14 @@ void ACCNAME::activate_PEs() {
     vars[i].cols_per_filter.write(cols_per_filter);
     vars[i].depth.write(depth);
     vars[i].online.write(true);
+    vars[i].oh.write(oh);
+    vars[i].ow.write(ow);
+    vars[i].kernel_size.write(kernel_size);
+    vars[i].stride_x.write(stride_x);
+    vars[i].stride_y.write(stride_y);
+    vars[i].pt.write(pt);
+    vars[i].pl.write(pl);
+    vars[i].width_col.write(width_col);
   }
   DWAIT();
 }

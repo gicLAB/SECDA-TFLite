@@ -23,6 +23,6 @@ cc_library(
     ],
     copts = common_copts,
     deps = [
-        "@systemc//:systemc",
+        # "@systemc//:systemc",
     ],
 )

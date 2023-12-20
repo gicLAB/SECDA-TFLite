@@ -200,9 +200,9 @@ public:
         temp_out_tensor->allocation_type = kTfLiteDynamic;
         // TF_LITE_ENSURE_STATUS(
         //     ResizeTensor(context, output_shape, temp_out_tensor));
-        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output,
-        temp_out_tensor));
-        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, temp_out_tensor));
+        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, temp_out_tensor));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape,
+        // temp_out_tensor));
       }
 
       if (data->weights_are_transposed) {
@@ -234,9 +234,9 @@ public:
       } else {
         // TF_LITE_ENSURE_STATUS(
         //     ResizeTensor(context, output_shape, scratch_buffer));
-        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output,
-        scratch_buffer));
-        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, scratch_buffer));
+        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, scratch_buffer));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape,
+        // scratch_buffer));
       }
 
       TF_LITE_ENSURE_EQ(context, weights->quantization.type,
@@ -536,10 +536,10 @@ public:
 
       // DirectMM2IM(hwoi_ordered_filter_data, input_data, output_data);
 
-      // cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data,
-      // rhs_params,
-      //                        input_data, dst_params, col2im_data,
-      //                        gemm_params, cpu_backend_context);
+      cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data,
+      rhs_params,
+                             input_data, dst_params, col2im_data,
+                             gemm_params, cpu_backend_context);
 
       // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
       //                   "_del_wgt.csv",
@@ -554,30 +554,30 @@ public:
       //                   "_del_gemm_cpu.csv",
       //               col2im_data, dst_params.cols, dst_params.rows);
 
-      // optimized_ops::Col2im(
-      //     col2im_data, output_depth, output_height, output_width,
-      //     filter_height, filter_width, padding_top, padding_left,
-      //     padding_bottom, padding_right, stride_height, stride_width,
-      //     scratch_data_p);
+      optimized_ops::Col2im(
+          col2im_data, output_depth, output_height, output_width,
+          filter_height, filter_width, padding_top, padding_left,
+          padding_bottom, padding_right, stride_height, stride_width,
+          scratch_data_p);
 
       // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
       //                   "_del_col2im_cpu.csv",
       //               scratch_data_p, scratch_cols, scratch_rows);
 
-      // if (has_bias)
-      //   optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
-      //                          output_height, output_width, output_depth);
+      if (has_bias)
+        optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
+                               output_height, output_width, output_depth);
 
-      // const int32_t output_min = std::numeric_limits<int8_t>::min();
-      // const int32_t output_max = std::numeric_limits<int8_t>::max();
-      // optimized_ops::Quantize(output_multiplier, output_shift, output_depth,
-      //                         output_shape.FlatSize(), cparams.output_offset,
-      //                         output_min, output_max, scratch_data,
-      //                         output_data);
+      const int32_t output_min = std::numeric_limits<int8_t>::min();
+      const int32_t output_max = std::numeric_limits<int8_t>::max();
+      optimized_ops::Quantize(output_multiplier, output_shift, output_depth,
+                              output_shape.FlatSize(), cparams.output_offset,
+                              output_min, output_max, scratch_data,
+                              output_data);
 
-      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_out_cpu.csv",
-      //               output_data, scratch_cols, scratch_rows);
+      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+                        "_del_out_cpu.csv",
+                    output_data, scratch_cols, scratch_rows);
 
       drv.p_t = p_t;
       mm2im_driver::Entry(drv);
@@ -587,9 +587,9 @@ public:
       //                   "_del_accgemm.csv",
       //               col2im_data, dst_params.cols, dst_params.rows);
 
-      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_out_acc.csv",
-      //               output_data, scratch_cols, scratch_rows);
+      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+                        "_del_out_acc.csv",
+                    output_data, scratch_cols, scratch_rows);
 
       dparams.layer++;
       dparams.delegated_nodes--;

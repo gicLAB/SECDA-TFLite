@@ -53,6 +53,7 @@ void ACCNAME::Data_In() {
       data_inS.write(3);
       DWAIT();
       inp_packet ip = inp_packet(&din1);
+      srow = ip.srow;
       int dex = 0;
       for (int i = 0; i < ip.inp_rows; i++) {
         for (int j = 0; j < ip.inp_depth; j++) {

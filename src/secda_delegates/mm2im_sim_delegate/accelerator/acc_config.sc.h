@@ -7,7 +7,8 @@
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/sysc_types.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
-typedef int8_t acc_dt;
+// typedef sc_int<8>  acc_dt;
+#define acc_dt sc_int<8>
 #define DWAIT(x) wait(x)
 
 #ifdef VERBOSE_ACC
@@ -27,7 +28,9 @@ typedef struct _DATA {
     return os;
   }
 } DATA;
-typedef sc_int<8> acc_dt;
+// typedef sc_int<8> acc_dt;
+#define acc_dt sc_int<8>
+
 #define DWAIT(x)
 #define ALOG(x)
 
@@ -124,16 +127,21 @@ struct wgt_packet {
 struct inp_packet {
   unsigned int a;
   unsigned int b;
+  unsigned int c;
+
   unsigned int inp_rows;
   unsigned int inp_depth;
+  unsigned int srow;
 
   inp_packet(sc_fifo_in<DATA> *din) {
     ALOG("INP_PACKET");
     ALOG("Time: " << sc_time_stamp());
     a = din->read().data;
     b = din->read().data;
+    c = din->read().data;
     inp_rows = a;
     inp_depth = b;
+    srow = c;
   }
 };
 
@@ -153,25 +161,39 @@ typedef struct _DATA_PACKED {
 typedef struct byteToUF {
   sc_bigint<8 * UF> data;
 
-  void insert(int8_t array[][UF], int index) {
+  //   void insert(int8_t array[][UF], int index) {
+  //     for (int i = 0; i < UF; i++) {
+  // #pragma HLS unroll
+  //       data.range(((i + 1) * 8) - 1, i * 8) = array[index][i];
+  //     }
+  //   }
+  //   void insert(sc_int<8> array[][UF], int index) {
+  //     for (int i = 0; i < UF; i++) {
+  // #pragma HLS unroll
+  //       data.range(((i + 1) * 8) - 1, i * 8) = array[index][i];
+  //     }
+  //   }
+  //   void retreive(int8_t array[][UF], int index) {
+  //     for (int i = 0; i < UF; i++) {
+  // #pragma HLS unroll
+  //       array[index][i] = data.range(((i + 1) * 8) - 1, i * 8).to_int();
+  //     }
+  //   }
+  //   void retreive(sc_int<8> array[][UF], int index) {
+  //     for (int i = 0; i < UF; i++) {
+  // #pragma HLS unroll
+  //       array[index][i] = data.range(((i + 1) * 8) - 1, i * 8).to_int();
+  //     }
+  //   }
+
+  void insert(acc_dt array[][UF], int index) {
     for (int i = 0; i < UF; i++) {
 #pragma HLS unroll
       data.range(((i + 1) * 8) - 1, i * 8) = array[index][i];
     }
   }
-  void insert(sc_int<8> array[][UF], int index) {
-    for (int i = 0; i < UF; i++) {
-#pragma HLS unroll
-      data.range(((i + 1) * 8) - 1, i * 8) = array[index][i];
-    }
-  }
-  void retreive(int8_t array[][UF], int index) {
-    for (int i = 0; i < UF; i++) {
-#pragma HLS unroll
-      array[index][i] = data.range(((i + 1) * 8) - 1, i * 8).to_int();
-    }
-  }
-  void retreive(sc_int<8> array[][UF], int index) {
+
+  void retreive(acc_dt array[][UF], int index) {
     for (int i = 0; i < UF; i++) {
 #pragma HLS unroll
       array[index][i] = data.range(((i + 1) * 8) - 1, i * 8).to_int();
@@ -222,6 +244,16 @@ struct PE_vars {
   sc_signal<bool, SC_MANY_WRITERS> out_done;
   sc_signal<bool, SC_MANY_WRITERS> send_done;
 
+  sc_signal<int, SC_MANY_WRITERS> oh;
+  sc_signal<int, SC_MANY_WRITERS> ow;
+  sc_signal<int, SC_MANY_WRITERS> kernel_size;
+  sc_signal<int, SC_MANY_WRITERS> stride_x;
+  sc_signal<int, SC_MANY_WRITERS> stride_y;
+  sc_signal<int, SC_MANY_WRITERS> pt;
+  sc_signal<int, SC_MANY_WRITERS> pl;
+  sc_signal<int, SC_MANY_WRITERS> width_col;
+  sc_signal<int, SC_MANY_WRITERS> srow;
+  sc_signal<int, SC_MANY_WRITERS> num_rows;
 #else
   sc_signal<bool> online;
   sc_signal<bool> compute;
@@ -241,6 +273,18 @@ struct PE_vars {
   sc_signal<bool> wgt_loaded;
   sc_signal<bool> out_done;
   sc_signal<bool> send_done;
+
+  sc_signal<int> oh;
+  sc_signal<int> ow;
+  sc_signal<int> kernel_size;
+  sc_signal<int> stride_x;
+  sc_signal<int> stride_y;
+  sc_signal<int> pt;
+  sc_signal<int> pl;
+  sc_signal<int> width_col;
+  sc_signal<int> srow;
+  sc_signal<int> num_rows;
+
 #endif
 
   sc_fifo<int> col_dexs_fifo;
@@ -277,6 +321,16 @@ struct PE_vars {
         wgt_loaded((std::string("wgt_loaded") + std::to_string(sid)).c_str()),
         out_done((std::string("out_done") + std::to_string(sid)).c_str()),
         send_done((std::string("send_done") + std::to_string(sid)).c_str()),
+        oh((std::string("oh") + std::to_string(sid)).c_str()),
+        ow((std::string("ow") + std::to_string(sid)).c_str()),
+        kernel_size((std::string("kernel_size") + std::to_string(sid)).c_str()),
+        stride_x((std::string("stride_x") + std::to_string(sid)).c_str()),
+        stride_y((std::string("stride_y") + std::to_string(sid)).c_str()),
+        pt((std::string("pt") + std::to_string(sid)).c_str()),
+        pl((std::string("pl") + std::to_string(sid)).c_str()),
+        width_col((std::string("width_col") + std::to_string(sid)).c_str()),
+        srow((std::string("srow") + std::to_string(sid)).c_str()),
+        num_rows((std::string("num_rows") + std::to_string(sid)).c_str()),
         col_dexs_fifo(size), dex_fifo(size), wgt_fifo(size), inp_fifo(size),
         out_fifo(size), temp_fifo(size),
         computeS((std::string("computeS") + std::to_string(sid)).c_str()),
@@ -289,9 +343,12 @@ struct PE_vars {
         crx_data("crx_data"), ra_data("ra_data"), send("send"), out("out"),
         cols_per_filter("cols_per_filter"), depth("depth"),
         compute_done("compute_done"), wgt_loaded("wgt_loaded"),
-        out_done("out_done"), send_done("send_done"), col_dexs_fifo(size),
-        dex_fifo(size), wgt_fifo(size), inp_fifo(size), out_fifo(size),
-        temp_fifo(size), computeS("computeS"), sendS("sendS") {
+        out_done("out_done"), send_done("send_done"), oh("oh"), ow("ow"),
+        kernel_size("kernel_size"), stride_x("stride_x"), stride_y("stride_y"),
+        pt("pt"), pl("pl"), width_col("width_col"), srow("srow"),
+        num_rows("num_rows"), s col_dexs_fifo(size), dex_fifo(size),
+        wgt_fifo(size), inp_fifo(size), out_fifo(size), temp_fifo(size),
+        computeS("computeS"), sendS("sendS") {
 #pragma HLS resource variable = wgt_fifo core = FIFO_SRL
 #pragma HLS resource variable = inp_fifo core = FIFO_SRL
   }
