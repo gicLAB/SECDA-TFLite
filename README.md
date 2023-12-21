@@ -11,7 +11,7 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
 
 ## 1. Setup repo
 ```
-git clone https://github.com/judeharis/SECDA-TFLite.git
+git clone git@github.com:judeharis/SECDA-TFLite.git
 cd SECDA-TFLite
 git submodule init
 git submodule update
