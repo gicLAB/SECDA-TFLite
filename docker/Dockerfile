@@ -2,7 +2,7 @@
 FROM ubuntu:22.04 as builder
 
 # Development Tools
-RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip
+RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rysnc
 
 # Compilers
 RUN apt update && apt install -y clang-14 lld-14 clang-format-14 && \
