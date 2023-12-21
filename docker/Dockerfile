@@ -2,7 +2,7 @@
 FROM ubuntu:22.04 as builder
 
 # Development Tools
-RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rysnc
+RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo
 
 # Compilers
 RUN apt update && apt install -y clang-14 lld-14 clang-format-14 && \
@@ -47,7 +47,6 @@ RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
     make -j$(nproc) && \
     make install
 
-RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> .bashrc
 
 RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
     echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
@@ -57,23 +56,51 @@ ENV SYSTEMC_HOME=/opt/systemc/systemc-2.3.3
 ENV CXX=/usr/bin/clang++ 
 ENV CC=/usr/bin/clang 
 
+# Install Conda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
+RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
+RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
+
+# Install Code Server and C++ extensions
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+RUN code-server --install-extension ms-vscode.cpptools \
+                --install-extension ms-vscode.cpptools-extension-pack
+
+RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
+# Select clang compiler and set SystemC home
+RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
+    echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
+    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
+
+# Print welcome message
+WORKDIR /working_dir
+RUN echo "cd /working_dir" >> ~/.bashrc && \
+    echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+    echo "echo ' '" >> ~/.bashrc && \
+    echo "echo 'NOTE:'" >> ~/.bashrc && \
+    echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
+    echo "echo ' '" >> ~/.bashrc 
+
+
+
 # ============================================================================
 FROM builder AS dev-user
 # Add dev user with matching UID of the user who build the image
 ARG USER_ID
 ARG GROUP_ID
-RUN useradd -m --uid $USER_ID developer && \
-    echo "developer:devpasswd" | chpasswd && \
-    usermod -aG dialout developer && \
-    usermod -aG sudo developer
+# RUN useradd -m --uid $USER_ID developer && \
+#     echo "developer:devpasswd" | chpasswd && \
+#     usermod -aG dialout developer && \
+#     usermod -aG sudo developer
 
-USER developer
-WORKDIR /home/developer
+# USER developer
+WORKDIR /working_dir
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
 RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
-RUN pip3 install numpy
+RUN /bin/bash -c '/home/developer/miniconda3/bin/conda install numpy -y'
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> .bashrc
 

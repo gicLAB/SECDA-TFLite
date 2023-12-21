@@ -86,93 +86,93 @@ struct acc_container {
     }
   }
 
-  // TODO generate read per byte
-  template <typename T>
-  void massign(T *dst, T *src, int d_dex, int s_dex, T value) {
-    if (!use_sim) {
-      cout << "dst_addr: " << (void *)&dst[d_dex] << endl;
-      auto dst_addr = (void *)(&dst[d_dex]);
-      auto src_addr = (void *)(&src[s_dex]);
-      // truncate hex address to 32 bits
-      dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
-      src_addr = (void *)((uint64_t)src_addr & 0xffffffff);
-      // create memory trace for ramulator and write to file
-      ofstream file;
-      std::string filename =
-          ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
-      file.open(filename, std::ios_base::app);
-      file << std::hex << (src_addr++) << " R" << endl;
-      file << std::hex << (dst_addr++) << " W" << endl;
-      file.close();
-    }
-    // dst[d_dex] = value;
-  }
+  // // TODO generate read per byte
+  // template <typename T>
+  // void massign(T *dst, T *src, int d_dex, int s_dex, T value) {
+  //   if (!use_sim) {
+  //     cout << "dst_addr: " << (void *)&dst[d_dex] << endl;
+  //     auto dst_addr = (void *)(&dst[d_dex]);
+  //     auto src_addr = (void *)(&src[s_dex]);
+  //     // truncate hex address to 32 bits
+  //     dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
+  //     src_addr = (void *)((uint64_t)src_addr & 0xffffffff);
+  //     // create memory trace for ramulator and write to file
+  //     ofstream file;
+  //     std::string filename =
+  //         ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
+  //     file.open(filename, std::ios_base::app);
+  //     file << std::hex << (src_addr++) << " R" << endl;
+  //     file << std::hex << (dst_addr++) << " W" << endl;
+  //     file.close();
+  //   }
+  //   // dst[d_dex] = value;
+  // }
 
-  template <typename D, typename S>
-  void massign(D *dst, S *src, int d_dex, int s_dex) {
-    auto dst_addr = (void *)(&dst[d_dex]);
-    auto src_addr = (void *)(&src[s_dex]);
-    // truncate hex address to 32 bits
-    dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
-    src_addr = (void *)((uint64_t)src_addr & 0xffffffff);
-    // create memory trace for ramulator and write to file
-    ofstream file;
-    std::string filename =
-        ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
-    file.open(filename, std::ios_base::app);
-    // file << (uint64_t) (src_addr++) << " R" << endl;
-    // file << (uint64_t) (dst_addr++) << " W" << endl;
+  // template <typename D, typename S>
+  // void massign(D *dst, S *src, int d_dex, int s_dex) {
+  //   auto dst_addr = (void *)(&dst[d_dex]);
+  //   auto src_addr = (void *)(&src[s_dex]);
+  //   // truncate hex address to 32 bits
+  //   dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
+  //   src_addr = (void *)((uint64_t)src_addr & 0xffffffff);
+  //   // create memory trace for ramulator and write to file
+  //   ofstream file;
+  //   std::string filename =
+  //       ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
+  //   file.open(filename, std::ios_base::app);
+  //   // file << (uint64_t) (src_addr++) << " R" << endl;
+  //   // file << (uint64_t) (dst_addr++) << " W" << endl;
 
-    file << " 3 " << (uint64_t)(src_addr++) << " " << (uint64_t)(dst_addr++)
-         << endl;
+  //   file << " 3 " << (uint64_t)(src_addr++) << " " << (uint64_t)(dst_addr++)
+  //        << endl;
 
-    // file << std::hex << (src_addr++) << " R" << endl;
-    // file << std::hex << (dst_addr++) << " W" << endl;
-    file.close();
-  }
+  //   // file << std::hex << (src_addr++) << " R" << endl;
+  //   // file << std::hex << (dst_addr++) << " W" << endl;
+  //   file.close();
+  // }
 
-  template <typename D, typename S>
-  void massign(D *dst, S *src, int d_dex, int s_dex, int cpu_ins) {
-    auto dst_addr = (void *)(&dst[d_dex]);
-    auto src_addr = (void *)(&src[s_dex]);
-    // truncate hex address to 32 bits
-    dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
-    src_addr = (void *)((uint64_t)src_addr & 0xffffffff);
-    // create memory trace for ramulator and write to file
-    ofstream file;
-    std::string filename =
-        ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
-    file.open(filename, std::ios_base::app);
-    // file << (uint64_t) (src_addr++) << " R" << endl;
-    // file << (uint64_t) (dst_addr++) << " W" << endl;
-    uint64_t csrc = (uint64_t)(src_addr++);
-    uint64_t cdst = (uint64_t)(dst_addr++);
-    // modulo the address to 512 megabytes
-    csrc = csrc % (512 * 1024 * 1024);
-    cdst = cdst % (512 * 1024 * 1024);
+  // template <typename D, typename S>
+  // void massign(D *dst, S *src, int d_dex, int s_dex, int cpu_ins) {
+  //   auto dst_addr = (void *)(&dst[d_dex]);
+  //   auto src_addr = (void *)(&src[s_dex]);
+  //   // truncate hex address to 32 bits
+  //   dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
+  //   src_addr = (void *)((uint64_t)src_addr & 0xffffffff);
+  //   // create memory trace for ramulator and write to file
+  //   ofstream file;
+  //   std::string filename =
+  //       ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
+  //   file.open(filename, std::ios_base::app);
+  //   // file << (uint64_t) (src_addr++) << " R" << endl;
+  //   // file << (uint64_t) (dst_addr++) << " W" << endl;
+  //   uint64_t csrc = (uint64_t)(src_addr++);
+  //   uint64_t cdst = (uint64_t)(dst_addr++);
+  //   // modulo the address to 512 megabytes
+  //   csrc = csrc % (512 * 1024 * 1024);
+  //   cdst = cdst % (512 * 1024 * 1024);
 
 
-    file << cpu_ins << " " << (uint64_t)(src_addr++) << " "
-         << (uint64_t)(dst_addr++) << endl;
+  //   file << cpu_ins << " " << (uint64_t)(src_addr++) << " "
+  //        << (uint64_t)(dst_addr++) << endl;
 
-    // file << std::hex << (src_addr++) << " R" << endl;
-    // file << std::hex << (dst_addr++) << " W" << endl;
-    file.close();
-  }
+  //   // file << std::hex << (src_addr++) << " R" << endl;
+  //   // file << std::hex << (dst_addr++) << " W" << endl;
+  //   file.close();
+  // }
 
-  template <typename T>
-  void massign(T *dst, int d_dex) {
-    auto dst_addr = (void *)(&dst[d_dex]);
-    // truncate hex address to 32 bits
-    dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
-    // create memory trace for ramulator and write to file
-    ofstream file;
-    std::string filename =
-        ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
-    file.open(filename, std::ios_base::app);
-    file << std::hex << (dst_addr++) << " W" << endl;
-    file.close();
-  }
+  // template <typename T>
+  // void massign(T *dst, int d_dex) {
+  //   auto dst_addr = (void *)(&dst[d_dex]);
+  //   // truncate hex address to 32 bits
+  //   dst_addr = (void *)((uint64_t)dst_addr & 0xffffffff);
+  //   // create memory trace for ramulator and write to file
+  //   ofstream file;
+  //   std::string filename =
+  //       ".data/secda_pim/traces/" + std::to_string(layer) + ".trace";
+  //   file.open(filename, std::ios_base::app);
+  //   file << std::hex << (dst_addr++) << " W" << endl;
+  //   file.close();
+  // }
 
   void load_inject_dram_cycles() {
     if (use_sim) {

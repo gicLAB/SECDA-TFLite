@@ -8,8 +8,8 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
 * Accelerator Design source code can be found inside the respective simulation delegate
   * Note: we use the same source files for HLS, we manually define __SYNTHESIS__ before HLS
  
-## Create dev environment on Host machine 
-### Setup repo
+
+## 1. Setup repo
 ```
 git clone https://github.com/judeharis/SECDA-TFLite.git
 cd SECDA-TFLite
@@ -21,6 +21,9 @@ cd tensorflow
 git checkout secda-tflite-v1
 ```
 
+You can now setup the dev environment natively (2.A) or via docker (2.B).
+ 
+## 2.A Create dev environment on natively
 ### Setup Bazel
 ```
 sudo apt install apt-transport-https curl gnupg -y && \
@@ -56,25 +59,27 @@ bazel run //tensorflow/lite/examples/systemc:hello_systemc
 sudo apt-get -y install gdb
 ```
 
-## Create dev environment via Dockerfile
+Once the environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
+
+## 2.B Create dev environment via Dockerfile
 Ensure docker is up and running and current user is part of docker group
 ``` 
 sudo usermod -aG docker $USER
 ```
-Following scripts to build and run the docker container ready for development:
+Following scripts to build and creates the docker container ready for development:
 ```
 ./build-docker.sh
 ./start-docker.sh
 ```
 
-Finally you need to configure Tensorflow from within the container
-```
-./start-docker.sh
-cd tensorflow 
-./configure
-bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
-bazel run //tensorflow/lite/examples/systemc:hello_systemc
-```
+Once the container is created, we recommend using VSCode to immediately start developing. You can access the container through [VSCode's attach to container functionality](https://code.visualstudio.com/docs/remote/attach-container)
+  
+## VSCode Instructions
+* Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
+
+* Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.
+* These configurations are stored within '/tensorflow/.vscode/launch.json' (to launch) and /tensorflow/.vscode/task.json (to compile), you can edit these to change the parameters to compile and launch the the end to end simulation.
+* There are some configurations already prepared to run the VM,SA and FC-GEMM accelerator with the simulation delegates
 
 
 
@@ -110,7 +115,7 @@ To perform logic synthesis, we provide Vivado project folders ([release](https:/
 * Vivado 2018.3
 
 
-# Docker Setup for SECDA-TFLite (TF2.7)
+# Docker Setup for SECDA-TFLite-dev (TF2.7) (Deprecated)
 We highly recommend using this container to immediately start developing accelerators and accelerator delegates using the SECDA-TFLite toolkit.
 
 **Requirements**
