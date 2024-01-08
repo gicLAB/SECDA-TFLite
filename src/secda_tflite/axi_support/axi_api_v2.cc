@@ -9,15 +9,15 @@ acc_regmap::acc_regmap(size_t base_addr, size_t length) {
 }
 
 void acc_regmap::writeAccReg(uint32_t offset, unsigned int val) {
-  void* base_addr = (void*)acc_addr;
-  *((volatile unsigned int*)(reinterpret_cast<char*>(base_addr) + offset)) =
+  void *base_addr = (void *)acc_addr;
+  *((volatile unsigned int *)(reinterpret_cast<char *>(base_addr) + offset)) =
       val;
 }
 
 unsigned int acc_regmap::readAccReg(uint32_t offset) {
-  void* base_addr = (void*)acc_addr;
+  void *base_addr = (void *)acc_addr;
   return *(
-      (volatile unsigned int*)(reinterpret_cast<char*>(base_addr) + offset));
+      (volatile unsigned int *)(reinterpret_cast<char *>(base_addr) + offset));
 }
 
 // TODO: parse JSON file to load offset map for control and status registers
@@ -72,15 +72,15 @@ void stream_dma::dma_init(unsigned int _dma_addr, unsigned int _input,
 }
 
 void stream_dma::writeMappedReg(uint32_t offset, unsigned int val) {
-  void* base_addr = (void*)dma_addr;
-  *((volatile unsigned int*)(reinterpret_cast<char*>(base_addr) + offset)) =
+  void *base_addr = (void *)dma_addr;
+  *((volatile unsigned int *)(reinterpret_cast<char *>(base_addr) + offset)) =
       val;
 }
 
 unsigned int stream_dma::readMappedReg(uint32_t offset) {
-  void* base_addr = (void*)dma_addr;
+  void *base_addr = (void *)dma_addr;
   return *(
-      (volatile unsigned int*)(reinterpret_cast<char*>(base_addr) + offset));
+      (volatile unsigned int *)(reinterpret_cast<char *>(base_addr) + offset));
 }
 
 void stream_dma::dma_mm2s_sync() {
@@ -126,9 +126,9 @@ void stream_dma::dma_free() {
   munmap(dma_addr, getpagesize());
 }
 
-int* stream_dma::dma_get_inbuffer() { return input; }
+int *stream_dma::dma_get_inbuffer() { return input; }
 
-int* stream_dma::dma_get_outbuffer() { return output; }
+int *stream_dma::dma_get_outbuffer() { return output; }
 
 void stream_dma::dma_start_send(int length) {
   msync(input, input_size, MS_SYNC);
@@ -159,8 +159,8 @@ int stream_dma::dma_check_recv() {
 }
 
 // =========================== Multi DMAs
-multi_dma::multi_dma(int _dma_count, unsigned int* _dma_addrs,
-                     unsigned int* _dma_addrs_in, unsigned int* _dma_addrs_out,
+multi_dma::multi_dma(int _dma_count, unsigned int *_dma_addrs,
+                     unsigned int *_dma_addrs_in, unsigned int *_dma_addrs_out,
                      unsigned int _buffer_size) {
   dma_count = _dma_count;
   dmas = new stream_dma[dma_count];
@@ -225,14 +225,19 @@ void multi_dma::multi_dma_start_recv() {
 }
 
 void multi_dma::multi_dma_wait_recv() {
-  for (int i = 0; i < dma_count; i++) dmas[i].dma_s2mm_sync();
+  // for (int i = 0; i < dma_count; i++) dmas[i].dma_s2mm_sync();
+  for (int i = 0; i < dma_count; i++) dmas[i].dma_wait_recv();
 }
 
 void multi_dma::multi_dma_wait_recv_4() {
-  dmas[0].dma_s2mm_sync();
-  dmas[1].dma_s2mm_sync();
-  dmas[2].dma_s2mm_sync();
-  dmas[3].dma_s2mm_sync();
+  // dmas[0].dma_s2mm_sync();
+  // dmas[1].dma_s2mm_sync();
+  // dmas[2].dma_s2mm_sync();
+  // dmas[3].dma_s2mm_sync();
+  dmas[0].dma_wait_recv();
+  dmas[1].dma_wait_recv();
+  dmas[2].dma_wait_recv();
+  dmas[3].dma_wait_recv();
 }
 
 int multi_dma::multi_dma_check_recv() {

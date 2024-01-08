@@ -1,0 +1,17 @@
+{
+  "path_to_tf": "/home/jude/Workspace/SECDA-TFLite/tensorflow",
+  "del_path": "tensorflow/lite/delegates/utils/secda_delegates/mm2im_fpga_delegate",
+  "bazel_name": "benchmark_model_plus_mm2im_fpga_delegate",
+  "app_short": "bm",
+  "trial_name": "baseline",
+  "output_path": "output/bm_baseline",
+  "pynq_dir": "/home/xilinx/Workspace/SECDA-TFLite/experiments",
+  "exp_folder": "bm_baseline",
+  "board_user": "xilinx",
+  "board_hostname": "jharis.ddns.net",
+  "board_port": "2202",
+  "hw_path": "/home/jude/Workspace/SECDA-TFLite/hardware_automation/generated/mm2im_1_0/generated_files/",
+  "hw_name": "mm2im_1_0",
+  "run_cmd": "./bm_baseline --graph=/home/xilinx/Workspace/SECDA-TFLite/models/dcgan_gen.tflite --num_runs=1 --max_secs=600 --use_mm2im_fpga_delegate=true",
+  "acc_tag": "mm2im_1_0"
+}

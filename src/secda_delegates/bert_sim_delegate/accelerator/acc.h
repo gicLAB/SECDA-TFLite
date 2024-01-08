@@ -9,8 +9,8 @@
 
 #ifndef __SYNTHESIS__
 #include "tensorflow/lite/delegates/utils/secda_tflite/ap_sysc/AXI4_if.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/sysc_types.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/sysc_types.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
 #define DWAIT() wait(1)
 #define DWAIT(x) wait(1)

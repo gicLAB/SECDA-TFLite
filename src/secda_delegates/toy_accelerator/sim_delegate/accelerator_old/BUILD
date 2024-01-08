@@ -26,9 +26,9 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
         "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
         
     ],
 )

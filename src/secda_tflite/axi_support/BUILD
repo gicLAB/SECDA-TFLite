@@ -24,7 +24,7 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
     ],
 )
 
@@ -39,7 +39,7 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
     ],
 )
 
@@ -55,7 +55,7 @@ cc_library(
     ],
     copts = common_copts,
     deps = [
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
     ],
 )
 
@@ -69,7 +69,7 @@ cc_library(
     ],
     copts = common_copts,
     deps = [
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
     ],
 )
 

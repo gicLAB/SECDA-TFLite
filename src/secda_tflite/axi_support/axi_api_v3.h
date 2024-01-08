@@ -2,8 +2,8 @@
 #define AXI_API_V2_H
 
 #ifdef SYSC
-#include "../sysc_integrator/axi4s_engine_generic.sc.h"
-#include "../sysc_integrator/sysc_types.h"
+#include "../secda_integrator/axi4s_engine_generic.sc.h"
+#include "../secda_integrator/sysc_types.h"
 #endif
 
 #include <fcntl.h>

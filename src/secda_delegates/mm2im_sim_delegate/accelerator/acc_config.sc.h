@@ -5,8 +5,8 @@
 
 #ifndef __SYNTHESIS__
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/sysc_types.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/sysc_types.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 // typedef sc_int<8>  acc_dt;
 #define acc_dt sc_int<8>
 #define DWAIT(x) wait(x)
@@ -346,7 +346,7 @@ struct PE_vars {
         out_done("out_done"), send_done("send_done"), oh("oh"), ow("ow"),
         kernel_size("kernel_size"), stride_x("stride_x"), stride_y("stride_y"),
         pt("pt"), pl("pl"), width_col("width_col"), srow("srow"),
-        num_rows("num_rows"), s col_dexs_fifo(size), dex_fifo(size),
+        num_rows("num_rows"), col_dexs_fifo(size), dex_fifo(size),
         wgt_fifo(size), inp_fifo(size), out_fifo(size), temp_fifo(size),
         computeS("computeS"), sendS("sendS") {
 #pragma HLS resource variable = wgt_fifo core = FIFO_SRL

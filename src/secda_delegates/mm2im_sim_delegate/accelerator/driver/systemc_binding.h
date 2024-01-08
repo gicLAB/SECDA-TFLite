@@ -2,7 +2,7 @@
 #define SYSTEMC_BINDING
 
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/systemc_integrate.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
 
 // This file is specfic to VM SystemC definition
 // This contains all the correct port/signal bindings to instantiate the VM

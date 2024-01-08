@@ -2,55 +2,48 @@
 #ifndef PROFILER_HEADER
 #define PROFILER_HEADER
 
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
+#ifdef ACC_PROFILE
+#define prf_start(N) auto start##N = chrono::high_resolution_clock::now();
+#define prf_end(N, X)                                                          \
+  auto end##N = chrono::high_resolution_clock::now();                          \
+  X += end##N - start##N;
+#else
+#define prf_start(N)
+#define prf_end(N, X)
+#endif
+
 using namespace std;
+using namespace std::chrono;
+#define prf_out(TSCALE, X)                                                     \
+  cerr << #X << ": " << duration_cast<TSCALE>(X).count() << endl;
 
-// profiled_bram lhsdata1a[IN_BUF_LEN];
-// profiled_bram lhsdata2a[IN_BUF_LEN];
-// profiled_bram lhsdata3a[IN_BUF_LEN];
-// profiled_bram lhsdata4a[IN_BUF_LEN];
+typedef duration<long long int, std::ratio<1, 1000000000>> duration_ns;
 
-// struct profiled_bram {
-//   ACC_DTYPE<32> lhsdata1a[IN_BUF_LEN];
+#ifdef SYSC
+#define SYSC_ON(X) X
+#else
+#define SYSC_ON(X)
+#endif
 
-// #ifndef __SYNTHESIS__
-//   BufferSpace *gweightbuf_p = new BufferSpace("gweightbuf_p", GWE_BUF_LEN);
-
-//   int capacity = GWE_BUF_LEN;
-//   int write_count = 0;
-//   int access_count = 0;
-//   int highest_index = 0;
-
-//   void utilisation() { gweightbuf_p->value = 0; }
-
-//   profiled_bram::operator=(const profiled_bram &rhs) const {
-//     write_count++;
-//     return lhsdata1a[] = rhs.lhsdata1a;
-//   }
-
-//   profiled_bram::operator[](int index) const {
-//     write_count++;
-//     return lhsdata1a[index];
-//   }
-
-// #endif
-// }
-
-// struct profiled_bram<32>
-//     lhsdata4a[1] = 5;
-
-enum MetricTypes { TClockCycles, TDataCount, TBufferSpace, TDataCountArray };
+enum MetricTypes {
+  TClockCycles,
+  TDataCount,
+  TBufferSpace,
+  TDataCountArray,
+  TSignalTrack
+};
 
 class Metric {
 public:
   string name;
   int value;
   MetricTypes type;
-
   // Metric(string _name,int value,  MetricTypes _type);
 };
 
@@ -60,6 +53,17 @@ public:
   ClockCycles(string _name, bool _resetOnSave);
 
   int readCount();
+  bool resetOnSave;
+};
+
+class SignalTrack : public Metric {
+public:
+  vector<int> values;
+  SignalTrack(string _name);
+  SignalTrack(string _name, bool _resetOnSave);
+
+  int readCount();
+  void increment(int);
   bool resetOnSave;
 };
 

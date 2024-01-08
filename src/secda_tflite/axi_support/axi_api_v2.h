@@ -2,8 +2,8 @@
 #define AXI_API_V2_H
 
 #ifdef SYSC
-#include "../sysc_integrator/axi4s_engine.sc.h"
-// #include "../sysc_integrator/axi4s_engine_phy.sc.h"
+#include "../secda_integrator/axi4s_engine.sc.h"
+// #include "../secda_integrator/axi4s_engine_phy.sc.h"
 
 #endif
 

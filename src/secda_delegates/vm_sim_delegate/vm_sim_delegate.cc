@@ -4,8 +4,8 @@
 
 #include <utility>
 
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/systemc_integrate.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"

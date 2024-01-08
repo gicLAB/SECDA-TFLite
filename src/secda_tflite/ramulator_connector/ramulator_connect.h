@@ -17,7 +17,7 @@
 // };
 
 #ifdef SYSC
-#include "../sysc_integrator/phy.sc.h"
+#include "../secda_integrator/phy.sc.h"
 #endif
 
 #include <string>

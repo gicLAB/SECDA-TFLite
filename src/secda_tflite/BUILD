@@ -18,7 +18,7 @@ cc_library(
         # "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_fpga",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
 
     ],
 )
@@ -28,9 +28,9 @@ cc_library(
 #     copts = common_copts,
 #     deps = [
 #         # "@systemc//:systemc",
-#         "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+#         "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
 #         "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
-#         "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+#         "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
 #         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
 #         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support",
 
@@ -42,9 +42,9 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
         "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_sysc",
         "//tensorflow/lite/delegates/utils/secda_tflite/ramulator_connector:ramulator_connector",
@@ -56,9 +56,9 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
         "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_supportv3",
 
@@ -70,9 +70,9 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
         "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_syscv3",
 

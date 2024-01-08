@@ -24,7 +24,7 @@ cc_library(
     deps = [
         "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_sysc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
         "//tensorflow/lite/delegates/utils/secda_tflite/toy_accelerator/sim_delegate/accelerator:toy_accelerator",
     ],
 )

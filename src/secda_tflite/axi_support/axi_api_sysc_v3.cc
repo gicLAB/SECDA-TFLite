@@ -1,5 +1,5 @@
 
-#include "../sysc_integrator/sysc_types.h"
+#include "../secda_integrator/sysc_types.h"
 #include "axi_api_v3.h"
 
 // TODO Implement SystemC Signal Read/Write

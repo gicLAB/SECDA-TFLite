@@ -100,13 +100,17 @@ void stream_dma::writeMappedReg(uint32_t offset, unsigned int val) {}
 
 unsigned int stream_dma::readMappedReg(uint32_t offset) { return 0; }
 
-void stream_dma::dma_mm2s_sync() {}
+void stream_dma::dma_mm2s_sync() { sc_start(); }
 
-void stream_dma::dma_s2mm_sync() {}
+void stream_dma::dma_s2mm_sync() { sc_start(); }
 
-void stream_dma::dma_change_start(int offset) { dmad->input_offset = offset; }
+void stream_dma::dma_change_start(int offset) {
+  dmad->input_offset = offset / 4;
+}
 
-void stream_dma::dma_change_end(int offset) { dmad->output_offset = offset; }
+void stream_dma::dma_change_end(int offset) {
+  dmad->output_offset = offset / 4;
+}
 
 void stream_dma::initDMA(unsigned int src, unsigned int dst) {}
 
@@ -125,7 +129,7 @@ void stream_dma::dma_start_send(int length) {
   data_transfered += length;
 }
 
-void stream_dma::dma_wait_send() { sc_start(); }
+void stream_dma::dma_wait_send() { dma_mm2s_sync(); }
 
 int stream_dma::dma_check_send() { return 0; }
 
@@ -134,7 +138,7 @@ void stream_dma::dma_start_recv(int length) {
   dmad->recv = true;
 }
 
-void stream_dma::dma_wait_recv() { sc_start(); }
+void stream_dma::dma_wait_recv() { dma_s2mm_sync(); }
 
 int stream_dma::dma_check_recv() { return 0; }
 
@@ -166,7 +170,12 @@ void multi_dma::multi_dma_change_start(int offset) {
   }
 }
 
-void multi_dma::multi_dma_change_start_4(int offset) {}
+void multi_dma::multi_dma_change_start_4(int offset) {
+  dmas[0].dma_change_start(offset);
+  dmas[1].dma_change_start(offset);
+  dmas[2].dma_change_start(offset);
+  dmas[3].dma_change_start(offset);
+}
 
 void multi_dma::multi_dma_change_end(int offset) {
   for (int i = 0; i < dma_count; i++) {
@@ -216,7 +225,7 @@ void multi_dma::multi_dma_wait_recv() {
   }
 }
 
-void multi_dma::multi_dma_wait_recv_4() {}
+void multi_dma::multi_dma_wait_recv_4() { multi_dma_wait_recv(); }
 
 int multi_dma::multi_dma_check_recv() { return 0; }
 

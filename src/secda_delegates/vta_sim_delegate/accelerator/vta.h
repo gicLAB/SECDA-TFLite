@@ -4,7 +4,7 @@
 #include <systemc.h>
 #include "hw_spec.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/ap_sysc/AXI4_if.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 
 #ifndef __SYNTHESIS__
 // #define DWAIT(x) wait(x)

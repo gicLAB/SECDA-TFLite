@@ -2,7 +2,7 @@
 #ifndef PHY_H
 #define PHY_H
 
-#include "../sysc_integrator/sysc_types.h"
+#include "../secda_integrator/sysc_types.h"
 #include <iomanip>
 #include <iostream>
 

@@ -6,7 +6,7 @@
 
 #ifdef SYSC
 #include "../acc.sc.h"
-// #include "sysc_profiler/profiler.h"
+// #include "secda_profiler/profiler.h"
 #include "systemc_binding.h"
 #endif
 

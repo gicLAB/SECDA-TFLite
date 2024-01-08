@@ -1,0 +1,15 @@
+{
+  "acc_name": "vm",
+  "acc_version": 3,
+  "acc_sub_version": 1,
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_link_folder": "/home/jude/Workspace/SECDA-TFLite/hardware_automation/acc_srcs/vm_src_v3",
+  "vivado_path": "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/",
+  "hlx_tcl_script": "./hlx_scripts/vm_hlx.tcl",
+  "top": "VM_INT8_V3_0",
+  "bitstream": "vm_int8_v4_2",
+  "pynq_dir": "int8acc/vm",
+  "board_script": ""
+}

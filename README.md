@@ -28,8 +28,8 @@ You can now setup the dev environment natively (2.A) or via docker (2.B).
 ```
 sudo apt install apt-transport-https curl gnupg -y && \
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg && \
-mv bazel-archive-keyring.gpg /usr/share/keyrings && \
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list && \
+sudo mv bazel-archive-keyring.gpg /usr/share/keyrings && \
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list && \
 sudo apt update && sudo apt install bazel-3.7.2 -y && \
 sudo ln -sf /usr/bin/bazel-3.7.2 /usr/bin/bazel
 ```
@@ -47,8 +47,10 @@ pip3 install numpy
 
 ###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflite environment)
 ```
-cd tensorflow 
-./configure
+conda activate secda-tflite
+cd tensorflow
+# make sure to set python path to /home/your_user/miniconda3/bin/python3
+./configure 
 bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
 bazel run //tensorflow/lite/examples/systemc:hello_systemc
 ```

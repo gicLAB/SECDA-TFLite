@@ -4,7 +4,7 @@
 #include <vector>
 #include "../acc.sc.h"
 #include "systemc_binding.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 
 struct acc_container {
   // Hardware

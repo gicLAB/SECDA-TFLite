@@ -5,7 +5,7 @@
 
 #include <systemc.h>
 #include "../acc.sc.h"
-// #include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/axi4s_engine.sc.h"
+// #include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/axi4s_engine.sc.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 
 int sc_main(int argc, char* argv[]) { return 0; }

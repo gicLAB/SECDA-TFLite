@@ -9,7 +9,7 @@
 #include "tensorflow/lite/delegates/utils/secda_delegates/mm2im_fpga_delegate/accelerator/driver/mm2im_util.h"
 #include "tensorflow/lite/delegates/utils/secda_delegates/mm2im_fpga_delegate/util.h"
 
-#include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"

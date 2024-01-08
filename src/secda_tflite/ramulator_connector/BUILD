@@ -24,7 +24,7 @@ cc_library(
     copts = ["-Itensorflow/lite/delegates/utils/secda_tflite/ramulator_connector/src/"] + common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
     ],
 
 )

@@ -14,6 +14,29 @@ ClockCycles::ClockCycles(string _name, bool _resetOnSave) {
   resetOnSave = _resetOnSave;
 }
 
+int SignalTrack::readCount() {
+  if (resetOnSave) value = 0;
+  return value;
+}
+
+SignalTrack::SignalTrack(string _name) {
+  name = _name;
+  value = 0;
+  type = TSignalTrack;
+}
+
+void SignalTrack::increment(int val) {
+  if (values.size() < val+1) values.resize(val + 1);
+  values[val]++;
+}
+
+SignalTrack::SignalTrack(string _name, bool _resetOnSave) {
+  name = _name;
+  value = 0;
+  type = TSignalTrack;
+  resetOnSave = _resetOnSave;
+}
+
 int ClockCycles::readCount() {
   if (resetOnSave) value = 0;
   return value;
@@ -43,6 +66,7 @@ BufferSpace::BufferSpace(string _name, int _total) {
 
 // Currently this does not check if the metric profiles match
 void Profile::saveProfile(vector<Metric *> captured_metrics) {
+#ifdef SYSC
   vector<Metric> newRecord;
 
   for (int i = 0; i < captured_metrics.size(); i++) {
@@ -76,9 +100,22 @@ void Profile::saveProfile(vector<Metric *> captured_metrics) {
         if (capped_metric->resetOnSave) capped_metric->array[l] = 0;
         newRecord.push_back(temp);
       }
+    } else if (captured_metrics[i]->type == TSignalTrack) {
+      SignalTrack *capped_metric =
+          reinterpret_cast<SignalTrack *>(captured_metrics[i]);
+      for (int l = 0; l < capped_metric->values.size(); l++) {
+        if (capped_metric->values[l] > 0) {
+          ClockCycles temp(capped_metric->name + "_" + to_string(l));
+          temp.value = capped_metric->values[l];
+          newRecord.push_back(temp);
+        }
+        if (capped_metric->resetOnSave) capped_metric->values[l] = 0;
+      }
+      if (capped_metric->resetOnSave) capped_metric->value = 0;
     }
   }
   records.push_back(newRecord);
+#endif
 }
 
 void Profile::saveBlank(vector<Metric *> captured_metrics) {
@@ -139,6 +176,8 @@ void Profile::incrementMetric(string name, int value) {
 }
 
 void Profile::saveCSVRecords(string filename) {
+#ifdef SYSC
+
   if (records.size() == 0) return;
   ofstream per_sim_file;
   per_sim_file.open(filename + ".csv");
@@ -164,18 +203,19 @@ void Profile::saveCSVRecords(string filename) {
   }
   per_sim_file.close();
 
-  ofstream per_model_file;
-  per_model_file.open(filename + "_model.csv");
-  for (int i = 0; i < model_record.size(); i++) {
-    per_model_file << model_record[i].name;
-    if (i + 1 != model_record.size()) per_model_file << ",";
-    else per_model_file << endl;
-  }
+  // ofstream per_model_file;
+  // per_model_file.open(filename + "_model.csv");
+  // for (int i = 0; i < model_record.size(); i++) {
+  //   per_model_file << model_record[i].name;
+  //   if (i + 1 != model_record.size()) per_model_file << ",";
+  //   else per_model_file << endl;
+  // }
 
-  for (int m = 0; m < model_record.size(); m++) {
-    per_model_file << model_record[m].value;
-    if (m + 1 != model_record.size()) per_model_file << ", ";
-    else per_model_file << endl;
-  }
-  per_model_file.close();
+  // for (int m = 0; m < model_record.size(); m++) {
+  //   per_model_file << model_record[m].value;
+  //   if (m + 1 != model_record.size()) per_model_file << ", ";
+  //   else per_model_file << endl;
+  // }
+  // per_model_file.close();
+#endif
 }

@@ -2,7 +2,7 @@
 #ifndef MM_CONTROLLER_H
 #define MM_CONTROLLER_H
 
-#include "../sysc_integrator/sysc_types.h"
+#include "../secda_integrator/sysc_types.h"
 #include <iomanip>
 #include <iostream>
 

@@ -1,2 +1,2 @@
-add_subdirectory(sysc_profiler)
+add_subdirectory(secda_profiler)
 add_subdirectory(axi_support)
