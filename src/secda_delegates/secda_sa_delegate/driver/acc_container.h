@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/multi_threading.h"
 
@@ -20,16 +21,7 @@
 
 using namespace std;
 using namespace std::chrono;
-
-#ifdef ACC_PROFILE
-#define prf_start(N) auto start##N = chrono::steady_clock::now();
-#define prf_end(N, X)                                                          \
-  auto end##N = chrono::steady_clock::now();                                   \
-  X += end##N - start##N;
-#else
-#define prf_start(N)
-#define prf_end(N, X)
-#endif
+#define TSCALE microseconds
 
 // Used for tracking output locations
 struct store_params {
@@ -42,33 +34,43 @@ struct store_params {
 };
 
 struct sa_times {
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_rhs;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_lhs;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> sa_acc;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> store;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> ipack;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> conv_total;
+  duration_ns load_rhs;
+  duration_ns load_lhs;
+  duration_ns sa_acc;
+  duration_ns store;
+  duration_ns ipack;
+  duration_ns conv_total;
   void print() {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
-    cout << "conv_total, "
-         << chrono::duration_cast<chrono::milliseconds>(conv_total).count()
-         << endl;
-    cout << "ipack, "
-         << chrono::duration_cast<chrono::milliseconds>(ipack).count() << endl;
-    cout << "sa_acc, "
-         << chrono::duration_cast<chrono::milliseconds>(sa_acc).count() << endl;
+    // prf_out(TSCALE, load_rhs);
+    // prf_out(TSCALE, load_lhs);
+    // prf_out(TSCALE, store);
+    prf_out(TSCALE, sa_acc);
+    prf_out(TSCALE, ipack);
+    prf_out(TSCALE, conv_total);
     cout << "================================================" << endl;
+#endif
+  }
+
+  void save_prf() {
+#ifdef ACC_PROFILE
+    std::ofstream file("prf.csv", std::ios::out);
+    // prf_file_out(TSCALE, load_rhs, file);
+    // prf_file_out(TSCALE, load_lhs, file);
+    // prf_file_out(TSCALE, store, file);
+    prf_file_out(TSCALE, sa_acc, file);
+    prf_file_out(TSCALE, ipack, file);
+    prf_file_out(TSCALE, conv_total, file);
+    file.close();
 #endif
   }
 };
 
 // Used for profiling
 struct gemm_details {
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> acctime =
-      std::chrono::duration<long long int, std::ratio<1, 1000000000>>(0);
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> convtime =
-      std::chrono::duration<long long int, std::ratio<1, 1000000000>>(0);
+  // duration_ns acctime = duration_ns(0);
+  // duration_ns convtime = duration_ns(0);
   int layer = 0;
   int layer_weight_tile = 0;
   int layer_input_tile = 0;

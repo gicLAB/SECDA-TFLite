@@ -8,6 +8,8 @@
 
 #include "acc_config.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 
 #ifdef ACC_NEON
@@ -16,20 +18,7 @@
 
 using namespace std;
 using namespace std::chrono;
-
-// #define MS chrono::duration_cast<chrono::milliseconds>
-// #define MS chrono::duration_cast<chrono::microseconds>
-#define MS chrono::duration_cast<chrono::nanoseconds>
-
-#ifdef ACC_PROFILE
-#define prf_start(N) auto start##N = chrono::steady_clock::now();
-#define prf_end(N, X)                                                          \
-  auto end##N = chrono::steady_clock::now();                                   \
-  X += end##N - start##N;
-#else
-#define prf_start(N)
-#define prf_end(N, X)
-#endif
+#define TSCALE microseconds
 
 int nofSteps(int length, int stride, int ks) {
   return int(((length - ks) / stride) + 1);
@@ -44,25 +33,22 @@ struct gemm_details {
 };
 
 struct mm2im_times {
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> driver_total;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> acc_total;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> tconv_total;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> store;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_wgt;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_inp;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_rowmap;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_colmap;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> start_sched;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> load_config;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> handle_rest;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> del_inp;
-  std::chrono::duration<long long int, std::ratio<1, 1000000000>> write_out;
-
+  duration_ns driver_total;
+  duration_ns acc_total;
+  duration_ns tconv_total;
+  duration_ns store;
+  duration_ns load_wgt;
+  duration_ns load_inp;
+  duration_ns load_rowmap;
+  duration_ns load_colmap;
+  duration_ns start_sched;
+  duration_ns load_config;
+  duration_ns handle_rest;
+  duration_ns ipack;
 
   int inp_data_sent = 0;
   int wgt_data_sent = 0;
   int colmap_data_sent = 0;
-
   int inp_load_calls = 0;
   int wgt_load_calls = 0;
   int colmap_load_calls = 0;
@@ -70,39 +56,41 @@ struct mm2im_times {
   void print() {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
-    cout << "driver_total, " << MS(driver_total).count() << endl;
-    cout << "acc_total, " << MS(acc_total).count() << endl;
-    cout << "tconv_total, " << MS(tconv_total).count() << endl;
-    cout << "store, " << MS(store).count() << endl;
-    cout << "write_out, " << MS(write_out).count() << endl;
-    cout << "load_wgt, " << MS(load_wgt).count() << endl;
-    cout << "load_inp, " << MS(load_inp).count() << endl;
-    cout << "load_colmap, " << MS(load_colmap).count() << endl;
-    cout << "start_sched, " << MS(start_sched).count() << endl;
-    cout << "load_config, " << MS(load_config).count() << endl;
-    cout << "handle_rest, " << MS(handle_rest).count() << endl;
-    cout << "del_inp, " << MS(del_inp).count() << endl;
+    prf_out(TSCALE, driver_total);
+    prf_out(TSCALE, acc_total);
+    prf_out(TSCALE, tconv_total);
+    prf_out(TSCALE, store);
+    prf_out(TSCALE, load_wgt);
+    prf_out(TSCALE, load_inp);
+    prf_out(TSCALE, load_colmap);
+    prf_out(TSCALE, start_sched);
+    prf_out(TSCALE, load_config);
+    prf_out(TSCALE, handle_rest);
+    prf_out(TSCALE, ipack);
     cout << "================================================" << endl;
+#endif
+  }
 
-    // write driver total time to fileF
-    ofstream myfile;
-    myfile.open("driver_total.txt", ios::app);
-    myfile << MS(driver_total).count() << ", " << MS(load_wgt).count() << ", "
-           << wgt_data_sent << ", " << wgt_load_calls << ", "
-           << MS(load_inp).count() << ", " << inp_data_sent << ", "
-           << inp_load_calls << ", " << MS(load_colmap).count() << ", "
-           << colmap_data_sent << ", " << colmap_load_calls << ", "
-           << MS(write_out).count() << endl;
-          //  << MS(write_out).count() << ", "  << MS(write_out).count() << endl;
-
-
-    myfile.close();
+  void save_prf() {
+#ifdef ACC_PROFILE
+    std::ofstream file("prf.csv", std::ios::out);
+    prf_file_out(TSCALE, driver_total, file);
+    prf_file_out(TSCALE, acc_total, file);
+    prf_file_out(TSCALE, tconv_total, file);
+    prf_file_out(TSCALE, store, file);
+    prf_file_out(TSCALE, load_wgt, file);
+    prf_file_out(TSCALE, load_inp, file);
+    prf_file_out(TSCALE, load_colmap, file);
+    prf_file_out(TSCALE, start_sched, file);
+    prf_file_out(TSCALE, load_config, file);
+    prf_file_out(TSCALE, handle_rest, file);
+    prf_file_out(TSCALE, ipack, file);
+    file.close();
 #endif
   }
 };
 
 struct acc_container {
-
   struct multi_dma *mdma;
 
   // Padded Buffers

@@ -1,6 +1,7 @@
 void ACCNAME::load_inputs(int i_idx, int d) {
   inp_len_VMM(d);
   for (int i = 0; i < d; i++) {
+#pragma HLS pipeline II = 1
     ACC_DTYPE<32> data1 = inp_data1[i_idx];
     ACC_DTYPE<32> data2 = inp_data2[i_idx];
     ACC_DTYPE<32> data3 = inp_data3[i_idx];
@@ -17,14 +18,20 @@ void ACCNAME::load_inputs(int i_idx, int d) {
 }
 
 void ACCNAME::start_VMM(int id, int w_idx, int params[13]) {
-  schS.write(40 + id * 4 + 1);
-  wait();
+  schS.write(40 + (id * 2) + 1);
+  // wait();
+  DWAIT();
   start_compute_VMM(id, w_idx, depth);
-  schS.write(40 + id * 4 + 2);
-  wait();
-  for (int i = 0; i < 13; i++) vars.post_write(params[i], id);
-  DWAIT(26);
-  wait();
+  schS.write(40 + (id * 2) + 2);
+  // wait();
+  DWAIT();
+  for (int i = 0; i < 13; i++) {
+#pragma HLS pipeline II = 1
+    vars.post_write(params[i], id);
+  }
+  // DWAIT(26);
+  // DWAIT(1);
+  // wait();
 }
 
 void ACCNAME::schedule_vmm_unit(int unit_counter, int w_idx, int l, int r) {
@@ -45,11 +52,12 @@ void ACCNAME::schedule_vmm_unit(int unit_counter, int w_idx, int l, int r) {
   params[11] = crf4[l];
   params[12] = crx[l];
 
-  DWAIT(7);
+  // DWAIT(7);
+  DWAIT();
   for (int i = 0; i < VMM_COUNT; i++) {
 #pragma HLS unroll
     if (unit_counter == i) start_VMM(i, w_idx, params);
-    DWAIT(4);
+    // DWAIT(4);
   }
 }
 
@@ -69,7 +77,7 @@ void ACCNAME::Scheduler() {
       int r4 = r / 4;
       int i_idx = r4 * dm;
       schS.write(2);
-      wait_ready_VMM();
+      vmm_ready_VMM();
       schS.write(3);
       load_inputs(i_idx, dm);
       schS.write(4);
@@ -78,14 +86,19 @@ void ACCNAME::Scheduler() {
         int l4 = l / 4;
         int w_idx = l4 * dm;
         schedule_vmm_unit(unit_counter, w_idx, l4, r4);
-        unit_counter = ((unit_counter + 1) % 4);
+        unit_counter = vars.next(unit_counter);
         schS.write(6);
-        wait();
+        DWAIT();
+        // wait();
       }
     }
     schS.write(7);
     schedule.write(0);
+    wait_ready_VMM();
+    send_done_write_VMM(unit_counter);
+    unit_counter = vars.next(unit_counter);
     schS.write(8);
-    wait();
+    DWAIT();
+    // wait();
   }
 }

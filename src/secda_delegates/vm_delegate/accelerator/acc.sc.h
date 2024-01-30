@@ -102,7 +102,7 @@ SC_MODULE(ACCNAME) {
   sc_out<int> schS;
   sc_out<int> p1S;
 
-  struct var_array vars;
+  struct var_array4 vars;
 
 #ifndef __SYNTHESIS__
   // Profiling variable
@@ -132,13 +132,21 @@ SC_MODULE(ACCNAME) {
   DataCountArray *gmacs = new DataCountArray("gmacs", 4);
   DataCountArray *gouts = new DataCountArray("gouts", 4);
   SignalTrack *shS = new SignalTrack("shS", true);
+  SignalTrack *gmSA = new SignalTrack("gmSA", true);
+  SignalTrack *gmSB = new SignalTrack("gmSB", true);
+  SignalTrack *gmSC = new SignalTrack("gmSC", true);
+  SignalTrack *gmSD = new SignalTrack("gmSD", true);
+  SignalTrack *psSA = new SignalTrack("psSA", true);
+  SignalTrack *psSB = new SignalTrack("psSB", true);
+  SignalTrack *psSC = new SignalTrack("psSC", true);
+  SignalTrack *psSD = new SignalTrack("psSD", true);
 
   std::vector<Metric *> profiling_vars = {
-      cycles,       load_inps,  load_wgts,   compute, idle1,   idle2,   idle3,
-      idle4,        post1,      post2,       post3,   post4,   gemm1,   gemm2,
-      gemm3,        gemm4,      wstall1,     wstall2, wstall3, wstall4, shS,
-      gweightbuf_p, inputbuf_p, weightbuf_p, gmacs,   gouts,
-  };
+      cycles, load_inps,    load_wgts,  compute,     idle1,   idle2,   idle3,
+      idle4,  post1,        post2,      post3,       post4,   gemm1,   gemm2,
+      gemm3,  gemm4,        wstall1,    wstall2,     wstall3, wstall4, shS,
+      gmSA,   gmSB,         gmSC,       gmSD,        psSA,    psSB,    psSC,
+      psSD,   gweightbuf_p, inputbuf_p, weightbuf_p, gmacs,   gouts};
 #endif
 
   void init_VMM();
@@ -156,6 +164,10 @@ SC_MODULE(ACCNAME) {
   void wait_ready_VMM();
 
   void start_compute_VMM(unsigned int, unsigned int, unsigned int);
+
+  void send_done_write_VMM(int);
+
+  void vmm_ready_VMM();
 
   void Input_Handler();
 

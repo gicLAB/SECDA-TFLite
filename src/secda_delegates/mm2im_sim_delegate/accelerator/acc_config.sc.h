@@ -51,6 +51,13 @@ typedef struct _DATA {
 #define MIN8 -128
 
 // HERE
+#define SUP_KS 7
+#define SUP_DEPTH 256
+#define SUP_IR 8
+#define SUP_STRIDE 2
+
+#define SUP_IHW 11
+#define SUP_OHW ((SUP_IHW - 1) * SUP_STRIDE) + SUP_KS // 27
 
 #define INP_BUF_LEN 2048
 #define WGT_BUF_LEN 2048 * 4
@@ -60,29 +67,68 @@ typedef struct _DATA {
 #define PE_COUNT 8
 
 // needs to support ks * ks * depth / UF
-#define PE_WGTCOLBUF_SIZE 512
+#define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 1936
+// #define PE_WGTCOLBUF_SIZE 512
 
 // wgt_col_sum needs to support ks * ks
-#define PE_WGTCOLSUMBUF_SIZE 64
+#define PE_WGTCOLSUMBUF_SIZE (SUP_KS * SUP_KS) // 49
+// #define PE_WGTCOLSUMBUF_SIZE 64
 
 // inp_row_buf needs to support depth / UF
-#define PE_INPROWBUF_SIZE 16
+#define PE_INPROWBUF_SIZE (SUP_DEPTH / UF) // 16
+// #define PE_INPROWBUF_SIZE 16
 
-// support ir * ks * ks gemm outputs where ir is the number
-// of input rows
-#define PE_OUTBUF_SIZE 1024
+// support input_rows * ks * ks gemm outputs
+#define PE_OUTBUF_SIZE (SUP_IR * SUP_KS * SUP_KS) // 968
+// #define PE_OUTBUF_SIZE 1024
 
 // max value is ks * ks
-#define PE_POUTDEXBUF_SIZE 64
+#define PE_POUTDEXBUF_SIZE (SUP_KS * SUP_KS) // 121
+// #define PE_POUTDEXBUF_SIZE 64
 
 // Max number of MM2IM outputs storable per PE, should allow OH * OW
-#define PE_ACC_BUF_SIZE 256
+// #define PE_ACC_BUF_SIZE (SUP_OHW * SUP_OHW) // 729
+#define PE_ACC_BUF_SIZE (1024) // 729
+// #define PE_ACC_BUF_SIZE 256
 
-#define G_WGTSUMBUF_SIZE 200
+
+// Needs to support ks * ks * PE_COUNT
+#define G_WGTSUMBUF_SIZE (SUP_KS * SUP_KS * PE_COUNT) // 968
+// #define G_WGTSUMBUF_SIZE 200
 
 #define G_COLINDICES_SIZE 50
 
 // TO HERE
+
+// #define INP_BUF_LEN 2048
+// #define WGT_BUF_LEN 2048 * 4
+// #define UF 16
+
+// // Number of PEs
+// #define PE_COUNT 8
+
+// // needs to support ks * ks * depth / UF
+// #define PE_WGTCOLBUF_SIZE 512
+
+// // wgt_col_sum needs to support ks * ks
+// #define PE_WGTCOLSUMBUF_SIZE 64
+
+// // inp_row_buf needs to support depth / UF
+// #define PE_INPROWBUF_SIZE 16
+
+// // support ir * ks * ks gemm outputs where ir is the number
+// // of input rows
+// #define PE_OUTBUF_SIZE 1024
+
+// // max value is ks * ks
+// #define PE_POUTDEXBUF_SIZE 64
+
+// // Max number of MM2IM outputs storable per PE, should allow OH * OW
+// #define PE_ACC_BUF_SIZE 256
+
+// #define G_WGTSUMBUF_SIZE 200
+
+// #define G_COLINDICES_SIZE 50
 
 struct opcode {
   unsigned int packet;
@@ -138,10 +184,8 @@ struct inp_packet {
     ALOG("Time: " << sc_time_stamp());
     a = din->read().data;
     b = din->read().data;
-    c = din->read().data;
     inp_rows = a;
     inp_depth = b;
-    srow = c;
   }
 };
 
@@ -243,17 +287,6 @@ struct PE_vars {
   sc_signal<bool, SC_MANY_WRITERS> wgt_loaded;
   sc_signal<bool, SC_MANY_WRITERS> out_done;
   sc_signal<bool, SC_MANY_WRITERS> send_done;
-
-  sc_signal<int, SC_MANY_WRITERS> oh;
-  sc_signal<int, SC_MANY_WRITERS> ow;
-  sc_signal<int, SC_MANY_WRITERS> kernel_size;
-  sc_signal<int, SC_MANY_WRITERS> stride_x;
-  sc_signal<int, SC_MANY_WRITERS> stride_y;
-  sc_signal<int, SC_MANY_WRITERS> pt;
-  sc_signal<int, SC_MANY_WRITERS> pl;
-  sc_signal<int, SC_MANY_WRITERS> width_col;
-  sc_signal<int, SC_MANY_WRITERS> srow;
-  sc_signal<int, SC_MANY_WRITERS> num_rows;
 #else
   sc_signal<bool> online;
   sc_signal<bool> compute;
@@ -273,18 +306,6 @@ struct PE_vars {
   sc_signal<bool> wgt_loaded;
   sc_signal<bool> out_done;
   sc_signal<bool> send_done;
-
-  sc_signal<int> oh;
-  sc_signal<int> ow;
-  sc_signal<int> kernel_size;
-  sc_signal<int> stride_x;
-  sc_signal<int> stride_y;
-  sc_signal<int> pt;
-  sc_signal<int> pl;
-  sc_signal<int> width_col;
-  sc_signal<int> srow;
-  sc_signal<int> num_rows;
-
 #endif
 
   sc_fifo<int> col_dexs_fifo;
@@ -321,16 +342,6 @@ struct PE_vars {
         wgt_loaded((std::string("wgt_loaded") + std::to_string(sid)).c_str()),
         out_done((std::string("out_done") + std::to_string(sid)).c_str()),
         send_done((std::string("send_done") + std::to_string(sid)).c_str()),
-        oh((std::string("oh") + std::to_string(sid)).c_str()),
-        ow((std::string("ow") + std::to_string(sid)).c_str()),
-        kernel_size((std::string("kernel_size") + std::to_string(sid)).c_str()),
-        stride_x((std::string("stride_x") + std::to_string(sid)).c_str()),
-        stride_y((std::string("stride_y") + std::to_string(sid)).c_str()),
-        pt((std::string("pt") + std::to_string(sid)).c_str()),
-        pl((std::string("pl") + std::to_string(sid)).c_str()),
-        width_col((std::string("width_col") + std::to_string(sid)).c_str()),
-        srow((std::string("srow") + std::to_string(sid)).c_str()),
-        num_rows((std::string("num_rows") + std::to_string(sid)).c_str()),
         col_dexs_fifo(size), dex_fifo(size), wgt_fifo(size), inp_fifo(size),
         out_fifo(size), temp_fifo(size),
         computeS((std::string("computeS") + std::to_string(sid)).c_str()),
@@ -343,12 +354,9 @@ struct PE_vars {
         crx_data("crx_data"), ra_data("ra_data"), send("send"), out("out"),
         cols_per_filter("cols_per_filter"), depth("depth"),
         compute_done("compute_done"), wgt_loaded("wgt_loaded"),
-        out_done("out_done"), send_done("send_done"), oh("oh"), ow("ow"),
-        kernel_size("kernel_size"), stride_x("stride_x"), stride_y("stride_y"),
-        pt("pt"), pl("pl"), width_col("width_col"), srow("srow"),
-        num_rows("num_rows"), col_dexs_fifo(size), dex_fifo(size),
-        wgt_fifo(size), inp_fifo(size), out_fifo(size), temp_fifo(size),
-        computeS("computeS"), sendS("sendS") {
+        out_done("out_done"), send_done("send_done"), col_dexs_fifo(size),
+        dex_fifo(size), wgt_fifo(size), inp_fifo(size), out_fifo(size),
+        temp_fifo(size), computeS("computeS"), sendS("sendS") {
 #pragma HLS resource variable = wgt_fifo core = FIFO_SRL
 #pragma HLS resource variable = inp_fifo core = FIFO_SRL
   }

@@ -42,7 +42,6 @@ public:
       //                                DMA_BL);
       // sdma = &_sdma;
       dparams.init = true;
-
       std::cout << "===========================" << std::endl;
       std::cout << "MM2IM Accelerator with driver v1.5" << std::endl;
       std::cout << std::endl;
@@ -532,52 +531,52 @@ public:
       drv.lhs_offset = 0;
       drv.t.layer = dparams.layer;
       drv.verb = true;
-      prf_end(1, p_t.del_inp);
+      prf_end(1, p_t.ipack);
 
-      // DirectMM2IM(hwoi_ordered_filter_data, input_data, output_data);
+      // // DirectMM2IM(hwoi_ordered_filter_data, input_data, output_data);
 
-      cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data,
-      rhs_params,
-                             input_data, dst_params, col2im_data,
-                             gemm_params, cpu_backend_context);
+      // cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data,
+      // rhs_params,
+      //                        input_data, dst_params, col2im_data,
+      //                        gemm_params, cpu_backend_context);
+
+      // // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      // //                   "_del_wgt.csv",
+      // //               hwoi_ordered_filter_data, lhs_params.rows,
+      // //               lhs_params.cols);
+
+      // // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      // //                   "_del_inp.csv",
+      // //               input_data, rhs_params.rows, rhs_params.cols);
+
+      // // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      // //                   "_del_gemm_cpu.csv",
+      // //               col2im_data, dst_params.cols, dst_params.rows);
+
+      // optimized_ops::Col2im(
+      //     col2im_data, output_depth, output_height, output_width,
+      //     filter_height, filter_width, padding_top, padding_left,
+      //     padding_bottom, padding_right, stride_height, stride_width,
+      //     scratch_data_p);
+
+      // // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      // //                   "_del_col2im_cpu.csv",
+      // //               scratch_data_p, scratch_cols, scratch_rows);
+
+      // if (has_bias)
+      //   optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
+      //                          output_height, output_width, output_depth);
+
+      // const int32_t output_min = std::numeric_limits<int8_t>::min();
+      // const int32_t output_max = std::numeric_limits<int8_t>::max();
+      // optimized_ops::Quantize(output_multiplier, output_shift, output_depth,
+      //                         output_shape.FlatSize(), cparams.output_offset,
+      //                         output_min, output_max, scratch_data,
+      //                         output_data);
 
       // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_wgt.csv",
-      //               hwoi_ordered_filter_data, lhs_params.rows,
-      //               lhs_params.cols);
-
-      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_inp.csv",
-      //               input_data, rhs_params.rows, rhs_params.cols);
-
-      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_gemm_cpu.csv",
-      //               col2im_data, dst_params.cols, dst_params.rows);
-
-      optimized_ops::Col2im(
-          col2im_data, output_depth, output_height, output_width,
-          filter_height, filter_width, padding_top, padding_left,
-          padding_bottom, padding_right, stride_height, stride_width,
-          scratch_data_p);
-
-      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_col2im_cpu.csv",
-      //               scratch_data_p, scratch_cols, scratch_rows);
-
-      if (has_bias)
-        optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
-                               output_height, output_width, output_depth);
-
-      const int32_t output_min = std::numeric_limits<int8_t>::min();
-      const int32_t output_max = std::numeric_limits<int8_t>::max();
-      optimized_ops::Quantize(output_multiplier, output_shift, output_depth,
-                              output_shape.FlatSize(), cparams.output_offset,
-                              output_min, output_max, scratch_data,
-                              output_data);
-
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_out_cpu.csv",
-                    output_data, scratch_cols, scratch_rows);
+      //                   "_del_out_cpu.csv",
+      //               output_data, scratch_cols, scratch_rows);
 
       drv.p_t = p_t;
       mm2im_driver::Entry(drv);
@@ -587,9 +586,9 @@ public:
       //                   "_del_accgemm.csv",
       //               col2im_data, dst_params.cols, dst_params.rows);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_out_acc.csv",
-                    output_data, scratch_cols, scratch_rows);
+      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      //                   "_del_out_acc.csv",
+      //               output_data, scratch_cols, scratch_rows);
 
       dparams.layer++;
       dparams.delegated_nodes--;
@@ -655,7 +654,10 @@ public:
 
     auto &tensor0 = context->tensors[node->inputs->data[1]];
     int filter_dim = tensor0.dims->data[0];
-    if (filter_dim < PE_COUNT) return false;
+
+    // TODO JUDE: Support any filter dim (make this better)
+    // if (filter_dim < PE_COUNT)
+    //   return false;
 
     // Adds node for delegation
     dparams.delegated_nodes++;
@@ -710,12 +712,13 @@ TfLiteMM2IMFPGADelegateCreate(const MM2IMFPGADelegateOptions *options) {
 void TfLiteMM2IMFPGADelegateDelete(TfLiteDelegate *delegate) {
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
+    munmap(dparams.acc, 65536);
     std::cout << "===========================" << std::endl;
     std::cout << "Unmapped DMA I/O Buffers" << std::endl;
     std::cout << "===========================" << std::endl;
-    p_t.print();
-
     dparams.unmap = true;
   }
+  p_t.print();
+  p_t.save_prf();
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }

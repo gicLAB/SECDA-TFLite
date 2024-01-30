@@ -22,6 +22,9 @@
 #define DMA_BL 4194304
 
 // Accelerator Parameters
+// #define VMM_COUNT 1
+// #define VMM_COUNT 2
+// #define VMM_COUNT 3
 #define VMM_COUNT 4
 #define ACC_DTYPE sc_int
 #define ACC_C_DTYPE int
@@ -44,7 +47,6 @@
 
 #include <systemc.h>
 #ifndef __SYNTHESIS__
-// #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/sysc_types.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
@@ -55,9 +57,20 @@
 typedef struct _DATA {
   sc_uint<32> data;
   bool tlast;
+  void operator=(_DATA _data) {
+    data = _data.data;
+    tlast = _data.tlast;
+  }
   inline friend ostream &operator<<(ostream &os, const _DATA &v) {
     cout << "data&colon; " << v.data << " tlast: " << v.tlast;
     return os;
+  }
+  void pack(ACC_DTYPE<8> a1, ACC_DTYPE<8> a2, ACC_DTYPE<8> a3,
+            ACC_DTYPE<8> a4) {
+    data.range(7, 0) = a1;
+    data.range(15, 8) = a2;
+    data.range(23, 16) = a3;
+    data.range(31, 24) = a4;
   }
 } DATA;
 #define DWAIT(x)
@@ -153,7 +166,7 @@ struct config_packet {
 };
 
 typedef struct packed8x4 {
-  sc_int<32> data;
+  sc_uint<32> data;
   void operator=(packed8x4 _data) { data = _data.data; }
   inline friend ostream &operator<<(ostream &os, const packed8x4 &v) {
     cout << "data&colon; " << v.data;
@@ -206,7 +219,9 @@ struct VMM_vars {
   sc_signal<bool, SC_MANY_WRITERS> load_inp;
   sc_signal<bool, SC_MANY_WRITERS> load_wgt;
   sc_signal<bool, SC_MANY_WRITERS> compute;
+  sc_signal<bool, SC_MANY_WRITERS> send_done;
   sc_signal<bool, SC_MANY_WRITERS> ready;
+  sc_signal<bool, SC_MANY_WRITERS> vmm_ready;
   sc_signal<bool, SC_MANY_WRITERS> ppu_done;
   sc_signal<int, SC_MANY_WRITERS> ra;
   sc_signal<unsigned int, SC_MANY_WRITERS> depth;
@@ -217,7 +232,9 @@ struct VMM_vars {
   sc_signal<bool> load_inp;
   sc_signal<bool> load_wgt;
   sc_signal<bool> compute;
+  sc_signal<bool> send_done;
   sc_signal<bool> ready;
+  sc_signal<bool> vmm_ready;
   sc_signal<bool> ppu_done;
   sc_signal<int> ra;
   sc_signal<unsigned int> depth;
@@ -229,10 +246,10 @@ struct VMM_vars {
   sc_fifo<bUF> wgt_fifo;
   sc_fifo<bUF> inp_fifo;
   sc_fifo<int> post_fifo;
-  sc_fifo<p8x4> dout1;
-  sc_fifo<p8x4> dout2;
-  sc_fifo<p8x4> dout3;
-  sc_fifo<p8x4> dout4;
+  sc_fifo<DATA> dout1;
+  sc_fifo<DATA> dout2;
+  sc_fifo<DATA> dout3;
+  sc_fifo<DATA> dout4;
   sc_out<int> computeS;
   sc_out<int> postS;
 
@@ -241,7 +258,10 @@ struct VMM_vars {
       : load_inp((std::string("load_inp") + std::to_string(sid)).c_str()),
         load_wgt((std::string("load_wgt") + std::to_string(sid)).c_str()),
         compute((std::string("compute") + std::to_string(sid)).c_str()),
+        send_done((std::string("send_done") + std::to_string(sid)).c_str()),
         ready((std::string("ready") + std::to_string(sid)).c_str()),
+        vmm_ready((std::string("vmm_ready") + std::to_string(sid)).c_str()),
+        ppu_done((std::string("ppu_done") + std::to_string(sid)).c_str()),
         depth((std::string("depth") + std::to_string(sid)).c_str()),
         w_idx((std::string("w_idx") + std::to_string(sid)).c_str()),
         wgt_len((std::string("wgt_len") + std::to_string(sid)).c_str()),
@@ -253,9 +273,10 @@ struct VMM_vars {
 #else
   VMM_vars(int size)
       : load_inp("load_inp"), load_wgt("load_wgt"), compute("compute"),
-        ready("ready"), depth("depth"), w_idx("w_idx"), wgt_len("wgt_len"),
-        inp_len("inp_len"), wgt_fifo(size), inp_fifo(size), post_fifo(size),
-        dout1(size), dout2(size), dout3(size), dout4(size),
+        send_done("send_done"), ready("ready"), vmm_ready("vmm_ready"),
+        ppu_done("ppu_done"), depth("depth"), w_idx("w_idx"),
+        wgt_len("wgt_len"), inp_len("inp_len"), wgt_fifo(size), inp_fifo(size),
+        post_fifo(size), dout1(size), dout2(size), dout3(size), dout4(size),
         computeS("computeS"), postS("postS") {
 #pragma HLS resource variable = wgt_fifo core = FIFO_SRL
 #pragma HLS resource variable = inp_fifo core = FIFO_SRL

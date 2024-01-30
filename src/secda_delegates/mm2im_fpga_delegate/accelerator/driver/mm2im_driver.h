@@ -11,19 +11,15 @@
 
 #define TOG(X)
 
-// #define TOG(X)                                                                 \
-//   if (drv.verb) X;
-
 int input_data_sent = 0;
 int weight_data_sent = 0;
 int colmap_data_sent = 0;
 int inp_load_calls = 0;
 int wgt_load_calls = 0;
 int colmap_load_calls = 0;
-
 int data_transfered = 0;
-
 int write_data_recv = 0;
+
 namespace mm2im_driver {
 using namespace std;
 
@@ -115,10 +111,10 @@ void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
     in0[inl0++] = (int)drv.crx[starting_filter + i];
   }
   drv.mdma->dmas[0].dma_start_send(inl0);
+  drv.mdma->multi_dma_wait_send();
   data_transfered += inl0;
   weight_data_sent += inl0;
   wgt_load_calls++;
-  drv.mdma->multi_dma_wait_send();
   prf_end(0, drv.p_t.load_wgt);
 }
 
@@ -129,8 +125,8 @@ void StartSchedule(acc_container &drv) {
   int opcode = 16;
   in0[inl0++] = opcode;
   drv.mdma->dmas[0].dma_start_send(inl0);
-  data_transfered += inl0;
   drv.mdma->multi_dma_wait_send();
+  data_transfered += inl0;
   prf_end(0, drv.p_t.start_sched);
 }
 
@@ -155,12 +151,11 @@ void LoadInput(acc_container &drv, int starting_row, int number_of_rows,
     //   d];
     // }
   }
-
   drv.mdma->dmas[0].dma_start_send(inl0);
+  drv.mdma->multi_dma_wait_send();
   data_transfered += inl0;
   input_data_sent += inl0;
   inp_load_calls++;
-  drv.mdma->multi_dma_wait_send();
   prf_end(0, drv.p_t.load_inp);
 }
 
@@ -171,19 +166,6 @@ void LoadColMap(acc_container &drv, int starting_row, int number_of_rows) {
   int opcode = 32 + 16;
   in0[inl0++] = opcode;
   in0[inl0++] = number_of_rows;
-  // vector<vector<int>> &col_dexs = *drv.col_dexs;
-  // vector<vector<int>> &out_dexs = *drv.out_dexs;
-  // for (int i = starting_row; i < starting_row + number_of_rows; i++) {
-  //   vector<int> col_dex_of_row = col_dexs[i];
-  //   vector<int> out_dex_of_row = out_dexs[i];
-  //   int col_dex_size = col_dex_of_row.size();
-  //   in0[inl0++] = col_dex_size;
-  //   for (int j = 0; j < col_dex_size; j++) {
-  //     in0[inl0++] = col_dex_of_row[j];
-  //     in0[inl0++] = out_dex_of_row[j];
-  //   }
-  // }
-
   for (int i = starting_row; i < starting_row + number_of_rows; i++) {
     vector<int> *col_dex_of_row = &(drv.col_dexs)->at(i);
     vector<int> *out_dex_of_row = &(drv.out_dexs)->at(i);
@@ -194,12 +176,11 @@ void LoadColMap(acc_container &drv, int starting_row, int number_of_rows) {
       in0[inl0++] = out_dex_of_row->at(j);
     }
   }
-
   drv.mdma->dmas[0].dma_start_send(inl0);
+  drv.mdma->multi_dma_wait_send();
   data_transfered += inl0;
   colmap_data_sent += inl0;
   colmap_load_calls++;
-  drv.mdma->multi_dma_wait_send();
   prf_end(0, drv.p_t.load_colmap);
 }
 
@@ -216,12 +197,10 @@ void StoreOutTileRow(acc_container &drv, int o_1, int o_3, int filter_step,
   drv.mdma->dmas[0].dma_start_send(inl0);
   // drv.mdma->multi_dma_wait_send();
 
-  // prf_start(0);
   drv.mdma->dmas[0].dma_start_recv(drv.o2 * filter_step + PE_COUNT + 1);
   drv.mdma->multi_dma_wait_recv();
-  // prf_end(0, drv.p_t.store);
 
-  // prf_start(1);  
+  // prf_start(1);
   int *out0 = drv.mdma->dmas[0].dma_get_outbuffer();
   int outl0 = 0;
   for (int o_2 = 0; o_2 < drv.o2; o_2++) {
@@ -230,14 +209,14 @@ void StoreOutTileRow(acc_container &drv, int o_1, int o_3, int filter_step,
     outl0 += filter_step / 4;
   }
   write_data_recv += outl0;
-  prf_end(1, drv.p_t.write_out);
+  prf_end(1, drv.p_t.store);
 }
 
 // Current Driver assumes filter_step is divisible by x  (x = 2 currently)
 // We need to handle the case where it is not
 // By processing the last filter_step % x filters separately
 void TileMM2IM(acc_container &drv, int padded_depth) {
-  // prf_start(1);
+  prf_start(1);
   int output_rows = drv.o1 * drv.o2;
   int output_cols = drv.o3;
 
@@ -284,41 +263,43 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
   int acc_filters = output_cols - remaining_filters;
 
   // ==============================================
-  drv.validate();
-  prf_start(1);
-  TOG(cerr << "Starting  MM2IM" << endl;);
-  if (acc_filters > 0) LoadConfig(drv, padded_depth);
+  // drv.validate();
+
   int o_3 = 0;
-  for (; o_3 < acc_filters; o_3 += filter_step) {
-    // Send filter_step * rows_per_filter  rows of weights to accelerator
-    TOG(cerr << "Sending weights: " << o_3 * rows_per_filter << " to "
-             << (o_3 * rows_per_filter + filter_step * rows_per_filter)
-             << endl;);
-    LoadWeight(drv, o_3 * rows_per_filter, filter_step * rows_per_filter,
-               padded_depth, filter_step, o_3);
-    int starting = 0;
-    StartSchedule(drv);
-    for (int o_1 = 0; o_1 < drv.o1; o_1++) {
-      TOG(cerr << "Sending rows: " << starting << " to " << drv.o1_ends[o_1] + 1
+  if (output_cols >= PE_COUNT) {
+    TOG(cerr << "Starting  MM2IM" << endl;);
+    if (acc_filters > 0) LoadConfig(drv, padded_depth);
+
+    for (; o_3 < acc_filters; o_3 += filter_step) {
+      // Send filter_step * rows_per_filter  rows of weights to accelerator
+      TOG(cerr << "Sending weights: " << o_3 * rows_per_filter << " to "
+               << (o_3 * rows_per_filter + filter_step * rows_per_filter)
                << endl;);
-      int rows_to_send = drv.o1_ends[o_1] + 1 - starting;
-      if (drv.o1_ends[o_1] != starting - 1) {
-        LoadInput(drv, starting, rows_to_send, padded_depth);
-        TOG(cerr << "Input loaded" << endl;);
-        LoadColMap(drv, starting, rows_to_send);
-        TOG(cerr << "ColMap loaded" << endl;);
+      LoadWeight(drv, o_3 * rows_per_filter, filter_step * rows_per_filter,
+                 padded_depth, filter_step, o_3);
+      int starting = 0;
+      StartSchedule(drv);
+      for (int o_1 = 0; o_1 < drv.o1; o_1++) {
+        TOG(cerr << "Sending rows: " << starting << " to "
+                 << drv.o1_ends[o_1] + 1 << endl;);
+        int rows_to_send = drv.o1_ends[o_1] + 1 - starting;
+        if (drv.o1_ends[o_1] != starting - 1) {
+          LoadInput(drv, starting, rows_to_send, padded_depth);
+          TOG(cerr << "Input loaded" << endl;);
+          LoadColMap(drv, starting, rows_to_send);
+          TOG(cerr << "ColMap loaded" << endl;);
+        }
+        // Last ejects acc from schedule mode
+        bool last = (o_1 == drv.o1 - 1);
+        TOG(cerr << "Store waiting" << endl;);
+        StoreOutTileRow(drv, o_1, o_3, filter_step, last);
+        TOG(cerr << "Store loaded" << endl;);
+        starting = drv.o1_ends[o_1] + 1;
       }
-      // Last ejects acc from schedule mode
-      bool last = (o_1 == drv.o1 - 1);
-      StoreOutTileRow(drv, o_1, o_3, filter_step, last);
-      TOG(cerr << "Store loaded" << endl;);
-      starting = drv.o1_ends[o_1] + 1;
     }
   }
-  prf_end(1, drv.p_t.driver_total);
 
   // Handle remaining filters
-  prf_start(0);
   vector<vector<int>> &mm2im_map = *drv.mm2im_map;
   for (; o_3 < output_cols; o_3++) {
     for (int o_1 = 0; o_1 < drv.o1; o_1++) {
@@ -350,29 +331,21 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
       }
     }
   }
-  prf_end(0, drv.p_t.handle_rest);
-  // prf_end(1, drv.p_t.driver_total);
+  prf_end(1, drv.p_t.driver_total);
 };
 
 void Entry(acc_container &drv) {
-  
   int rrows = roundUp(drv.rows, 4);
   int rcols = roundUp(drv.cols, 4);
   int padded_depth = roundUp(drv.depth, 16);
   int output_stride = drv.cols;
   TileMM2IM(drv, padded_depth);
-  // cerr << "Data transfered: " << data_transfered * 4 << endl;
-  // cerr << "Colmap data sent: " << colmap_data_sent * 4 << endl;
-  // cerr << "Write data recv: " << write_data_recv * 4 << endl;
-
   drv.p_t.inp_data_sent = input_data_sent * 4;
   drv.p_t.wgt_data_sent = weight_data_sent * 4;
   drv.p_t.colmap_data_sent = colmap_data_sent * 4;
   drv.p_t.inp_load_calls = inp_load_calls;
   drv.p_t.wgt_load_calls = wgt_load_calls;
   drv.p_t.colmap_load_calls = colmap_load_calls;
-
-  
 }
 
 } // namespace mm2im_driver

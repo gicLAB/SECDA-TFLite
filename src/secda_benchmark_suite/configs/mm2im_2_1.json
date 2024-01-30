@@ -1,0 +1,6 @@
+{
+  "hardware": "MM2IM",
+  "version": "2_1",
+  "del": "mm2im_delegate",
+  "del_version": "1"
+}

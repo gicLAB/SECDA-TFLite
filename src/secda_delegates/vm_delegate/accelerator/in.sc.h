@@ -14,25 +14,25 @@ void ACCNAME::Input_Handler() {
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=w3SS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=w4SS
 
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_0.computeS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_1.computeS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_2.computeS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_3.computeS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_0.postS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_1.postS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_2.postS
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_3.postS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_0.computeS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_1.computeS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_2.computeS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_3.computeS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_0.postS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_1.postS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_2.postS
+// #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_3.postS
   // clang-format on
 
 #ifdef __SYNTHESIS__
-  vars.vars_0.computeS.write(0);
-  vars.vars_1.computeS.write(0);
-  vars.vars_2.computeS.write(0);
-  vars.vars_3.computeS.write(0);
-  vars.vars_0.postS.write(0);
-  vars.vars_1.postS.write(0);
-  vars.vars_2.postS.write(0);
-  vars.vars_3.postS.write(0);
+  // vars.vars_0.computeS.write(0);
+  // vars.vars_1.computeS.write(0);
+  // vars.vars_2.computeS.write(0);
+  // vars.vars_3.computeS.write(0);
+  // vars.vars_0.postS.write(0);
+  // vars.vars_1.postS.write(0);
+  // vars.vars_2.postS.write(0);
+  // vars.vars_3.postS.write(0);
 #endif
 
   inS.write(0);

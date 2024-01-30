@@ -37,7 +37,7 @@ cc_library(
         "acc.sc.cc",
         ],
     hdrs = [
-        "acc_config.sc.h",
+        # "acc_config.sc.h",
         "acc.sc.h",
         "in.sc.h",
         "data_in.sc.h",

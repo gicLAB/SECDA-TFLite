@@ -82,15 +82,15 @@ if [ $run_hlx == 1 ]; then
   cp ./&{acc_tag}_hlx/utilization_report_impl_ip.txt ./generated_files/
   cp ./&{acc_tag}_hlx/timing_report_impl_full.txt ./generated_files/
   cp ./&{acc_tag}_hlx/timing_report_impl_ip.txt ./generated_files/
-  cp ./generated_files/&{acc_tag}.bit ./generated_files/&{new_name}.bit
-  cp ./generated_files/&{acc_tag}.hwh ./generated_files/&{new_name}.hwh
-  rsync -r -av -e 'ssh -p &{board_port}' ./generated_files/&{new_name}.bit &{board_user}@&{board_hostname}:~/pynq/overlays/&{pynq_dir}/
-  rsync -r -av -e 'ssh -p &{board_port}' ./generated_files/&{new_name}.hwh &{board_user}@&{board_hostname}:~/pynq/overlays/&{pynq_dir}/
+  cp ./generated_files/&{acc_tag}.bit ./generated_files/&{bitstream}.bit
+  cp ./generated_files/&{acc_tag}.hwh ./generated_files/&{bitstream}.hwh
+  rsync -r -av -e 'ssh -p &{board_port}' ./generated_files/&{bitstream}.bit &{board_user}@&{board_hostname}:&{pynq_dir}/
+  rsync -r -av -e 'ssh -p &{board_port}' ./generated_files/&{bitstream}.hwh &{board_user}@&{board_hostname}:&{pynq_dir}/
 fi
 
 if [ $run_board_script == 1 ]; then 
   # load the bitstream
-  ssh -t -p &{board_port} &{board_user}@&{board_hostname} "sudo python3 ~/load_bitstream.py ~/pynq/overlays/&{pynq_dir}/&{new_name}.bit"
+  ssh -t -p &{board_port} &{board_user}@&{board_hostname} "sudo python3 ~/load_bitstream.py &{pynq_dir}/&{bitstream}.bit"
   start_run=`date +%N`
   ssh -t -p &{board_port} &{board_user}@&{board_hostname} "chmod +x &{board_script}; sudo &{board_script}"
   end_run=`date +%N`

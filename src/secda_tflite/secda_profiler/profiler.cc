@@ -184,20 +184,20 @@ void Profile::saveCSVRecords(string filename) {
 
   for (int i = 0; i < base_metrics.size(); i++) {
     per_sim_file << base_metrics[i].name;
-    if (i + 1 != base_metrics.size()) per_sim_file << ", ";
+    if (i + 1 != base_metrics.size()) per_sim_file << ",";
     else per_sim_file << endl;
   }
 
   for (int i = 0; i < records[0].size(); i++) {
     per_sim_file << records[0][i].name;
-    if (i + 1 != records[0].size()) per_sim_file << ", ";
+    if (i + 1 != records[0].size()) per_sim_file << ",";
     else per_sim_file << endl;
   }
 
   for (int r = 0; r < records.size(); r++) {
     for (int m = 0; m < records[r].size(); m++) {
       per_sim_file << records[r][m].value;
-      if (m + 1 != records[r].size()) per_sim_file << ", ";
+      if (m + 1 != records[r].size()) per_sim_file << ",";
       else per_sim_file << endl;
     }
   }

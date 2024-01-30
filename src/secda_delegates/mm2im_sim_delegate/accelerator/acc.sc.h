@@ -86,29 +86,7 @@ SC_MODULE(ACCNAME) {
   int inp_rows;
   int number_of_rows;
   int nfilters;
-
   int ra;
-
-
-  // Pattern vars
-  int  oh;
-  int  ow;
-  int  kernel_size;
-  int  stride_x;
-  int  stride_y;
-  int  pt;
-  int  pl;
-  int  width_col;
-  int srow;
-
-  int in_size;
-  int k_size;
-  int curr_row;
-  // skip calculate skips the calculation of the output
-  // calculate output accumulation indexes
-
-  int skip_row[PE_POUTDEXBUF_SIZE];
-  int out_row[PE_POUTDEXBUF_SIZE];
 
 
 
@@ -165,8 +143,6 @@ SC_MODULE(ACCNAME) {
   void activate_PEs();
 
   void deactivate_PEs();
-
-  void config_PEs();
 
   void load_wgt_PEs();
 

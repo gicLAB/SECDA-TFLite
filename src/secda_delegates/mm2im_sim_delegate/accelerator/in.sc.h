@@ -68,14 +68,6 @@ void ACCNAME::Input_Handler() {
       cols_per_filter = din1.read().data;
       inp_rows = din1.read().data;
       ra = din1.read().data;
-      oh = din1.read().data;
-      ow = din1.read().data;
-      kernel_size = din1.read().data;
-      stride_x = din1.read().data;
-      stride_y = din1.read().data;
-      pt = din1.read().data;
-      pl = din1.read().data;
-      width_col = din1.read().data;
       DWAIT(5);
       for (int i = 0; i < PE_COUNT; i++) {
         pe_cols[i] = cols_per_filter * i;

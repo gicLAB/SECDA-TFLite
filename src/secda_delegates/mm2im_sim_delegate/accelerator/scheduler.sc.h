@@ -95,8 +95,6 @@ void ACCNAME::FIFO_Loader() {
 // Generalise for any number of PEs
 void ACCNAME::load_inp_PEs() {
   // load & process one row inputs to PE at a time
-
-  config_PEs();
   DWAIT(1);
 
   // scheduleS.write(61);

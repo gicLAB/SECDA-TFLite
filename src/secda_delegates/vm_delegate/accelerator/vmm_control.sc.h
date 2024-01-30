@@ -8,6 +8,7 @@ void ACCNAME::init_VMM() {
     vars[i].depth.write(0);
     vars[i].w_idx.write(0);
     vars[i].inp_len.write(0);
+    vars[i].send_done.write(0);
   }
   DWAIT();
 }
@@ -25,7 +26,7 @@ void ACCNAME::wgt_len_VMM(unsigned int len) {
 #pragma HLS unroll
     vars[i].wgt_len.write(len);
   }
-  wait();
+  // wait();
   for (int i = 0; i < VMM_COUNT; i++) {
 #pragma HLS unroll
     vars.load_wgt_write(true, i);
@@ -51,7 +52,7 @@ void ACCNAME::inp_len_VMM(unsigned int len) {
 #pragma HLS unroll
     vars.inp_len_write(len, i);
   }
-  wait();
+  // wait();
   for (int i = 0; i < VMM_COUNT; i++) {
 #pragma HLS unroll
     vars.load_inp_write(true, i);
@@ -79,14 +80,26 @@ void ACCNAME::wait_ready_VMM() {
   }
 }
 
+void ACCNAME::vmm_ready_VMM() {
+  for (int i = 0; i < VMM_COUNT; i++) {
+#pragma HLS unroll
+    while (!vars.check_vmm_ready(i)) wait();
+    DWAIT();
+  }
+}
+
+void ACCNAME::send_done_write_VMM(int unit) {
+  vars.send_done_write(true, unit);
+  while (!vars[unit].ppu_done.read()) wait();
+  vars.send_done_write(false, unit);
+  wait();
+}
+
 void ACCNAME::start_compute_VMM(unsigned int unit, unsigned int w_idx,
                                 unsigned int depth) {
   while (!vars.check_ready(unit)) wait();
-  wait();
   vars.start_compute(unit, w_idx, depth, ra);
-  wait();
   while (vars.check_ready(unit)) wait();
-  wait();
   vars.set_compute(unit, false);
-  wait();
+
 }

@@ -7,7 +7,8 @@
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 
-#define DMA_BC 10
+#define DMA_BC 1
+// #define DMA_BC 10
 // DRIVER Globals
 unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
 unsigned int dma_addrs_in[4] = {dma_in0, dma_in1, dma_in2, dma_in3};
@@ -17,12 +18,19 @@ struct del_params dparams;
 struct sa_times sa_t;
 struct store_params st_params[DMA_BC];
 struct dma_buffer_set dfs[4] = {
-    {DMA_BC, 204800, dma_in0},
-    {DMA_BC, 204800, dma_in1},
-    {DMA_BC, 204800, dma_in2},
-    {DMA_BC, 204800, dma_in3},
+    {DMA_BC, (DMA_BL / DMA_BC), dma_in0},
+    {DMA_BC, (DMA_BL / DMA_BC), dma_in1},
+    {DMA_BC, (DMA_BL / DMA_BC), dma_in2},
+    {DMA_BC, (DMA_BL / DMA_BC), dma_in3},
 };
-int recv_len = 204800 / DMA_BC;
+int recv_len = (DMA_BL / DMA_BC);
+// struct dma_buffer_set dfs[4] = {
+//     {DMA_BC, 204800, dma_in0},
+//     {DMA_BC, 204800, dma_in1},
+//     {DMA_BC, 204800, dma_in2},
+//     {DMA_BC, 204800, dma_in3},
+// };
+// int recv_len = 204800 / DMA_BC;
 
 namespace tflite {
 namespace secda_sa_test {
@@ -442,9 +450,7 @@ public:
       dparams.layer++;
       dparams.delegated_nodes--;
     }
-
     prf_end(0, sa_t.conv_total);
-    if (dparams.delegated_nodes == 0) sa_t.print();
     return kTfLiteOk;
   }
 
@@ -545,10 +551,14 @@ TfLiteSecdaSADelegateCreate(const SecdaSADelegateOptions *options) {
 void TfLiteSecdaSADelegateDelete(TfLiteDelegate *delegate) {
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
+    munmap(dparams.acc, 65536);
     std::cout << "===========================" << std::endl;
     std::cout << "Unmapped DMA I/O Buffers" << std::endl;
     std::cout << "===========================" << std::endl;
     dparams.unmap = true;
+    for (int i = 0; i < 4; i++) dfs[i].free();
   }
+  sa_t.print();
+  sa_t.save_prf();
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }

@@ -15,6 +15,7 @@
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 
 #define DMA_BC 1
+#define DELEGATE_VERSION 3
 
 static unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
 static unsigned int dma_addrs_in[4] = {dma_in0, dma_in1, dma_in2, dma_in3};
@@ -69,13 +70,11 @@ public:
       static ACCNAME _acc("VM");
       sysC_init();
       sysC_binder(&_acc, &mdma, &scs1);
-      // mdma = &_mdma;
       acc = &_acc;
       std::cout << "Initialised the SystemC Modules" << std::endl;
 #else
       dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
       acc = dparams.acc;
-      dparams.init = true;
       std::cout << "Initialised the DMA" << std::endl;
 #endif
 
@@ -496,9 +495,9 @@ public:
            << "      Node: " << associated_nodes[i] << endl;
       cout << "===========================" << endl;
 #endif
-      saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-                        "_del_out_acc2.csv",
-                    output_data, gemm_input_cols, filter_rows);
+      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
+      //                   "_out_acc.csv",
+      //               output_data, gemm_input_cols, filter_rows);
       dparams.layer++;
       dparams.delegated_nodes--;
     }
@@ -613,6 +612,7 @@ void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
+    munmap(dparams.acc, 65536);
     std::cout << "===========================" << std::endl;
     std::cout << "Unmapped DMA I/O Buffers" << std::endl;
     std::cout << "===========================" << std::endl;
@@ -621,6 +621,7 @@ void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
   }
 #endif
   vm_t.print();
+  vm_t.save_prf();
   std::cout << "===========================" << std::endl;
   std::cout << "Deleted" << std::endl;
   std::cout << "===========================" << std::endl;

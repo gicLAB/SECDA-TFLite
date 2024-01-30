@@ -328,7 +328,7 @@ TfLiteStatus ResizeAndTransposeWeights(TfLiteContext *context,
   transposed_weights->allocation_type = kTfLiteDynamic;
   TF_LITE_ENSURE_STATUS(context->ResizeTensor(context, transposed_weights,
                                               transposed_weights_shape_array));
-
+  // transposed_weights->allocation_type = kTfLiteArenaRw;
   // Transpose the weights from OHWI order to HWOI order.
   TransposeParams transpose_params;
   transpose_params.perm_count = 4;
@@ -419,8 +419,8 @@ TfLiteStatus ResizeTensor2(TfLiteContext *context, TfLiteTensor *shape_tensor,
                            TfLiteTensor *tensor_to_resize) {
   TfLiteIntArray *shape = TfLiteIntArrayCreate(shape_tensor->dims->size);
   for (int i = 0; i < shape->size; ++i) {
-    cout << "shape_tensor->dims->data[i] = " << shape_tensor->dims->data[i]
-         << endl;
+    // cout << "shape_tensor->dims->data[i] = " << shape_tensor->dims->data[i]
+    //      << endl;
     shape->data[i] = shape_tensor->dims->data[i];
   }
   return context->ResizeTensor(context, tensor_to_resize, shape);
@@ -451,6 +451,7 @@ TfLiteStatus ResizeCol2ImTensor(TfLiteContext *context,
 
   col2im->type = input->type == kTfLiteFloat32 ? kTfLiteFloat32 : kTfLiteInt32;
   col2im->allocation_type = kTfLiteDynamic;
+  // col2im->allocation_type = kTfLiteArenaRw;
   return context->ResizeTensor(context, col2im, col2im_shape_array);
 }
 

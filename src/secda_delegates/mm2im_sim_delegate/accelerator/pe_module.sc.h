@@ -45,46 +45,32 @@ SC_MODULE(PE) {
   sc_out_sig computeS;
   sc_out_sig sendS;
 
-  int pouts;
-  int out_indices[PE_POUTDEXBUF_SIZE];
-  int col_indices[PE_POUTDEXBUF_SIZE];
-  int col_indices_offsets[PE_POUTDEXBUF_SIZE];
+  // wgt_cols_buf needs to support ks * ks * depth / UF
+  acc_dt wgt_cols_buf[PE_WGTCOLBUF_SIZE][UF];
 
-  sc_in<int> oh;
-  sc_in<int> ow;
-  sc_in<int> kernel_size;
-  sc_in<int> stride_x;
-  sc_in<int> stride_y;
-  sc_in<int> pt;
-  sc_in<int> pl;
-  sc_in<int> width_col;
-  sc_in<int> srow;
-  sc_in<int> num_rows;
+  // wgt_col_sum needs to support ks * ks
+  int wgt_col_sum[PE_WGTCOLSUMBUF_SIZE];
 
-  int crow;
+  // single row of input , 32 is a limiting factor
+  // x rows of weights (x * depth) (x = ks * ks)
+  // inp_row_buf needs to support depth / UF
+  acc_dt inp_row_buf[PE_INPROWBUF_SIZE][UF];
 
-  void process_cal_id() {
-    int cal_col = crow % width_col;
-    int cal_row = crow / width_col;
-    int h_pad = -pt + (stride_y * cal_row);
-    int w_pad = -pl + (stride_x * cal_col);
-    int im_dex = (h_pad * ow + w_pad);
-    int row = 0;
-    pouts = 0;
-    for (int ih = 0; ih < kernel_size; ih++) {
-      for (int iw = 0; iw < kernel_size; iw++) {
-        if (ih + h_pad >= 0 and ih + h_pad < oh and iw + w_pad >= 0 and
-            iw + w_pad < ow) {
-          col_indices[pouts] = row;
-          out_indices[pouts++] = im_dex;
-        }
-        im_dex += 1;
-        row += 1;
-      }
-      im_dex += (ow - kernel_size);
-    }
-  }
+  // Outbuf needs to support input rows * ks * ks gemm outputs
+  int out_buf[PE_OUTBUF_SIZE];
 
+  // pout_dex is the indexes of the output computed using current row
+  int pout_dex[PE_POUTDEXBUF_SIZE];
+  int aocol_s[PE_POUTDEXBUF_SIZE];
+
+  // temp inp and wgt buffers, supports UF unrolling
+  acc_dt inp_temp[UF];
+
+  // Used to temporary accumalate GEMM outputs
+  int acc_store[PE_ACC_BUF_SIZE];
+
+#ifndef __SYNTHESIS__
+  // Reference CPU
   int Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
     sc_int<64> pl;
     sc_int<32> pr;
@@ -119,41 +105,30 @@ SC_MODULE(PE) {
     int res = result_32;
     return result_32;
   }
+#else
+  //  ARM-Neon version CPU
+  int Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
+    int nshift = shift;
+    int total_shift = 31 - shift;
+    sc_int<64> x_64 = x;
+    sc_int<64> quantized_multiplier_64(qm);
+    sc_int<64> one = 1;
+    sc_int<64> round = one << (total_shift - 1); // ALU ADD + ALU SHLI
+    sc_int<64> result =
+        x_64 * quantized_multiplier_64 + round; // ALU ADD + ALU MUL
+    result = result >> total_shift;             // ALU SHRI
+    int nresult = result;
+    if (result > MAX) result = MAX; // ALU MIN
+    if (result < MIN) result = MIN; // ALU MAX
+    sc_int<32> result_32 = result;
+    return result_32;
+  }
+#endif
 
   void Compute() {
-
-    // wgt_cols_buf needs to support ks * ks * depth / UF
-    acc_dt wgt_cols_buf[PE_WGTCOLBUF_SIZE][UF];
-// #pragma HLS ARRAY_PARTITION variable = wgt_cols_buf complete dim = 2
-// #pragma HLS ARRAY_PARTITION variable = wgt_cols_buf cyclic factor = 2 dim = 2
-#pragma HLS ARRAY_PARTITION variable = wgt_cols_buf cyclic factor = 8 dim = 2
-
-    // wgt_col_sum needs to support ks * ks
-    int wgt_col_sum[PE_WGTCOLSUMBUF_SIZE];
-
-    // single row of input , 32 is a limiting factor
-    // x rows of weights (x * depth) (x = ks * ks)
-    // inp_row_buf needs to support depth / UF
-    acc_dt inp_row_buf[PE_INPROWBUF_SIZE][UF];
-#pragma HLS ARRAY_PARTITION variable = inp_row_buf complete dim = 2
-
-    // Outbuf needs to support ir * ks * ks gemm outputs where ir is the number
-    // of input rows
-    int out_buf[PE_OUTBUF_SIZE];
-
     // pouts_needed is the number of output needed to be computed using current
     // input row max value is ks * ks
     int pouts_needed;
-    // pout_dex is the indexes of the output needed to be computed using current
-    // input row
-    int pout_dex[PE_POUTDEXBUF_SIZE];
-    int aocol_s[PE_POUTDEXBUF_SIZE];
-
-    // temy inp and wgt buffers, supports UF unrolling
-    acc_dt inp_temp[UF];
-    // acc_dt wgt_ud[UF];
-#pragma HLS ARRAY_PARTITION variable = inp_temp complete
-    // #pragma HLS ARRAY_PARTITION variable = wgt_ud complete
 
     int in_load_count = 0;
     compute_done.write(false);
@@ -165,9 +140,7 @@ SC_MODULE(PE) {
       computeS.write(1);
       wgt_loaded.write(false);
       DWAIT();
-      while (!online.read()) {
-        wait();
-      }
+      while (!online.read()) wait();
 
       // load weights
       int i = 0;
@@ -215,10 +188,10 @@ SC_MODULE(PE) {
         pouts_needed = col_size.read();
         int pouts_count = pouts_needed;
         DWAIT();
-        for (int i = 0; i < pouts_needed; i++) {
+        for (int i = 0; i < pouts_needed; i++) { // replace with pouts
 #pragma HLS PIPELINE II = 1
-          pout_dex[i] = col_dexs_fifo_in.read();
-          aocol_s[i] = pout_dex[i] * depth;
+          pout_dex[i] = col_dexs_fifo_in.read(); // remove
+          aocol_s[i] = pout_dex[i] * depth;      // replace with col_indices[i]
           // DWAIT(7);
           DWAIT();
         }
@@ -235,7 +208,7 @@ SC_MODULE(PE) {
           for (int i = 0; i < pouts_needed; i++) {
 #pragma HLS loop_tripcount min = 20 max = 20 avg = 20
 #pragma HLS PIPELINE II = 1
-            int ocol = pout_dex[i];
+            int ocol = pout_dex[i]; // replace with col_indices[i]
             int ocol_s = aocol_s[i];
             int sum = 0;
             for (int u = 0; u < UF; u++) {
@@ -283,7 +256,6 @@ SC_MODULE(PE) {
   void Out() {
     DATA last = {4000, 1};
     DATA d = {0, 0};
-    int acc_store[PE_ACC_BUF_SIZE];
     int pouts_count = 0;
     int start_addr = 0;
     int send_len = 0;
@@ -322,6 +294,7 @@ SC_MODULE(PE) {
           if (qm_ret > MAX8) qm_ret = MAX8;
           else if (qm_ret < MIN8) qm_ret = MIN8;
           d.data = qm_ret;
+          // cout << "send: " << d.data << endl;
           // d.data = acc_store[dex];
           out_fifo_out.write(d);
           if (i + 1 == send_len) {
@@ -344,8 +317,9 @@ SC_MODULE(PE) {
       if (out) {
         sendS.write(4);
         pouts_count = col_size.read();
-        for (int i = 0; i < pouts_count; i++) {
-          int dex = dex_fifo_in.read() % PE_ACC_BUF_SIZE;
+        for (int i = 0; i < pouts_count; i++) { // replace with pouts
+          int dex = dex_fifo_in.read() %
+                    PE_ACC_BUF_SIZE; // replace with out_indices[i]
           int out = temp_fifo_in.read();
           acc_store[dex] += out;
           DWAIT(6);
@@ -395,18 +369,6 @@ SC_MODULE(PE) {
     this->send_done(vars.send_done);
     this->computeS(vars.computeS);
     this->sendS(vars.sendS);
-
-    this->oh(vars.oh);
-    this->ow(vars.ow);
-    this->kernel_size(vars.kernel_size);
-    this->stride_x(vars.stride_x);
-    this->stride_y(vars.stride_y);
-    this->pt(vars.pt);
-    this->pl(vars.pl);
-    this->width_col(vars.width_col);
-
-    this->srow(vars.srow);
-    this->num_rows(vars.num_rows);
   }
 
   SC_HAS_PROCESS(PE);
@@ -417,6 +379,10 @@ SC_MODULE(PE) {
 
     SC_CTHREAD(Out, clock);
     reset_signal_is(reset, true);
+
+#pragma HLS ARRAY_PARTITION variable = wgt_cols_buf cyclic factor = 8 dim = 2
+#pragma HLS ARRAY_PARTITION variable = inp_row_buf complete dim = 2
+#pragma HLS ARRAY_PARTITION variable = inp_temp complete
   }
 };
 

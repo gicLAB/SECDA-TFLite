@@ -23,6 +23,9 @@ using namespace std::chrono;
 #define prf_out(TSCALE, X)                                                     \
   cerr << #X << ": " << duration_cast<TSCALE>(X).count() << endl;
 
+#define prf_file_out(TSCALE, X, file)                                          \
+  file << #X << "," << duration_cast<TSCALE>(X).count() << endl;
+
 typedef duration<long long int, std::ratio<1, 1000000000>> duration_ns;
 
 #ifdef SYSC

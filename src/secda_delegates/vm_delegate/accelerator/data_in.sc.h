@@ -79,6 +79,7 @@ void ACCNAME::Data_In() {
       }
     }
     load_data.write(false);
-    wait();
+    // wait();
+    DWAIT();
   }
 }

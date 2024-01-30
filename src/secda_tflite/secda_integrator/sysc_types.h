@@ -1,10 +1,9 @@
 #ifndef SYSC_TYPES_H
 #define SYSC_TYPES_H
 
-#include <systemc.h>
-#include <iostream>
 #include <iomanip>
-
+#include <iostream>
+#include <systemc.h>
 
 #ifndef DWAIT(x)
 #ifndef __SYNTHESIS__
@@ -17,9 +16,19 @@
 typedef struct _DATA {
   sc_uint<32> data;
   bool tlast;
+  void operator=(_DATA _data) {
+    data = _data.data;
+    tlast = _data.tlast;
+  }
   inline friend ostream &operator<<(ostream &os, const _DATA &v) {
     cout << "data&colon; " << v.data << " tlast: " << v.tlast;
     return os;
+  }
+  void pack(sc_int<8> a1, sc_int<8> a2, sc_int<8> a3, sc_int<8> a4) {
+    data.range(7, 0) = a1;
+    data.range(15, 8) = a2;
+    data.range(23, 16) = a3;
+    data.range(31, 24) = a4;
   }
 } DATA;
 
@@ -85,8 +94,7 @@ struct rm_data2 {
     file.close();
   }
 
-
-  void generate_writes(int addr, int length){
+  void generate_writes(int addr, int length) {
     // generate trace for ramulator
     ofstream file;
     std::string filename =
@@ -105,7 +113,6 @@ struct rm_data2 {
     }
     file.close();
   }
-
 
   void write(DATA d, int r_addr) {
     if (!use_sim) {
@@ -135,7 +142,6 @@ struct rm_data2 {
     }
     return dout1.read();
   }
-
 };
 
 template <int W>

@@ -10,6 +10,23 @@ sc_int<64> VMM_UNIT::mul_s64(int a, sc_int<64> b) {
   return c;
 }
 
+int VMM_UNIT::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
+  int nshift = shift;
+  int total_shift = 31 - shift;
+  sc_int<64> x_64 = x;
+  sc_int<64> quantized_multiplier_64(qm);
+  sc_int<64> one = 1;
+  sc_int<64> round = one << (total_shift - 1); // ALU ADD + ALU SHLI
+  sc_int<64> result =
+      x_64 * quantized_multiplier_64 + round; // ALU ADD + ALU MUL
+  result = result >> total_shift;             // ALU SHRI
+  int nresult = result;
+  if (result > MAX) result = MAX; // ALU MIN
+  if (result < MIN) result = MIN; // ALU MAX
+  sc_int<32> result_32 = result;
+  return result_32;
+}
+
 int VMM_UNIT::Quantised_Multiplier_v2(int x, int qm, sc_int<64> pl,
                                       sc_int<32> pr, sc_int<32> msk,
                                       sc_int<32> sm) {
@@ -75,6 +92,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       int accum1 = accum[j * 4 + i];
       int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j], prs[j],
                                                msks[j], sms[j]);
+      // int ret_accum1 = Quantised_Multiplier(accum1, pcrf[j], pex[j]);
       sc_int<32> f1_a1 = ret_accum1 + ra;
       int res = f1_a1;
       if (f1_a1 > MAX8) f1_a1 = MAX8;
@@ -118,9 +136,11 @@ void VMM_UNIT::Compute() {
   wait();
   while (1) {
     ready.write(true);
+    vmm_ready.write(true);
     computeS.write(1);
     while (!compute.read()) wait();
     ready.write(false);
+    vmm_ready.write(false);
     computeS.write(2);
     wait();
     while (compute.read()) wait();
@@ -129,7 +149,7 @@ void VMM_UNIT::Compute() {
     int d = (depth.read() / 4);
     VM_PE(wgt_data1a, wgt_data2a, wgt_data3a, wgt_data4a, inp_1a_1, inp_1b_1,
           inp_1c_1, inp_1d_1, out, d, w_idx, 0);
-    ready.write(true);
+    vmm_ready.write(false);
     computeS.write(4);
     wait();
     while (!post_ready) wait();
@@ -137,10 +157,10 @@ void VMM_UNIT::Compute() {
 #pragma HLS unroll
       g[i] = out[i][0];
     }
-    DWAIT(1);
     computeS.write(5);
     post_ready.write(false);
-    wait();
+    // wait();
+    DWAIT(1);
   }
 }
 
@@ -149,62 +169,73 @@ void VMM_UNIT::Post() {
   int x[4];
   int pcrf[4];
   ACC_DTYPE<8> pex[4];
+  DATA last = {5000, 1};
 
 #pragma HLS array_partition variable = y complete dim = 0
 #pragma HLS array_partition variable = x complete dim = 0
 #pragma HLS array_partition variable = pcrf complete dim = 0
 #pragma HLS array_partition variable = pex complete dim = 0
   post_ready.write(true);
-  ppu_done.write(true);
+  ppu_done.write(false);
   postS.write(0);
   wait();
   while (true) {
 
     postS.write(1);
-    while (post_ready) wait();
-    ppu_done.write(false);
-    postS.write(2);
-
-    for (int i = 0; i < 4; i++) {
+    while (post_ready && !send_done) wait();
+    if (!post_ready) {
+      postS.write(2);
+      for (int i = 0; i < 4; i++) {
 #pragma HLS unroll
-      y[i] = post_fifo.read();
-    }
-    for (int i = 0; i < 4; i++) {
+        y[i] = post_fifo.read();
+      }
+      for (int i = 0; i < 4; i++) {
 #pragma HLS unroll
-      x[i] = post_fifo.read();
-    }
-    for (int i = 0; i < 4; i++) {
+        x[i] = post_fifo.read();
+      }
+      for (int i = 0; i < 4; i++) {
 #pragma HLS unroll
-      pcrf[i] = post_fifo.read();
+        pcrf[i] = post_fifo.read();
+      }
+      ACC_DTYPE<32> ex = post_fifo.read();
+      pex[0] = ex.range(7, 0);
+      pex[1] = ex.range(15, 8);
+      pex[2] = ex.range(23, 16);
+      pex[3] = ex.range(31, 24);
+      postS.write(3);
+      PPU(x, y, pcrf, pex, g, r);
+      postS.write(4);
+
+      DATA data1;
+      DATA data2;
+      DATA data3;
+      DATA data4;
+      data1.pack(r[0], r[4], r[8], r[12]);
+      data2.pack(r[1], r[5], r[9], r[13]);
+      data3.pack(r[2], r[6], r[10], r[14]);
+      data4.pack(r[3], r[7], r[11], r[15]);
+      dout1.write(data1);
+      dout2.write(data2);
+      dout3.write(data3);
+      dout4.write(data4);
+      postS.write(5);
+      // wait();
+      DWAIT(1);
+
+      post_ready.write(true);
+      DWAIT(2);
     }
-    ACC_DTYPE<32> ex = post_fifo.read();
-    pex[0] = ex.range(7, 0);
-    pex[1] = ex.range(15, 8);
-    pex[2] = ex.range(23, 16);
-    pex[3] = ex.range(31, 24);
-    postS.write(3);
-    PPU(x, y, pcrf, pex, g, r);
-    postS.write(4);
-
-    p8x4 data1;
-    p8x4 data2;
-    p8x4 data3;
-    p8x4 data4;
-    data1.pack(r[0], r[4], r[8], r[12]);
-    data2.pack(r[1], r[5], r[9], r[13]);
-    data3.pack(r[2], r[6], r[10], r[14]);
-    data4.pack(r[3], r[7], r[11], r[15]);
-    dout1.write(data1);
-    dout2.write(data2);
-    dout3.write(data3);
-    dout4.write(data4);
-    postS.write(5);
-    wait();
-
-    post_ready.write(true);
-    ppu_done.write(true);
-    DWAIT(2);
-    wait();
+    if (send_done) {
+      dout1.write(last);
+      dout2.write(last);
+      dout3.write(last);
+      dout4.write(last);
+      ppu_done.write(true);
+      while (send_done) wait();
+      ppu_done.write(false);
+      DWAIT(1);
+    }
+    // wait();
   }
 }
 

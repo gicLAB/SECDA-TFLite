@@ -1,0 +1,6 @@
+{
+  "hardware": "VM",
+  "version": "3_0",
+  "del": "vm_delegate",
+  "del_version": "1"
+}

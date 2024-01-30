@@ -8,10 +8,7 @@
 #include <cstring>
 #include <iostream>
 
-// #define TOG(X)                                                                 \
-//   if (drv.verb) X;
-
-#define TOG(X) X
+#define TOG(X)
 
 int weight_transfered = 0;
 int input_transfered = 0;
@@ -32,14 +29,6 @@ void LoadConfig(acc_container &drv, int padded_depth) {
   in0[inl0++] = (drv.rows / drv.f);
   in0[inl0++] = drv.cols;
   in0[inl0++] = drv.ra;
-  in0[inl0++] = drv.oh;
-  in0[inl0++] = drv.ow;
-  in0[inl0++] = drv.ks;
-  in0[inl0++] = drv.sx;
-  in0[inl0++] = drv.sy;
-  in0[inl0++] = drv.pt;
-  in0[inl0++] = drv.pl;
-  in0[inl0++] = drv.width_col;
   drv.mdma->dmas[0].dma_start_send(inl0);
   drv.mdma->multi_dma_wait_send();
 }
@@ -91,19 +80,15 @@ void LoadInput(acc_container &drv, int starting_row, int number_of_rows,
   int inp_packet_a = number_of_rows;
   int inp_packet_b = padded_depth_4 / 4;
   int inp_packet_c = starting_row;
-
   int opcode = 4 + 16;
   in0[inl0++] = opcode;
   in0[inl0++] = inp_packet_a;
   in0[inl0++] = inp_packet_b;
-  in0[inl0++] = inp_packet_c;
-
   for (int i = 0; i < number_of_rows; i++) {
     for (int d = 0; d < padded_depth_4; d++) {
       in0[inl0++] = drv.loaded_inputs[(starting_row + i) * padded_depth_4 + d];
     }
   }
-
   drv.mdma->dmas[0].dma_start_send(inl0);
   drv.mdma->multi_dma_wait_send();
   input_transfered += inl0;
@@ -116,20 +101,14 @@ void LoadColMap(acc_container &drv, int starting_row, int number_of_rows) {
   int opcode = 32 + 16;
   in0[inl0++] = opcode;
   in0[inl0++] = number_of_rows;
-  vector<vector<int>> &col_dexs = *drv.col_dexs;
-  vector<vector<int>> &out_dexs = *drv.out_dexs;
-  int ex = 0;
   for (int i = starting_row; i < starting_row + number_of_rows; i++) {
-    vector<int> col_dex_of_row = col_dexs[i];
-    vector<int> out_dex_of_row = out_dexs[i];
-    int col_dex_size = col_dex_of_row.size();
+    vector<int> *col_dex_of_row = &(drv.col_dexs)->at(i);
+    vector<int> *out_dex_of_row = &(drv.out_dexs)->at(i);
+    int col_dex_size = col_dex_of_row->size();
     in0[inl0++] = col_dex_size;
-    ex++;
     for (int j = 0; j < col_dex_size; j++) {
-      in0[inl0++] = col_dex_of_row[j];
-      in0[inl0++] = out_dex_of_row[j];
-      ex++;
-      ex++;
+      in0[inl0++] = col_dex_of_row->at(j);
+      in0[inl0++] = out_dex_of_row->at(j);
     }
   }
   drv.mdma->dmas[0].dma_start_send(inl0);
@@ -226,36 +205,38 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
   int acc_filters = output_cols - remaining_filters;
 
   // ==============================================
-  drv.validate();
-  TOG(cerr << "Starting  MM2IM" << endl;);
-  if (acc_filters > 0) LoadConfig(drv, padded_depth);
+  // drv.validate();
   int o_3 = 0;
-  for (; o_3 < acc_filters; o_3 += filter_step) {
-    // Send filter_step * rows_per_filter  rows of weights to accelerator
-    TOG(cerr << "Sending weights: " << o_3 * rows_per_filter << " to "
-             << (o_3 * rows_per_filter + filter_step * rows_per_filter)
-             << endl;);
-    LoadWeight(drv, o_3 * rows_per_filter, filter_step * rows_per_filter,
-               padded_depth, filter_step, o_3);
-
-    int starting = 0;
-    // Start Schedule
-    StartSchedule(drv);
-    for (int o_1 = 0; o_1 < drv.oh; o_1++) {
-      tiling_factor++;
-      TOG(cerr << "Sending rows: " << starting << " to " << drv.oh_ends[o_1] + 1
+  if (output_cols >= PE_COUNT) {
+    TOG(cerr << "Starting  MM2IM" << endl;);
+    if (acc_filters > 0) LoadConfig(drv, padded_depth);
+    for (; o_3 < acc_filters; o_3 += filter_step) {
+      // Send filter_step * rows_per_filter  rows of weights to accelerator
+      TOG(cerr << "Sending weights: " << o_3 * rows_per_filter << " to "
+               << (o_3 * rows_per_filter + filter_step * rows_per_filter)
                << endl;);
-      int rows_to_send = drv.oh_ends[o_1] + 1 - starting;
-      if (drv.oh_ends[o_1] != starting - 1) {
-        LoadInput(drv, starting, rows_to_send, padded_depth);
-        // TOG(cerr << "Input loaded" << endl;);
-        LoadColMap(drv, starting, rows_to_send);
-        // TOG(cerr << "ColMap loaded" << endl;);
+      LoadWeight(drv, o_3 * rows_per_filter, filter_step * rows_per_filter,
+                 padded_depth, filter_step, o_3);
+
+      int starting = 0;
+      // Start Schedule
+      StartSchedule(drv);
+      for (int o_1 = 0; o_1 < drv.oh; o_1++) {
+        tiling_factor++;
+        TOG(cerr << "Sending rows: " << starting << " to "
+                 << drv.oh_ends[o_1] + 1 << endl;);
+        int rows_to_send = drv.oh_ends[o_1] + 1 - starting;
+        if (drv.oh_ends[o_1] != starting - 1) {
+          LoadInput(drv, starting, rows_to_send, padded_depth);
+          // TOG(cerr << "Input loaded" << endl;);
+          LoadColMap(drv, starting, rows_to_send);
+          // TOG(cerr << "ColMap loaded" << endl;);
+        }
+        // Last ejects acc from schedule mode
+        bool last = (o_1 == drv.oh - 1);
+        StoreOutTileRow(drv, o_1, o_3, filter_step, last);
+        starting = drv.oh_ends[o_1] + 1;
       }
-      // Last ejects acc from schedule mode
-      bool last = (o_1 == drv.oh - 1);
-      StoreOutTileRow(drv, o_1, o_3, filter_step, last);
-      starting = drv.oh_ends[o_1] + 1;
     }
   }
 
@@ -276,7 +257,6 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
             int input = drv.inputs[input_index];
             sum += weight * input;
           }
-          // int offset = 0;
           int offset = drv.acc_wt_sum[orow] * drv.rhs_offset;
           sum += offset;
         }

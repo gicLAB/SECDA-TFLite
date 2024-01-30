@@ -72,6 +72,7 @@ public:
     acc_weights.resize(params->nodes_to_replace->size);
     acc_inputs.resize(params->nodes_to_replace->size);
     acc_wt_sums.resize(params->nodes_to_replace->size);
+    n_weights.resize(params->nodes_to_replace->size);
     swapped_weights.resize(params->nodes_to_replace->size);
     acc_dex_maps.resize(params->nodes_to_replace->size);
     // mm2im_params.resize(params->nodes_to_replace->size);
@@ -185,6 +186,7 @@ public:
             GetTemporarySafe(context, node, user_data->col2im_index, &col2im));
       }
 
+      // Output & Col2Im
       if (!IsConstantTensor(output_shape) && false) {
         // Defer resizing until Eval().
         SetTensorToDynamic(output);
@@ -202,18 +204,21 @@ public:
         }
       }
 
+      // Temporary output
       if (req_temp_out && !IsConstantTensor(output_shape)) {
         node->temporaries->data[temp_out_id] = outputs_[i][0];
         TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
         temp_out_tensor->type = kTfLiteInt8;
         temp_out_tensor->allocation_type = kTfLiteDynamic;
+        // temp_out_tensor->allocation_type = kTfLiteArenaRw;
         // TF_LITE_ENSURE_STATUS(
         //     ResizeTensor(context, output_shape, temp_out_tensor));
-        // TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output,
+        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, temp_out_tensor));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape,
         // temp_out_tensor));
-        TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, temp_out_tensor));
       }
 
+      // Weights
       if (data->weights_are_transposed) {
         node->temporaries->data[data->transposed_weights_index] =
             data->transposed_weights_id;
@@ -229,6 +234,7 @@ public:
         }
       }
 
+      // Scratch buffer
       node->temporaries->data[data->scratch_tensor_index] =
           data->scratch_tensor_id;
       TfLiteTensor *scratch_buffer;
@@ -238,14 +244,11 @@ public:
 
       scratch_buffer->type = kTfLiteInt32;
       scratch_buffer->allocation_type = kTfLiteDynamic;
+      // scratch_buffer->allocation_type = kTfLiteArenaRw;
       if (!IsConstantTensor(output_shape) && false) {
         SetTensorToDynamic(scratch_buffer);
       } else {
-        // TF_LITE_ENSURE_STATUS(
-        //     ResizeTensor(context, output_shape, scratch_buffer));
-        // TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output,
-        // scratch_buffer));
-        TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, scratch_buffer));
+        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, scratch_buffer));
       }
 
       TF_LITE_ENSURE_EQ(context, weights->quantization.type,
@@ -288,11 +291,13 @@ public:
       acc_inputs[i].resize(rounded_depth * cols);
       acc_wt_sums[i].resize(filters * kernel_size * kernel_size);
       acc_dex_maps[i].resize(in1 * in2 * filters * kernel_size * kernel_size);
+      n_weights[i].resize(in3 * filters * kernel_size * kernel_size);
       swapped_weights[i].resize(in3 * filters * kernel_size * kernel_size);
       int8_t *acc_input = &acc_inputs[i][0];
       int8_t *acc_weight = &acc_weights[i][0];
       int *acc_wt_sum = &acc_wt_sums[i][0];
       int32_t *acc_dex_map = &acc_dex_maps[i][0];
+      int8_t *n_wgt = &n_weights[i][0];
       int8_t *swapped_weight = &swapped_weights[i][0];
       struct mm2im_params amp(stride_x, stride_y, filters, kernel_size, in1,
                               in2, in3, rows, cols, depth, out1, out2, out3,
@@ -405,8 +410,9 @@ public:
       int32 *output_multiplier = &crf[i][0];
       int32 *output_shift = &crx[i][0];
       const int8_t *input_data = GetTensorData<int8>(input);
-      const int8_t *hwoi_ordered_filter_data =
-          GetTensorData<int8>(transposed_weights);
+      // const int8_t *hwoi_ordered_filter_data =
+      //     GetTensorData<int8>(transposed_weights);
+      const int8_t *hwoi_ordered_filter_data = &n_weights[i][0];
 
       int8_t *output_data = GetTensorData<int8>(output);
       int32_t *col2im_data = GetTensorData<int32>(col2im);
@@ -542,84 +548,87 @@ public:
       drv.t.layer = dparams.layer;
       drv.verb = true;
 
+      // // create fake input data
+      // int8_t *fake_input = new int8_t[par->ic * par->ih * par->iw]();
+      // // fill inputs with 1
+      // for (int i = 0; i < par->ic * par->ih * par->iw; i++) {
+      //   fake_input[i] = 1;
+      // }
+
+      // // create fake weights
+      // int8_t *fake_weight = new int8_t[par->f * par->ks * par->ks *
+      // par->ic]();
+      // // fill weights with 1,2,3,4,5
+      // for (int i = 0; i < par->f * par->ks * par->ks * par->ic; i++) {
+      //   fake_weight[i] = i % 5 + 1;
+      // }
+
+#ifndef RUN_CPU_TCONV
       // create fake input data
       int8_t *fake_input = new int8_t[par->ic * par->ih * par->iw]();
       // fill inputs with 1
-      for (int i = 0; i < par->ic * par->ih * par->iw; i++) {
-        fake_input[i] = 1;
-      }
-
+      for (int i = 0; i < par->ic * par->ih * par->iw; i++) fake_input[i] = 1;
       // create fake weights
       int8_t *fake_weight = new int8_t[par->f * par->ks * par->ks * par->ic]();
       // fill weights with 1,2,3,4,5
-      for (int i = 0; i < par->f * par->ks * par->ks * par->ic; i++) {
+      for (int i = 0; i < par->f * par->ks * par->ks * par->ic; i++)
         fake_weight[i] = i % 5 + 1;
-      }
-
       int8_t *const cost_fake_input =
           reinterpret_cast<int8_t *>(&fake_input[0]);
-
       int8_t *const cost_fake_weight =
           reinterpret_cast<int8_t *>(&fake_weight[0]);
-
-      // DirectMM2IM(hwoi_ordered_filter_data, input_data, output_data);
-
-      cpu_backend_gemm::Gemm(lhs_params, cost_fake_weight, rhs_params,
-                             cost_fake_input, dst_params, col2im_data, gemm_params,
-                             cpu_backend_context);
-
-      // cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data,
-      // rhs_params,
-      //                        input_data, dst_params, col2im_data,
+      // cpu_backend_gemm::Gemm(lhs_params, cost_fake_weight, rhs_params,
+      //                        cost_fake_input, dst_params, col2im_data,
       //                        gemm_params, cpu_backend_context);
-
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_wgt.csv",
-                    cost_fake_weight, lhs_params.rows,
-                    lhs_params.cols);
-
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_inp.csv",
-                    cost_fake_input, rhs_params.rows, rhs_params.cols);
-
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_gemm_cpu.csv",
-                    col2im_data, dst_params.cols, dst_params.rows);
-
+      cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data, rhs_params,
+                             input_data, dst_params, col2im_data, gemm_params,
+                             cpu_backend_context);
       optimized_ops::Col2im(
           col2im_data, output_depth, output_height, output_width, filter_height,
           filter_width, padding_top, padding_left, padding_bottom,
           padding_right, stride_height, stride_width, scratch_data_p);
-      
-
-
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_col2im_cpu.csv",
-                    scratch_data_p, scratch_cols, scratch_rows);
-
       if (has_bias)
         optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
                                output_height, output_width, output_depth);
-
       const int32_t output_min = std::numeric_limits<int8_t>::min();
       const int32_t output_max = std::numeric_limits<int8_t>::max();
       optimized_ops::Quantize(output_multiplier, output_shift, output_depth,
                               output_shape.FlatSize(), cparams.output_offset,
                               output_min, output_max, scratch_data,
                               output_data);
+      // saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i])
+      // +
+      //                   "_wgt.csv",
+      //               cost_fake_weight, lhs_params.rows, lhs_params.cols);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_out_cpu.csv",
+      // saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i])
+      // +
+      //                   "_inp.csv",
+      //               cost_fake_input, rhs_params.rows, rhs_params.cols);
+
+      // saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i])
+      // +
+      //                   "_gemm_cpu.csv",
+      //               col2im_data, dst_params.cols, dst_params.rows);
+      // saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i])
+      // +
+      //                   "_col2im_cpu.csv",
+      //               scratch_data_p, scratch_cols, scratch_rows);
+      saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i]) +
+                        "_out_cpu.csv",
                     output_data, scratch_cols, scratch_rows);
+      // DirectMM2IM(hwoi_ordered_filter_data, input_data, output_data);
+#endif
 
       mm2im_driver::Entry(drv);
 
-      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-      //                   "_del_accgemm.csv",
+      // saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i])
+      // +
+      //                   "_gemm_acc.csv",
       //               col2im_data, dst_params.cols, dst_params.rows);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_out_acc.csv",
+      saveMatrixCSV("aData/mm2im_sim/" + std::to_string(associated_nodes[i]) +
+                        "_out_acc.csv",
                     output_data, scratch_cols, scratch_rows);
 
       dparams.layer++;
@@ -634,6 +643,7 @@ public:
   std::vector<std::vector<int>> inputs_, outputs_;
   std::vector<int> builtin_code_, associated_nodes;
 
+  std::vector<std::vector<int8_t>> n_weights;
   std::vector<std::vector<int8_t>> swapped_weights;
   std::vector<std::vector<int8_t>> acc_weights;
   std::vector<std::vector<int8_t>> acc_inputs;
@@ -686,7 +696,10 @@ public:
 
     auto &tensor0 = context->tensors[node->inputs->data[1]];
     int filter_dim = tensor0.dims->data[0];
-    // if (filter_dim < PE_COUNT) return false;
+
+    // TODO JUDE: Support any filter dim (make this better)
+    // if (filter_dim < PE_COUNT)
+    //   return false;
 
     // Adds node for delegation
     dparams.delegated_nodes++;

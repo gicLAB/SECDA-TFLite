@@ -8,8 +8,8 @@
 #endif
 
 #include "../acc_config.sc.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/multi_threading.h"
 #include <chrono>
@@ -47,10 +47,19 @@ struct vm_times {
     prf_out(TSCALE, ipack);
     prf_out(TSCALE, conv_total);
     cout << "================================================" << endl;
-    // std::ofstream offile("runs.csv", std::ios::app);
-    // offile << chrono::duration_cast<chrono::milliseconds>(conv_total).count()
-    //        << endl;
-    // offile.close();
+#endif
+  }
+
+  void save_prf() {
+#ifdef ACC_PROFILE
+    std::ofstream file("prf.csv", std::ios::out);
+    prf_file_out(TSCALE, load_inputs, file);
+    prf_file_out(TSCALE, load_weights, file);
+    prf_file_out(TSCALE, store, file);
+    prf_file_out(TSCALE, vm_acc, file);
+    prf_file_out(TSCALE, ipack, file);
+    prf_file_out(TSCALE, conv_total, file);
+    file.close();
 #endif
   }
 };

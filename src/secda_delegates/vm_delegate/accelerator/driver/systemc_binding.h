@@ -4,7 +4,8 @@
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 
 // This file is specfic to VM SystemC definition
-// This contains all the correct port/signal bindings to instantiate the VM accelerator
+// This contains all the correct port/signal bindings to instantiate the VM
+// accelerator
 struct sysC_sigs {
   int id;
   sc_clock clk_fast;
@@ -60,23 +61,18 @@ struct sysC_sigs {
   sc_fifo<DATA> din4;
 
   sysC_sigs(int id_)
-      : dout1("dout1_fifo", 563840),
-        dout2("dout2_fifo", 563840),
-        dout3("dout3_fifo", 563840),
-        dout4("dout4_fifo", 563840),
-        din1("din1_fifo", 554800),
-        din2("din2_fifo", 554800),
-        din3("din3_fifo", 554800),
-        din4("din4_fifo", 554800),
-        clk_fast("ClkFast", 5, SC_NS)
-         {
+      : dout1("dout1_fifo", 563840), dout2("dout2_fifo", 563840),
+        dout3("dout3_fifo", 563840), dout4("dout4_fifo", 563840),
+        din1("din1_fifo", 554800), din2("din2_fifo", 554800),
+        din3("din3_fifo", 554800), din4("din4_fifo", 554800),
+        clk_fast("ClkFast", 5, SC_NS) {
     id = id_;
     // sc_time clk_period(5, SC_NS);
     // sc_clock clk_fast("ClkFast", clk_period);
   }
 };
 
-void sysC_binder(ACCNAME* acc, multi_dma* mdma, sysC_sigs* scs) {
+void sysC_binder(ACCNAME *acc, multi_dma *mdma, sysC_sigs *scs) {
   acc->clock(scs->clk_fast);
   acc->reset(scs->sig_reset);
   acc->inS(scs->sig_inS);
@@ -119,7 +115,6 @@ void sysC_binder(ACCNAME* acc, multi_dma* mdma, sysC_sigs* scs) {
   mdma->dmas[2].dmad->din1(scs->din3);
   mdma->dmas[3].dmad->din1(scs->din4);
 
-
   acc->dout1(scs->dout1);
   acc->dout2(scs->dout2);
   acc->dout3(scs->dout3);
@@ -130,14 +125,16 @@ void sysC_binder(ACCNAME* acc, multi_dma* mdma, sysC_sigs* scs) {
   acc->din4(scs->din4);
 
   acc->vars.vars_0.computeS(scs->sig_computeS0);
-  acc->vars.vars_1.computeS(scs->sig_computeS1);
-  acc->vars.vars_2.computeS(scs->sig_computeS2);
-  acc->vars.vars_3.computeS(scs->sig_computeS3);
-
   acc->vars.vars_0.postS(scs->sig_postS0);
+
+  acc->vars.vars_1.computeS(scs->sig_computeS1);
   acc->vars.vars_1.postS(scs->sig_postS1);
+
+  acc->vars.vars_2.computeS(scs->sig_computeS2);
   acc->vars.vars_2.postS(scs->sig_postS2);
+
+  acc->vars.vars_3.computeS(scs->sig_computeS3);
   acc->vars.vars_3.postS(scs->sig_postS3);
 }
 
-#endif  // SYSTEMC_BINDING
+#endif // SYSTEMC_BINDING
