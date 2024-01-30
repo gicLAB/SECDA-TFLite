@@ -16,6 +16,11 @@ hardware_automation/generated
 hardware_automation/acc_srcs
 scripts/experiment_prep/generated
 src/secda_delegates/secda_vm_delegate/driver/gemm_driver_v1_03.h
+
+
+src/secda_apps/imagenet_image_classification/ILSVRC2012_devkit
+src/secda_apps/imagenet_image_classification
+scripts/hardwareFilesGeneration
 /src/secda_benchmark_suite/tmp
 /src/secda_benchmark_suite/generated
 /src/secda_benchmark_suite/results
