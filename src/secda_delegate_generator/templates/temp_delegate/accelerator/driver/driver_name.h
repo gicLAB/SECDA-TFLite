@@ -5,9 +5,9 @@
 #include "secda_tflite_path/threading_utils/utils.h"
 namespace tflite_tempsim {
 
-void BlockTemp(acc_container& drv) {
+void BlockTemp(acc_container &drv) {
   int i_len = 0;
-  int* DMA_input_buffer = drv.sdma->dma_get_inbuffer();
+  int *DMA_input_buffer = drv.mdma->dmas[0].dma_get_inbuffer();
   DMA_input_buffer[i_len++] = drv.length / 4;
   DMA_input_buffer[i_len++] = drv.lshift;
   DMA_input_buffer[i_len++] = drv.in1_off;
@@ -23,8 +23,8 @@ void BlockTemp(acc_container& drv) {
   DMA_input_buffer[i_len++] = drv.qa_min;
   int8_t a_val[4];
   int8_t b_val[4];
-  int* aval = reinterpret_cast<int*>(a_val);
-  int* bval = reinterpret_cast<int*>(b_val);
+  int *aval = reinterpret_cast<int *>(a_val);
+  int *bval = reinterpret_cast<int *>(b_val);
 
   for (int i = 0; i < drv.length; i += 4) {
     a_val[0] = drv.input_A[i + 0];
@@ -39,19 +39,20 @@ void BlockTemp(acc_container& drv) {
     DMA_input_buffer[i_len++] = bval[0];
   }
 
-  drv.sdma->dma_start_send(i_len);
-  drv.sdma->dma_wait_send();
-  drv.sdma->dma_start_recv(drv.length / 4);
-  drv.sdma->dma_wait_recv();
+  drv.mdma->dmas[0].dma_start_send(i_len);
+  drv.mdma->dmas[0].dma_wait_send();
+  drv.mdma->dmas[0].dma_start_recv(drv.length / 4);
+  drv.mdma->dmas[0].dma_wait_recv();
 
-  drv.profile->saveProfile(drv.acc->profiling_vars);
-  int8_t* oval = reinterpret_cast<int8_t*>(drv.sdma->dma_get_outbuffer());
+  int8_t *oval =
+      reinterpret_cast<int8_t *>(drv.mdma->dmas[0].dma_get_outbuffer());
   for (int i = 0; i < drv.length; i++) {
     drv.output_C[i] = oval[i];
   }
 }
 
-void Entry(acc_container& drv) {
+void Entry(acc_container &drv) {
+  prf_start(1); // Start profiling the driver
 #ifdef DELEGATE_VERBOSE
   cout << "TempTemp" << endl;
   cout << "===========================" << endl;
@@ -61,7 +62,9 @@ void Entry(acc_container& drv) {
   cout << "===========================" << endl;
 #endif
   BlockTemp(drv);
+  SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
+  prf_end(1, drv.p_t.driver_total); // Stop profiling the driver
 }
 
-}  // namespace tflite_secda
+} // namespace tflite_tempsim
 #endif // DRIVER_NAME

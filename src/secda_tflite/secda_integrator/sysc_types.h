@@ -13,6 +13,24 @@
 #endif
 #endif
 
+#define INITSIGPORT(X, SID) X((std::string(#X) + std::to_string(SID)).c_str())
+
+// Hardware struct to contain output signal and port
+struct sc_out_sig {
+  sc_out<int> oS;
+  sc_signal<int> iS;
+  void write(int x) {
+    oS.write(x);
+    iS.write(x);
+  }
+  int read() { return iS.read(); }
+  void operator=(int x) { write(x); }
+  void bind(sc_signal<int> &sig) { oS.bind(sig); }
+  void operator()(sc_signal<int> &sig) { bind(sig); }
+  void bind(sc_out<int> &sig) { oS.bind(sig); }
+  void operator()(sc_out<int> &sig) { bind(sig); }
+};
+
 typedef struct _DATA {
   sc_uint<32> data;
   bool tlast;

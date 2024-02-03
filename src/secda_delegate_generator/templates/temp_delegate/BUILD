@@ -8,6 +8,13 @@ package(
     licenses = ["notice"],
 )
 
+
+config_setting(
+    name = "linux_armhf",
+    values = {"cpu": "armhf"},
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "temp_delegate",
     srcs = [
@@ -23,8 +30,10 @@ cc_library(
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels/internal:types",
-        "//secda_delegates_path/temp_delegate/accelerator/driver:driver_name",
-    ],
+    ] + select({
+        ":linux_armhf": ["//tensorflow/lite/delegates/utils/secda_delegates/temp_delegate/accelerator/driver:driver_name"],
+        "//conditions:default": ["//tensorflow/lite/delegates/utils/secda_delegates/temp_delegate/accelerator/driver:driver_name_sysc"],
+    }),
 )
 
 cc_binary(
@@ -92,9 +101,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":temp_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval_lib",
+        ":temp_delegate_provider",
     ],
 )
 
@@ -103,9 +112,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":temp_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/imagenet_image_classification:run_eval_lib",
+        ":temp_delegate_provider",
     ],
 )
 
@@ -114,8 +123,8 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":temp_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/coco_object_detection:run_eval_lib",
+        ":temp_delegate_provider",
     ],
 )

@@ -9,18 +9,39 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
+config_setting(
+    name = "linux_armhf",
+    values = {"cpu": "armhf"},
+    visibility = ["//visibility:public"],
+)
+
 common_copts = ["-Wall"] + tflite_copts()
+
+cc_library(
+    name = "temp_accelerator_config",
+    srcs = [
+        "acc_config.sc.h",
+        ],
+    copts = common_copts,
+    deps = select({
+        ":linux_armhf": [],
+        "//conditions:default": ["@systemc//:systemc"],
+    }),
+)
 
 cc_library(
     name = "temp_accelerator",
     srcs = [
         "acc.sc.cc",
+    ],
+    hdrs = [ 
         "acc.sc.h",
         "compute.sc.h",
-        ],
+        "hw_submodule.sc.h"
+    ],
     copts = common_copts,
     deps = [
-        "@systemc//:systemc",
+        ":temp_accelerator_config",
         "//secda_tflite_path:secda_tflite_sim",
     ],
 )

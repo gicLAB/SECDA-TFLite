@@ -1,35 +1,48 @@
-#define SYSC
 
 #include <fstream>
 #include <iostream>
 #include <utility>
 
-#include "accelerator/driver/driver_name.h"
-#include "temp_delegate.h"
+#ifdef SYSC
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#endif
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
+
+#include "accelerator/driver/toyadd_driver.h"
+#include "add_delegate.h"
+#include "util.h"
+
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include "tensorflow/lite/kernels/internal/quantization_util.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
-#include "util.h"
-
-#include "secda_tflite_path/sysc_integrator/systemc_integrate.h"
-#include "secda_tflite_path/sysc_profiler/profiler.h"
-#include "secda_tflite_path/threading_utils/acc_helpers.h"
-#include "secda_tflite_path/threading_utils/utils.h"
 
 // Some variables needs to be defined across multiple instances of the delegate
+unsigned int dma_addrs[1] = {dma_addr0};
+unsigned int dma_addrs_in[1] = {dma_in0};
+unsigned int dma_addrs_out[1] = {dma_out0};
+struct TOYADD_ACC_times p_t;
 struct del_params dparams;
+static struct Profile profile;
+struct MultiThreadContext mt_context;
+
+#ifdef SYSC
+static struct multi_dma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, 563840);
 ACCNAME *acc;
-struct stream_dma *sdma;
 struct sysC_sigs *scs;
-struct Profile *profile;
+#else
+struct multi_dma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
+int *acc;
+#endif
 
 namespace tflite {
-namespace temp_test {
+namespace add_test {
 
-// Temp delegate kernel.
-class TempDelegateKernel : public SimpleDelegateKernelInterface {
+// Add delegate kernel.
+class AddDelegateKernel : public SimpleDelegateKernelInterface {
 public:
-  explicit TempDelegateKernel(const TempDelegateOptions &options)
+  explicit AddDelegateKernel(const AddDelegateOptions &options)
       : options_(options) {}
 
   // Runs once per delegate partition
@@ -37,16 +50,26 @@ public:
                     const TfLiteDelegateParams *params) override {
     // Init SystemC Modules & Profilier
     if (!dparams.init) {
-      static ACCNAME accelerator("temp_accelerator");
-      static struct stream_dma _sdma(0, 0, 8096, 0, 8096);
-      static struct sysC_sigs _scs(1);
-      static struct Profile _profile;
+      std::cout << "===========================" << std::endl;
+#ifdef SYSC
+      static struct sysC_sigs scs1(1);
+      static ACCNAME _acc("TOYADD_ACC");
       sysC_init();
-      systemC_binder(&accelerator, &_sdma, &_scs);
-      acc = &accelerator;
-      sdma = &_sdma;
-      scs = &_scs;
-      profile = &_profile;
+      sysC_binder(&_acc, &mdma, &scs1);
+      acc = &_acc;
+      scs = &scs1;
+      std::cout << "Initialised the SystemC Modules" << std::endl;
+#else
+      dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
+      acc = dparams.acc;
+      std::cout << "Initialised the DMA" << std::endl;
+#endif
+      std::cout << "TOYADD_ACC Accelerator";
+#ifdef ACC_NEON
+      std::cout << " with Neon";
+#endif
+      std::cout << std::endl;
+      std::cout << "===========================" << std::endl;
       dparams.init = true;
     }
 
@@ -147,23 +170,21 @@ public:
 
   // Runs once per node during inference/invoke()
   // This function executes the operations required by node by offloading the
-  // computation to the driver_name For more info look into
+  // computation to the toyadd_driver For more info look into
   // "tensorflow/lite/kernels/add.cc" for the default implementation for Add
   // Nodes
   TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
+    prf_start(0); // Start the profiling delegate
     int node_count = inputs_.size();
     for (int i = 0; i < node_count; i++) {
       auto *params = cparams[i];
       OpData *data = opdatas[i];
-
       const TfLiteTensor *input1;
       const TfLiteTensor *input2;
       TfLiteTensor *output;
-
       GetInputSafe(context, inputs_[i][0], &input1);
       GetInputSafe(context, inputs_[i][1], &input2);
       GetOutputSafe(context, outputs_[i][0], &output);
-
       tflite::ArithmeticParams op_params;
       op_params.left_shift = data->left_shift;
       op_params.input1_offset = data->input1_offset;
@@ -177,6 +198,8 @@ public:
       op_params.output_shift = data->output_shift;
       SetActivationParams(data->output_activation_min,
                           data->output_activation_max, &op_params);
+
+      // Prepare Inputs for Driver/Accelerator
       int size = 1;
       for (int i = 0; i < input1->dims->size; ++i) {
         size *= input1->dims->data[i];
@@ -186,10 +209,13 @@ public:
       int8 *output_data = output->data.int8;
 
       struct acc_container drv;
-      drv.scs = scs;
-      drv.profile = profile;
       drv.acc = acc;
-      drv.sdma = sdma;
+      drv.profile = &profile;
+      drv.mdma = &mdma;
+      drv.mt_context = &mt_context;
+      drv.thread_count = context->recommended_num_threads;
+
+      // Accelerator Specific Parameters
       drv.input_A = input1_data;
       drv.input_B = input2_data;
       drv.output_C = output_data;
@@ -207,14 +233,24 @@ public:
       drv.qa_max = op_params.quantized_activation_max;
       drv.qa_min = op_params.quantized_activation_min;
 
-      tflite_tempsim::Entry(drv);
+      // Debugging
+      drv.t.layer = dparams.layer;
+      drv.p_t = p_t;
+#ifdef DELEGATE_VERBOSE
+      cout << "===========================" << endl;
+      cout << "Layer: " << dparams.layer
+           << "      Node: " << associated_nodes[i] << endl;
+      cout << "===========================" << endl;
+#endif
+
+      // Enter the driver code
+      tflite_addsim::Entry(drv);
+      p_t = drv.p_t;
       dparams.layer++;
       dparams.delegated_nodes--;
     }
 
-    if (dparams.delegated_nodes == 0) {
-      profile->saveCSVRecords(".data/temp_sim");
-    }
+    prf_end(0, p_t.delegate_total); // Stop the profiling delegate
     return kTfLiteOk;
   }
 
@@ -231,14 +267,14 @@ public:
   std::vector<int8_t *> crx;
 
 private:
-  const TempDelegateOptions options_;
+  const AddDelegateOptions options_;
 };
 
-// TempDelegate implements the interface of SimpleDelegateInterface.
+// AddDelegate implements the interface of SimpleDelegateInterface.
 // This holds the Delegate capabilities.
-class TempDelegate : public SimpleDelegateInterface {
+class AddDelegate : public SimpleDelegateInterface {
 public:
-  explicit TempDelegate(const TempDelegateOptions &options)
+  explicit AddDelegate(const AddDelegateOptions &options)
       : options_(options) {}
 
   bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
@@ -260,8 +296,7 @@ public:
 
     if (!TfLiteIntArrayEqual(input1.dims, input2.dims)) return false;
 
-    // ADD
-    // cout << dparams.delegated_nodes << endl;
+    // Added node to the list of nodes to be delegated.
     dparams.delegated_nodes++;
     return true;
   }
@@ -269,13 +304,13 @@ public:
   TfLiteStatus Initialize(TfLiteContext *context) override { return kTfLiteOk; }
 
   const char *Name() const override {
-    static constexpr char kName[] = "TempDelegate";
+    static constexpr char kName[] = "AddDelegate";
     return kName;
   }
 
   std::unique_ptr<SimpleDelegateKernelInterface>
   CreateDelegateKernelInterface() override {
-    return std::make_unique<TempDelegateKernel>(options_);
+    return std::make_unique<AddDelegateKernel>(options_);
   }
 
   SimpleDelegateInterface::Options DelegateOptions() const override {
@@ -284,31 +319,50 @@ public:
   }
 
 private:
-  const TempDelegateOptions options_;
+  const AddDelegateOptions options_;
 };
 
-} // namespace temp_test
+} // namespace add_test
 } // namespace tflite
 
-TempDelegateOptions TfLiteTempDelegateOptionsDefault() {
-  TempDelegateOptions options = {0};
-  // Just assign an invalid builtin code so that this temp test delegate will
+AddDelegateOptions TfLiteAddDelegateOptionsDefault() {
+  AddDelegateOptions options = {0};
+  // Just assign an invalid builtin code so that this add test delegate will
   // not support any node by default.
   options.allowed_builtin_code = -1;
   return options;
 }
 
 // Creates a new delegate instance that need to be destroyed with
-// `TfLiteTempDelegateDelete` when delegate is no longer used by TFLite.
+// `TfLiteAddDelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate *TfLiteTempDelegateCreate(const TempDelegateOptions *options) {
-  std::unique_ptr<tflite::temp_test::TempDelegate> temp(
-      new tflite::temp_test::TempDelegate(
-          options ? *options : TfLiteTempDelegateOptionsDefault()));
-  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(temp));
+TfLiteDelegate *TfLiteAddDelegateCreate(const AddDelegateOptions *options) {
+  std::unique_ptr<tflite::add_test::AddDelegate> add(
+      new tflite::add_test::AddDelegate(
+          options ? *options : TfLiteAddDelegateOptionsDefault()));
+  // return
+  // tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(add));
+  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
+      std::move(add), kTfLiteDelegateFlagsAllowDynamicTensors);
 }
 
-// Destroys a delegate created with `TfLiteTempDelegateCreate` call.
-void TfLiteTempDelegateDelete(TfLiteDelegate *delegate) {
+// Destroys a delegate created with `TfLiteAddDelegateCreate` call.
+void TfLiteAddDelegateDelete(TfLiteDelegate *delegate) {
+  SYSC_ON(profile.saveProfile(acc->profiling_vars));
+#ifndef SYSC
+  if (!dparams.unmap) {
+    mdma.multi_free_dmas();
+    munmap(dparams.acc, 65536);
+    std::cout << "===========================" << std::endl;
+    std::cout << "Unmapped DMA I/O Buffers" << std::endl;
+    std::cout << "===========================" << std::endl;
+    dparams.unmap = true;
+  }
+#endif
+  p_t.print();
+  p_t.save_prf();
+  std::cout << "===========================" << std::endl;
+  std::cout << "Deleted" << std::endl;
+  std::cout << "===========================" << std::endl;
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }

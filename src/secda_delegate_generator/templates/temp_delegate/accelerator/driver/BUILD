@@ -12,9 +12,8 @@ package(
 common_copts = ["-Wall"] + tflite_copts()
 
 
-
 cc_library(
-    name = "driver_name",
+    name = "driver_name_sysc",
     srcs = [
         "systemc_binding.h",
         "acc_container.h",
@@ -23,7 +22,21 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/temp_sim_delegate/accelerator:temp_accelerator",
+        "//tensorflow/lite/delegates/utils/secda_delegates/temp_delegate/accelerator:temp_accelerator",
         "//secda_tflite_path:secda_tflite_sim",
     ],
 )
+
+cc_library(
+    name = "driver_name",
+    srcs = [
+        "acc_container.h",
+        "driver_name.h",
+        ],
+    copts = common_copts,
+    deps = [
+        "//tensorflow/lite/delegates/utils/secda_delegates/temp_delegate/accelerator:temp_accelerator_config",
+        "//secda_tflite_path:secda_tflite",
+    ],
+)
+

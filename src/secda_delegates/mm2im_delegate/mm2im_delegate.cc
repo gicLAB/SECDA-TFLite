@@ -20,7 +20,6 @@
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 
 // Some variables needs to be defined across multiple instances of the delegate
-
 unsigned int dma_addrs[1] = {dma_addr0};
 unsigned int dma_addrs_in[1] = {dma_in0};
 unsigned int dma_addrs_out[1] = {dma_out0};

@@ -268,5 +268,5 @@ def custom_tconv_cols(df):
     ))
     df['MACs']= df.apply(pf, axis=1, result_type='expand')[0]
     df['Outputs']= df.apply(pf, axis=1, result_type='expand')[1]
-    df["Compute Intensity"] = df["total_macs"] / df["outputs"]
+    df["Compute Intensity"] = df["MACs"] / df["Outputs"]
     return df

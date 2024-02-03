@@ -21,6 +21,7 @@ all_models = [
     "new_cycle_gan_g",
     "pix2pix_g",
     "magenta_gen",
+    "add_simple",
 ]
 
 # manually supported conv models
@@ -46,6 +47,8 @@ gan_models = [
     "magenta_gen",
 ]
 
+add_models = ["add_simple"]
+
 # automatically generated tconv models
 with open("model_gen/configs/tconv_models.json") as f:
     tconv_models = json.load(f)["tconv_models"]
@@ -57,6 +60,9 @@ all_supported_hardware = ["vm_3_0", "sa_2_0", "cpu", "mm2im_1_0"]
 cpu_only = ["cpu"]
 conv_only = ["vm_3_0", "sa_2_0"]
 tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1"]
+add_only = ["toyadd_1_0", "cpu"]
+
+
 
 ####################################################
 ## CURRENT CONFIG
@@ -67,16 +73,26 @@ tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1"]
 # threads = [1, 2]
 # num_run = 1
 
+# TCONV Experiment
 models = tconv_models
 # models = ["dcgan_gen"]
 # hardware = ["mm2im_1_0", "cpu", "mm2im_2_0"]
 hardware = ["mm2im_2_1"]
 threads = [1, 2]
 num_run = 1
+model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
+
+
+# ADD Experiment
+hardware = add_only
+models = add_models
+threads = [1, 2]
+num_run = 1
+model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
+
 
 # directories within the target board
 # model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
 bitstream_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams"
 bin_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bins"
 
