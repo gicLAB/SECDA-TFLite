@@ -1,9 +1,11 @@
 {
 	"folders": [
 		{
+			"name": "tensorflow",
 			"path": "tensorflow"
 		},
 		{
+			"name": "SECDA-TFLite",
 			"path": "."
 		}
 	],
@@ -93,19 +95,17 @@
 			"shared_mutex": "cpp",
 			"charconv": "cpp",
 			"locale": "cpp",
+			"*.def": "cpp",
 			"barrier": "cpp",
 			"latch": "cpp",
-			"ranges": "cpp",
-			"span": "cpp",
-			"coroutine": "cpp",
-			"stacktrace": "cpp",
 			"bit": "cpp",
 			"compare": "cpp",
 			"concepts": "cpp",
 			"numbers": "cpp",
-			"semaphore": "cpp",
-			"stop_token": "cpp",
-			"*.def": "cpp"
+			"ranges": "cpp",
+			"span": "cpp",
+			"stacktrace": "cpp",
+			"coroutine": "cpp"
 		}
 	}
 }
