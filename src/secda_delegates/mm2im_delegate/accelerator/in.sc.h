@@ -7,7 +7,8 @@ void ACCNAME::Input_Handler() {
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=scheduleS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=tempS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=on
-#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=inS.oS
+#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=inS
+#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=outS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_0.computeS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_0.sendS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_1.computeS
@@ -76,35 +77,26 @@ void ACCNAME::Input_Handler() {
       pt = din1.read().data;
       pl = din1.read().data;
       width_col = din1.read().data;
-      DWAIT(5);
-      for (int i = 0; i < PE_COUNT; i++) {
-        pe_cols[i] = cols_per_filter * i;
-        DWAIT();
-      }
+      DWAIT(13);
     }
 
     DWAIT();
-    if (op.load_wgt || op.load_inp || op.load_col_map) {
-      if (op.load_wgt) load_wgt.write(true);
-      if (op.load_inp) load_inp.write(true);
-      if (op.load_col_map) load_col_map.write(true);
-      
+    if (op.load_wgt) {
+      activate_PEs();
+      wait();
+      load_wgt.write(true);
       load_data.write(true);
       inS.write(3);
       wait();
-      while (load_data.read())
-        wait();
+      while (load_data.read()) wait();
       load_wgt.write(false);
-      load_inp.write(false);
-      load_col_map.write(false);
     }
 
     if (op.schedule) {
       schedule.write(true);
       inS.write(4);
       wait();
-      while (schedule.read())
-        wait();
+      while (schedule.read()) wait();
     }
     DWAIT();
   }

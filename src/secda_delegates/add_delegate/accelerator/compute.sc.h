@@ -75,7 +75,7 @@ void ACCNAME::Compute() {
 
     int length = din1.read().data;
     computeS.write(1);
-    computeSS.write(2);
+    computeSS.write(1);
     DWAIT();
 
     send_parameters_ADD_PE(length, &din1);

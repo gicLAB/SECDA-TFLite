@@ -26,9 +26,9 @@ def build_tconv_model(params, mdir):
         out1 = ((in1 - 1) * stride_x) + kernel_size
         out2 = ((in2 - 1) * stride_y) + kernel_size
 
-    # print(f"Input: {in1}x{in2}x{in3}")
-    # print(f"Output: {out1}x{out2}x{out3}")
-    # print(f"Stride: {stride_x}x{stride_y}")
+    print(f"Input: {in1}x{in2}x{in3}")
+    print(f"Output: {out1}x{out2}x{out3}")
+    print(f"Stride: {stride_x}x{stride_y}")
     inputs = tf.keras.Input((in1, in2, in3))
     x = tf.keras.layers.Conv2DTranspose(
         filters=filters,
@@ -95,6 +95,27 @@ for s in strides:
             for i in inh:
                 for o in ic:
                     params.append([s, s, f, k, i, i, o, "same"])
+
+# params = []
+# dcgan_layer1 = [2,2,512,5,4,4,1024,"same"]
+# dcgan_layer2 = [2,2,256,5,8,8,512,"same"]
+# dcgan_layer3 = [2,2,128,5,16,16,256,"same"]
+# dcgan_layer4 = [2,2,3,5,32,32,128,"same"]
+# params.append(dcgan_layer1)
+# params.append(dcgan_layer2)
+# params.append(dcgan_layer3)
+# params.append(dcgan_layer4)
+                    
+#  [s, s, f, k, i, i, o, "same"]
+params = []
+fcn_layer1 = [2,2,21,4,1,1,21,"same"]
+fcn_layer2 = [2,2,21,4,4,4,21,"same"]
+# fcn_layer3 = [2,2,128,5,16,16,256,"same"]
+
+params.append(fcn_layer1)
+params.append(fcn_layer2)
+# params.append(dcgan_layer3)
+# params.append(dcgan_layer4)
 
 
 for param in params:

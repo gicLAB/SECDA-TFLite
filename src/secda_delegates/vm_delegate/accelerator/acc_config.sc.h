@@ -73,6 +73,21 @@ typedef struct _DATA {
     data.range(31, 24) = a4;
   }
 } DATA;
+
+struct sc_out_sig {
+  sc_out<int> oS;
+  sc_signal<int> iS;
+  void write(int x) {
+    oS.write(x);
+    iS.write(x);
+  }
+  int read() { return iS.read(); }
+  void operator=(int x) { write(x); }
+  void bind(sc_signal<int> &sig) { oS.bind(sig); }
+  void operator()(sc_signal<int> &sig) { bind(sig); }
+  void bind(sc_out<int> &sig) { oS.bind(sig); }
+  void operator()(sc_out<int> &sig) { bind(sig); }
+};
 #define DWAIT(x)
 #define ALOG(x)
 #define acc_dt sc_int<32>
@@ -199,20 +214,7 @@ typedef struct byteToUF {
   }
 } bUF;
 
-struct sc_out_sig {
-  sc_out<int> oS;
-  sc_signal<int> iS;
-  void write(int x) {
-    oS.write(x);
-    iS.write(x);
-  }
-  int read() { return iS.read(); }
-  void operator=(int x) { write(x); }
-  void bind(sc_signal<int> &sig) { oS.bind(sig); }
-  void operator()(sc_signal<int> &sig) { bind(sig); }
-  void bind(sc_out<int> &sig) { oS.bind(sig); }
-  void operator()(sc_out<int> &sig) { bind(sig); }
-};
+
 
 struct VMM_vars {
 #ifndef __SYNTHESIS__

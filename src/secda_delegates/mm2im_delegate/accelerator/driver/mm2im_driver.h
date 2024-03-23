@@ -84,8 +84,12 @@ void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
     in0[inl0++] = drv.crf[starting_filter + i];
     in0[inl0++] = (int)drv.crx[starting_filter + i];
   }
+  TOG(cerr << "Sending weights: " << starting_row << " to "
+           << (starting_row + number_of_rows) << endl;);
   drv.mdma->dmas[0].dma_start_send(inl0);
+  TOG(cerr << "Starting Send" << endl;);
   drv.mdma->multi_dma_wait_send();
+  TOG(cerr << "Finished Send" << endl;);
   data_transfered += inl0;
   weight_data_sent += inl0;
   wgt_load_calls++;
@@ -157,9 +161,9 @@ void StoreOutTileRow(acc_container &drv, int o_1, int o_3, int filter_step,
     outl0 += filter_step / 4;
     // for (int fs = 0; fs < filter_step; fs++) {
     //   int curr = o_dex + fs;
-    //   drv.output_data[curr] = bo0[outl0++];
-    //   cout << "output_data[" << curr << "] = " << (int) drv.output_data[curr]
-    //   << endl;
+    //   int8_t *out = &drv.output_data[0];
+    //   out[curr] = bo0[outl0++];
+    //   cout << "output_data[" << curr << "] = " << (int)out[curr] << endl;
     // }
   }
   write_data_recv += outl0;
@@ -246,6 +250,7 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
                << endl;);
       LoadWeight(drv, o_3 * rows_per_filter, filter_step * rows_per_filter,
                  padded_depth, filter_step, o_3);
+      TOG(cerr << "Starting Schedule" << endl;);
       StartSchedule(drv);
       int starting = 0;
 

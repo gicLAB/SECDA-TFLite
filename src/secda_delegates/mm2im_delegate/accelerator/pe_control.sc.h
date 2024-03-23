@@ -99,7 +99,7 @@ bool ACCNAME::store_done() {
 }
 
 void ACCNAME::activate_PEs() {
-#pragma HLS inline OFF
+// #pragma HLS inline OFF
   for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
     vars[i].cols_per_filter.write(cols_per_filter);
@@ -139,7 +139,6 @@ bool ACCNAME::out_fifo_filled() {
   //       break;
   //     }
   //   }
-
   loop = loop || vars.vars_0.out_fifo.num_available();
   loop = loop || vars.vars_1.out_fifo.num_available();
   loop = loop || vars.vars_2.out_fifo.num_available();

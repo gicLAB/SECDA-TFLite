@@ -47,7 +47,7 @@ cc_library(
         "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
         "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
         "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_sysc",
-        "//tensorflow/lite/delegates/utils/secda_tflite/ramulator_connector:ramulator_connector",
+        # "//tensorflow/lite/delegates/utils/secda_tflite/ramulator_connector:ramulator_connector",
     ],
 )
 

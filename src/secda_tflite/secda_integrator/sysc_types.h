@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <systemc.h>
+#include "secda_hw_utils.sc.h"
 
 #ifndef DWAIT(x)
 #ifndef __SYNTHESIS__

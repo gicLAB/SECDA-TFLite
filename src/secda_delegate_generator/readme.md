@@ -1,6 +1,6 @@
 # Delegate Generation
 
-- Please use delegate_generator notebook to generate new boilerplate delegates.
+- Please use generate_delegate.py to generate new boilerplate delegates.
 - The default output directory is with in ```/generated```.
 - The default template delegate is located within ```templates/temp_delegate```.
 - You can also customise/create new template for future use within ```templates/```.

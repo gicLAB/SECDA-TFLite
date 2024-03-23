@@ -24,7 +24,7 @@ struct sysC_sigs {
 
   sc_signal<bool> on;
   sc_signal<int> inS;
-  sc_signal<int> data_inS;
+  sc_signal<int> data_loadS;
   sc_signal<int> scheduleS;
   sc_signal<int> outS;
   sc_signal<int> tempS;
@@ -85,7 +85,7 @@ void sysC_binder(ACCNAME *acc, multi_dma *mdma, sysC_sigs *scs) {
   acc->on(scs->on);
 
   acc->inS(scs->inS);
-  acc->data_inS(scs->data_inS);
+  acc->data_loadS(scs->data_loadS);
   acc->scheduleS(scs->scheduleS);
   acc->outS(scs->outS);
   acc->tempS(scs->tempS);

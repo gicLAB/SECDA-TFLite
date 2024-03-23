@@ -12,6 +12,18 @@ package(
 common_copts = ["-Wall"] + tflite_copts()
 
 
+cc_library(
+    name = "secda_hw_utils",
+    srcs = [
+        "secda_hw_utils.sc.h",
+        ],
+    copts = common_copts,
+    deps = [
+        "@systemc//:systemc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
+    ],
+)
+
 
 cc_library(
     name = "systemc_integrator",
@@ -26,6 +38,7 @@ cc_library(
         ],
     copts = common_copts,
     deps = [
+        ":secda_hw_utils",
         "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
     ],

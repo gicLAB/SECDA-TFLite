@@ -9,17 +9,18 @@ SC_MODULE(ACCNAME) {
   sc_in<bool> reset;
   sc_out<bool> on;
 
-  // sc_out<int> inS;
-  // sc_out<int> data_inS;
-  // sc_out<int> scheduleS;
-  // sc_out<int> outS;
-  // sc_out<int> tempS;
+  sc_out<int> inS;
+  sc_out<int> data_loadS;
+  sc_out<int> scheduleS;
+  sc_out<int> outS;
+  sc_signal<int> pdS;
+  sc_out<int> tempS;
 
-  sc_out_sig inS;
-  sc_out_sig data_inS;
-  sc_out_sig scheduleS;
-  sc_out_sig outS;
-  sc_out_sig tempS;
+  // sc_out_sig inS;
+  // sc_out_sig data_loadS;
+  // sc_out_sig scheduleS;
+  // sc_out_sig outS;
+  // sc_out_sig tempS;
 
   sc_fifo_in<DATA> din1;
   sc_fifo_in<DATA> din2;
@@ -32,11 +33,12 @@ SC_MODULE(ACCNAME) {
   sc_fifo_out<DATA> dout4;
 
   // Global Buffer for wgt and inp data
-  ACC_DTYPE<8> wgt_buf[WGT_BUF_LEN][UF];
-  ACC_DTYPE<8> inp_buf[INP_BUF_LEN][UF];
+  // ACC_DTYPE<8> wgt_buf[WGT_BUF_LEN][UF];
+  // ACC_DTYPE<8> inp_buf[INP_BUF_LEN][UF];
 
   // Global Buffer for wgt sum: needs to support ks * ks * filter_step
   ACC_DTYPE<32> wgt_sum_buf[G_WGTSUMBUF_SIZE];
+  // struct sbram<ACC_DTYPE<32>,G_WGTSUMBUF_SIZE> wgt_sum_buf;
 
   // Global Buffer for bias, crf, crx:  needs to support filter_step
   ACC_DTYPE<32> bias_buf[PE_COUNT];
@@ -105,6 +107,13 @@ SC_MODULE(ACCNAME) {
   ClockCycles *load_col_map_cycles =
       new ClockCycles("load_col_map_cycles", true);
 
+  SignalTrack *T_in = new SignalTrack("T_in", true);
+  SignalTrack *T_sh = new SignalTrack("T_sh", true);
+  SignalTrack *T_ld = new SignalTrack("T_ld", true);
+  SignalTrack *T_com = new SignalTrack("T_com", true);
+  SignalTrack *T_sd = new SignalTrack("T_sd", true);
+  SignalTrack *T_pd = new SignalTrack("T_pd", true);
+
   // ClockCycles *idle1 = new ClockCycles("idle1", true);
   // ClockCycles *idle2 = new ClockCycles("idle2", true);
   // BufferSpace *gweightbuf_p = new BufferSpace("gweightbuf_p", WGT_BUF_LEN);
@@ -116,8 +125,9 @@ SC_MODULE(ACCNAME) {
   //     schedule_cycles,   process_cycles, store_cycles, update_wgt_cycles,
   //     update_inp_cycles, compute_cycles, send_cycles,  out_cycles,
   //     load_wgt_cycles,   load_inp_cycles};
-  std::vector<Metric *> profiling_vars = {process_cycles, compute_cycles,
-                                          load_col_map_cycles, store_cycles};
+
+  std::vector<Metric *> profiling_vars = {
+      process_cycles, compute_cycles, T_in, T_sh, T_ld, T_com, T_sd, T_pd};
 
   void In_Counter();
 #endif
@@ -145,7 +155,7 @@ SC_MODULE(ACCNAME) {
 
   void set_row_PEs(int);
 
-  void load_wgt_PEs();
+  // void load_wgt_PEs();
 
   void load_inp_PEs();
 
@@ -200,8 +210,10 @@ SC_MODULE(ACCNAME) {
 #endif
 
 // #pragma HLS array_partition variable = wgt_buf dim = 2 cyclic factor = 8
-#pragma HLS array_partition variable = wgt_buf dim = 2 complete
-#pragma HLS array_partition variable = inp_buf dim = 2 complete
+
+// #pragma HLS array_partition variable = wgt_buf dim = 2 complete
+// #pragma HLS array_partition variable = inp_buf dim = 2 complete
+
 // #pragma HLS array_partition variable = ocols complete
 #pragma HLS array_partition variable = pe_cols complete
 

@@ -7,7 +7,16 @@ void ACCNAME::In_Counter() {
     int sched = scheduleS.read();
     int compute = vars.X1.computeS.read();
     int send = vars.X1.sendS.read();
-    int load = data_inS.read();
+    int load = data_loadS.read();
+    int pd = pdS.read();
+
+    T_in->increment(ins);
+    T_sh->increment(sched);
+    T_ld->increment(load);
+    T_com->increment(compute);
+    T_sd->increment(send);
+    T_pd->increment(pd);
+
     if (ins == 4) schedule_cycles->value++;
     if (sched == 6) process_cycles->value++;
     if (sched == 71) store_cycles->value++;

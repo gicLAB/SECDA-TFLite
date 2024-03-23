@@ -1,57 +1,17 @@
 #include "acc.sc.h"
 
-// Remove PE specific code as much as possible below
-// Generalise for any number of PEs
-void ACCNAME::load_wgt_PEs() {
-  int ocols[PE_COUNT];
-#pragma HLS array_partition variable = ocols complete
-
-  scheduleS.write(31);
-  wait();
-
-  for (int c = 0; c < cols_per_filter; c++) {
-
-    for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-      int pe_dex = c + pe_cols[i];
-      ocols[i] = pe_dex * depth;
-      vars[i].wgt_sum_fifo.write(wgt_sum_buf[pe_dex]);
-    }
-
-    for (int d = 0; d < depth; d++) {
-#pragma HLS loop_tripcount min = 16 max = 16 avg = 16
-      bUF d1[8];
-      for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-        d1[i].insert(wgt_buf, ocols[i] + d);
-      }
-      for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-        vars.wgt_write(d1[i], i);
-      }
-      DWAIT(7);
-    }
-    DWAIT(7);
-  }
-
-  scheduleS.write(32);
-  wait();
-
-  while (!wgt_loaded()) wait();
-
-  scheduleS.write(33);
-  wait();
-}
-
 void ACCNAME::Pattern_Decoder() {
+  pdS.write(0);
   wait();
   while (1) {
+    pdS.write(1);
     while (!start_decode.read()) wait();
       // us there anyway to calculate this once and then simply increment
 #pragma HLS PIPELINE II = 1
     int crow = srow;
     for (int i = 0; i < number_of_rows; i++) {
 #pragma HLS PIPELINE II = 1
+      pdS.write(2);
       int cal_col = crow % width_col;
       int cal_row = crow / width_col;
       int h_pad = -pt + (stride_y * cal_row);
@@ -59,6 +19,8 @@ void ACCNAME::Pattern_Decoder() {
       int im_dex = (h_pad * ow + w_pad);
       int row = 0;
       int pouts = 0;
+      DWAIT(48);
+      pdS.write(3);
       for (int ih = 0; ih < kernel_size; ih++) {
 #pragma HLS PIPELINE II = 1
         for (int iw = 0; iw < kernel_size; iw++) {
@@ -70,8 +32,10 @@ void ACCNAME::Pattern_Decoder() {
           }
           im_dex += 1;
           row += 1;
+          DWAIT();
         }
         im_dex += (ow - kernel_size);
+        DWAIT(3);
       }
       col_indices_write(0, true);
       out_indices_write(0, true);
@@ -109,9 +73,9 @@ void ACCNAME::FIFO_Loader() {
 #pragma HLS unroll
           vars.inp_write(d1[i], i);
         }
-        DWAIT(3);
+        DWAIT(4);
       }
-      DWAIT();
+      DWAIT(2);
     }
     load_fifo.write(false);
     DWAIT();
@@ -209,11 +173,9 @@ void ACCNAME::Scheduler() {
     while (!schedule.read()) wait();
     scheduleS.write(2);
     wait();
-    if (schedule) activate_PEs();
     wait();
     wait();
     scheduleS.write(3);
-    load_wgt_PEs();
     while (ready) {
       scheduleS.write(4);
       wait();
@@ -221,22 +183,14 @@ void ACCNAME::Scheduler() {
       DWAIT();
       ready = op.schedule;
       if (op.load_inp) {
-        // load_inp.write(true);
-        // load_data.write(true);
-        // scheduleS.write(5);
-        // wait();
-        // while (load_data.read()) wait();
-        // load_inp.write(false);
-        // DWAIT(3);
-
         inp_packet ip = inp_packet(&din1);
         srow = ip.srow;
         number_of_rows = ip.inp_rows;
-
         DWAIT();
         scheduleS.write(6);
         wait();
         wait();
+        DWAIT(2);
         load_inp_PEs();
       }
       if (op.store) {

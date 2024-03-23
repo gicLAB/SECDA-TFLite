@@ -736,7 +736,7 @@ TfLiteDelegate *TfLiteMM2IMDelegateCreate(const MM2IMDelegateOptions *options) {
 
 // Destroys a delegate created with `TfLiteMM2IMDelegateCreate` call.
 void TfLiteMM2IMDelegateDelete(TfLiteDelegate *delegate) {
-  SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  SYSC_ON(profile.saveCSVRecords(".data/mm2im"));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();

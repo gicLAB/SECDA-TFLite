@@ -50,14 +50,16 @@ gan_models = [
 add_models = ["add_simple"]
 
 # automatically generated tconv models
-with open("model_gen/configs/tconv_models.json") as f:
-    tconv_models = json.load(f)["tconv_models"]
+with open("model_gen/configs/tconv_models_synth.json") as f:
+    tconv_models_synth = json.load(f)["tconv_models_synth"]
 
+with open("model_gen/configs/dcgan_layers.json") as f:
+    dcgan_layers = json.load(f)["dcgan_layers"]
+    
 ####################################################
 ## HARDWARE
 ####################################################
-all_supported_hardware = ["vm_3_0", "sa_2_0", "cpu", "mm2im_1_0"]
-cpu_only = ["cpu"]
+all_supported_hardware = ["vm_3_0", "sa_2_0", "cpu", "mm2im_1_0","toyadd_1_0"]
 conv_only = ["vm_3_0", "sa_2_0"]
 tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1"]
 add_only = ["toyadd_1_0", "cpu"]
@@ -67,34 +69,44 @@ add_only = ["toyadd_1_0", "cpu"]
 ####################################################
 ## CURRENT CONFIG
 ####################################################
+bitstream_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams"
+bin_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bins"
+
 # Current benchmark suite config
 # models = conv_models
 # hardware = ["vm_3_0", "cpu", "sa_2_0"]
 # threads = [1, 2]
 # num_run = 1
+# model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
 
-# TCONV Experiment
-models = tconv_models
-# models = ["dcgan_gen"]
+# TCONV Synth Experiment
+models = tconv_models_synth
 # hardware = ["mm2im_1_0", "cpu", "mm2im_2_0"]
 hardware = ["mm2im_2_1"]
 threads = [1, 2]
 num_run = 1
 model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
 
+# DCGAN Experiment
+models = dcgan_layers
+hardware = ["mm2im_2_2","cpu"]
+# threads = [1, 2]
+threads = [1]
+num_run = 1
+model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
+
 
 # ADD Experiment
-hardware = add_only
-models = add_models
-threads = [1, 2]
-num_run = 1
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
+# hardware = add_only
+# models = add_models
+# threads = [1, 2]
+# num_run = 1
+# model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
 
 
 # directories within the target board
-# model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
-bitstream_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams"
-bin_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bins"
+
+
 
 
 ####################################################

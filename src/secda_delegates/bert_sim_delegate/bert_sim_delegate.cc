@@ -235,6 +235,7 @@ public:
       const int batches = output_shape.Dims(0);
       const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
 
+
       int N = batches;
       int M = output_depth;
       int K = accum_depth;
@@ -282,6 +283,9 @@ public:
       drv.lhs_offset = -lhs_offset;
       if (!isBias) drv.bias = new int32_t[pM]();
       else drv.bias = biases[i];
+
+
+      // I(N,K) * W(K,M) = REQUANT(O(N,M) + B(M) + WSUM(M) + ISUM(N)), output_multiplier,output_shift,rhs_offset,lhs_offset )
 
       // Calls the fc_driver to offload the FC operation
       drv.start_count = dparams.start_count;
@@ -395,7 +399,7 @@ TfLiteBertSimDelegateCreate(const BertSimDelegateOptions *options) {
       new tflite::bert_sim_test::BertSimDelegate(
           options ? *options : TfLiteBertSimDelegateOptionsDefault()));
   return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
-      std::move(bert_sim));
+      std::move(bert_sim), kTfLiteDelegateFlagsAllowDynamicTensors);
 }
 
 // Destroys a delegate created with `TfLiteBertSimDelegateCreate` call.

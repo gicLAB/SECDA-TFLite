@@ -3,15 +3,15 @@ import os
 supported_delegates = {
     # "vm_delegate": "1",
     # "secda_sa_delegate": "1",
-    # "mm2im_delegate": "1",
+    "mm2im_delegate": "1",
     # "mm2im_fpga_delegate": "1",
-    "add_delegate": "1",
+    # "add_delegate": "1",
     # "cpu": "1"
 }
 supported_tools = {
-    "benchmark_model": "bm",
+    # "benchmark_model": "bm",
     "inference_diff": "id",
-    "eval_model": "em",
+    # "eval_model": "em",
 }
 
 cpu_paths = {

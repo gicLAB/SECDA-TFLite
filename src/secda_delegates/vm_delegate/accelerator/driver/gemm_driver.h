@@ -379,9 +379,6 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   max_rows = max_rows - (max_rows % 4);
   int row_inc = std::min(std::min(rrows, max_rows), ISUMS_BUF_LEN);
 
-  if (drv.t.layer == 27){
-    int a = 0;
-  }
   Config_Acc(drv);
   for (int r = 0; r < rrows; r += row_inc) {
     int rrows_step = std::min(row_inc, rrows - r);

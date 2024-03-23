@@ -142,6 +142,7 @@ public:
     int out_tid = 0;
 
     for (int i = 0; i < node_count; i++) {
+      cout            << "      Node: " << associated_nodes[i] << endl;
       TfLiteConvParams *params = cparams[i];
       OpData *data = opdatas[i];
 

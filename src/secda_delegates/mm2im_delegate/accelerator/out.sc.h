@@ -1,9 +1,6 @@
 
 
 void ACCNAME::Output_Handler() {
-#pragma HLS resource core = AXI4LiteS metadata = "-bus_bundle slv0" variable = \
-    outS
-
   outS.write(0);
   int data[PE_COUNT];
   bool tlast = false;
@@ -14,6 +11,7 @@ void ACCNAME::Output_Handler() {
   wait();
   while (1) {
     outS.write(1);
+    wait();
     tlast = false;
 
     for (int i = 0; i < PE_COUNT; i++) {
@@ -21,7 +19,6 @@ void ACCNAME::Output_Handler() {
       DATA d = vars.get(i);
       data[i] = d.data;
       tlast = tlast || d.tlast;
-      DWAIT();
     }
 
     outS.write(2);
@@ -31,13 +28,12 @@ void ACCNAME::Output_Handler() {
       if (i % 4 == 3) {
         d.data = datap.data;
         dout1.write(d);
-        DWAIT();
       }
     }
     if (tlast) {
       dout1.write(last);
     }
     outS.write(5);
-    DWAIT(4);
+    DWAIT(13);
   }
 }

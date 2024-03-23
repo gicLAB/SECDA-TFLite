@@ -30,20 +30,22 @@
 #define DMA_BL 4194304
 
 // HERE
-#define SUP_KS 7
-#define SUP_DEPTH 256
-#define SUP_IR 8
 #define SUP_STRIDE 2
+#define SUP_IHW 16
+#define SUP_KS 5
+#define SUP_DEPTH 1024
 
-#define SUP_IHW 11
-#define SUP_OHW ((SUP_IHW - 1) * SUP_STRIDE) + SUP_KS // 27
+#define SUP_IR 8
+#define SUP_OHW (SUP_IHW * SUP_STRIDE)
 
-#define INP_BUF_LEN 2048
-#define WGT_BUF_LEN 2048 * 4
-#define UF 16
+// #define SUP_OHW ((SUP_IHW - 1) * SUP_STRIDE) + SUP_KS // 27
 
 // Number of PEs
 #define PE_COUNT 8
+#define UF 16
+
+#define INP_BUF_LEN 2048
+#define WGT_BUF_LEN (SUP_DEPTH * SUP_KS * SUP_KS * PE_COUNT) / UF
 
 // needs to support ks * ks * depth / UF
 #define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 1936
@@ -92,6 +94,7 @@
 #define ALOG(x)
 #endif
 #else
+
 typedef struct _DATA {
   sc_uint<32> data;
   bool tlast;
@@ -100,6 +103,45 @@ typedef struct _DATA {
     return os;
   }
 } DATA;
+
+template <typename T, unsigned int W>
+struct sbram {
+  T data[W];
+  int idx;
+#ifndef __SYNTHESIS__
+  int size;
+  int access_count;
+#endif
+  sbram() {
+#ifndef __SYNTHESIS__
+    size = W;
+    access_count = 0;
+#endif
+  }
+  T &operator[](int i) {
+    idx = i;
+    return data[i];
+  }
+  int &operator=(int val) { data[idx] = val; }
+  void write(int i, T val) { data[i] = val; }
+  T read(int i) { return data[i]; }
+};
+
+struct sc_out_sig {
+  sc_out<int> oS;
+  sc_signal<int> iS;
+  void write(int x) {
+    oS.write(x);
+    iS.write(x);
+  }
+  int read() { return iS.read(); }
+  void operator=(int x) { write(x); }
+  void bind(sc_signal<int> &sig) { oS.bind(sig); }
+  void operator()(sc_signal<int> &sig) { bind(sig); }
+  void bind(sc_out<int> &sig) { oS.bind(sig); }
+  void operator()(sc_out<int> &sig) { bind(sig); }
+};
+
 // typedef sc_int<8> acc_dt;
 #define acc_dt sc_int<8>
 #define DWAIT(x)

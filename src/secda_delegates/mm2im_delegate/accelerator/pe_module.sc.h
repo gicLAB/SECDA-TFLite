@@ -171,14 +171,14 @@ SC_MODULE(PE) {
       int i = 0;
       computeS.write(2);
       for (int c = 0; c < cols_per_filter; c++) {
-        wgt_col_sum[c] = wgt_sum_fifo_in.read();
-        DWAIT(2);
         for (int d = 0; d < depth; d++) {
           bUF data = wgt_fifo_in.read();
           data.retreive(wgt_cols_buf, i);
-          DWAIT();
           i++;
+          DWAIT(2);
         }
+        wgt_col_sum[c] = wgt_sum_fifo_in.read();
+        DWAIT(2);
       }
       wait();
       computeS.write(3);
@@ -217,10 +217,9 @@ SC_MODULE(PE) {
           col_offset[pouts] = d.data * depth;
           out_buf[pouts++] += wgt_col_sum[d.data];
           d = col_indices_fifo.read();
-          // DWAIT(7);
           DWAIT();
         }
-        DWAIT(8);
+        DWAIT(7);
 
         // computeS.write(7);
         for (int d = 0; d < depth; d++) {
@@ -243,7 +242,7 @@ SC_MODULE(PE) {
             out_buf[i] += sum;
             DWAIT();
           }
-          DWAIT(9);
+          DWAIT(11);
         }
         // computeS.write(71);
         DWAIT();
@@ -254,7 +253,7 @@ SC_MODULE(PE) {
           temp_fifo_out.write(out_buf[i]);
           DWAIT();
         }
-        DWAIT(5);
+        DWAIT(3);
         wait();
         for (int i = 0; i < pouts; i++) {
           out_buf[i] = 0;
@@ -307,12 +306,12 @@ SC_MODULE(PE) {
         // sendS.write(31);
         // sendS.write(send_len);
 
-        DWAIT(23);
         for (int i = 0; i < send_len; i++) {
 #pragma HLS PIPELINE II = 1
           int dex = (start_addr + i) % PE_ACC_BUF_SIZE;
           int qm_ret = ra + Quantised_Multiplier(acc_store[dex] + bias, crf,
                                                  crx.range(7, 0));
+          // int qm_ret = acc_store[dex] + bias;
           if (qm_ret > MAX8) qm_ret = MAX8;
           else if (qm_ret < MIN8) qm_ret = MIN8;
           d.data = qm_ret;
@@ -324,15 +323,16 @@ SC_MODULE(PE) {
           // sendS.write(32);
           DWAIT(2);
         }
-        DWAIT();
+        DWAIT(19);
 
         for (int i = 0; i < send_len; i++) {
           int dex = (start_addr + i) % PE_ACC_BUF_SIZE;
           acc_store[dex] = 0;
-          DWAIT(4);
+          DWAIT(3);
         }
         // sendS.write(33);
         send_done.write(true);
+        DWAIT();
       }
 
       if (out) {
@@ -343,7 +343,7 @@ SC_MODULE(PE) {
           int out_data = temp_fifo_in.read();
           acc_store[dex] += out_data;
           d = out_indices_fifo.read();
-          DWAIT(6);
+          DWAIT(4);
         }
         out_done.write(true);
       }
@@ -522,6 +522,18 @@ struct var_array {
     else return vars_0.wgt_fifo.write(data);
   }
 
+  void wgt_sum_fifo_write(int data, int index) {
+    if (index == 0) return vars_0.wgt_sum_fifo.write(data);
+    else if (index == 1) return vars_1.wgt_sum_fifo.write(data);
+    else if (index == 2) return vars_2.wgt_sum_fifo.write(data);
+    else if (index == 3) return vars_3.wgt_sum_fifo.write(data);
+    else if (index == 4) return vars_4.wgt_sum_fifo.write(data);
+    else if (index == 5) return vars_5.wgt_sum_fifo.write(data);
+    else if (index == 6) return vars_6.wgt_sum_fifo.write(data);
+    else if (index == 7) return vars_7.wgt_sum_fifo.write(data);
+    else return vars_0.wgt_sum_fifo.write(data);
+  }
+
   DATA get(int index) {
     if (index == 0) return vars_0.out_fifo.read();
     else if (index == 1) return vars_1.out_fifo.read();
@@ -547,3 +559,4 @@ struct var_array {
 };
 
 #endif // PE_MODULE_H
+
