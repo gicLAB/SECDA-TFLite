@@ -556,7 +556,7 @@ public:
       drv.t.layer = dparams.layer;
       prf_end(1, p_t.ipack);
 
-#ifdef RUN_CPU_TCONV
+#ifndef RUN_CPU_TCONV
       cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data, rhs_params,
                              input_data, dst_params, col2im_data, gemm_params,
                              cpu_backend_context);
@@ -564,6 +564,9 @@ public:
           col2im_data, output_depth, output_height, output_width, filter_height,
           filter_width, padding_top, padding_left, padding_bottom,
           padding_right, stride_height, stride_width, scratch_data_p);
+      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+                        "_col2im_cpu.csv",
+                    scratch_data_p, scratch_cols, scratch_rows);
       if (has_bias)
         optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
                                output_height, output_width, output_depth);
@@ -586,7 +589,7 @@ public:
                         "_gemm_cpu.csv",
                     col2im_data, dst_params.cols, dst_params.rows);
       saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_col2im_cpu.csv",
+                        "_biasadded_cpu.csv",
                     scratch_data_p, scratch_cols, scratch_rows);
       saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
                         "_out_cpu.csv",

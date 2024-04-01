@@ -192,7 +192,7 @@ void BlockFC(acc_container &drv) {
 }
 
 void Entry(acc_container &drv) {
-#ifdef DELEGATE_VERBOSE
+// #ifdef DELEGATE_VERBOSE
   cout << "FC ACC - Layer: " << drv.layer << endl;
   cout << "===========================" << endl;
   cout << "Pre-ACC Info" << endl;
@@ -200,7 +200,7 @@ void Entry(acc_container &drv) {
   cout << "padded_M: " << drv.pM << " M: " << drv.M << endl;
   cout << "padded_N: " << drv.pN << " N: " << drv.N << endl;
   cout << "===========================" << endl;
-#endif
+// #endif
   BlockFC(drv);
 }
 

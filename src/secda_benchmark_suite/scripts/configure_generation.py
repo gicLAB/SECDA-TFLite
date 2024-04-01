@@ -1,15 +1,15 @@
 import os
 
 supported_delegates = {
-    # "vm_delegate": "1",
+    "vm_delegate": "1",
     # "secda_sa_delegate": "1",
-    "mm2im_delegate": "1",
+    # "mm2im_delegate": "1",
     # "mm2im_fpga_delegate": "1",
     # "add_delegate": "1",
-    # "cpu": "1"
+    "cpu": "1",
 }
 supported_tools = {
-    # "benchmark_model": "bm",
+    "benchmark_model": "bm",
     "inference_diff": "id",
     # "eval_model": "em",
 }
@@ -24,12 +24,14 @@ cpu_paths = {
 }
 
 
-bb_pr = "bazel build --config=elinux_armhf -c opt //"
-bb_po = "--cxxopt='-mfpu=neon' --copt='-DACC_PROFILE' --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
+bb_po = "--cxxopt='-mfpu=neon' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
 board_user = "xilinx"
 board_hostname = "jharis.ddns.net"
 arm_dir = "/home/xilinx/Workspace/secda_benchmark_suite"
-path_to_tf = "/home/jude/Workspace/SECDA-TFLite/tensorflow"
+# path_to_tf = "/home/jude/Workspace/SECDA-TFLite/tensorflow"
+path_to_tf = "/home/jude/Workspace/SECDA-TFLite_v1.2/tensorflow"
+
 
 def generate_generation_script(output_path):
     script = "#!/bin/bash\n"

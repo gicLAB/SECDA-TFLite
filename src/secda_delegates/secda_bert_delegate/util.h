@@ -7,6 +7,7 @@
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/kernels/padding.h"
 #include "tensorflow/lite/util.h"
+#include "tensorflow/lite/kernels/internal/optimized/fully_connected_4bit.h"
 
 #include <cassert>
 
@@ -27,6 +28,9 @@ struct OpData {
   // be represented as a fixed point multiplier plus a left shift.
   int32_t output_multiplier;
   int output_shift;
+  // Per channel output multiplier and shift.
+  std::vector<int32_t> per_channel_output_multiplier;
+  std::vector<int> per_channel_output_shift;
   // The range of the fused activation layer. For example for kNone and
   // uint8_t these would be 0 and 255.
   int32_t output_activation_min;
@@ -36,7 +40,11 @@ struct OpData {
   bool compute_row_sums = false;
   // Only used for sparse hybrid fully connected kernels.
   bool ledger_initialized;
+  // Used for 4bit hybrid
+  std::unique_ptr<tflite::optimized_4bit::OpData4Bit> op_data_4bit = nullptr;
+  TfLiteType quantized_bias_type = kTfLiteNoType;
 };
+
 constexpr int kInputTensor = 0;
 constexpr int kWeightsTensor = 1;
 constexpr int kBiasTensor = 2;

@@ -1,4 +1,4 @@
-
+// Jude: This Delegate will be deprecated soon and merged with SECDA_BERT
 #include "tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/bert_sim_delegate.h"
 #include <fstream>
 #include <iostream>
@@ -23,6 +23,24 @@ struct Profile *profile;
 
 namespace tflite {
 namespace bert_sim_test {
+
+int Quantised_Multiplier_S(int x, int qm, int shift) {
+  int nshift = shift;
+  int total_shift = 31 - shift;
+  int64_t x_64 = x;
+  int64_t quantized_multiplier_64(qm);
+  int64_t one = 1;
+  int64_t round = one << (total_shift - 1);
+  int64_t result = x_64 * quantized_multiplier_64 + round;
+  result = result >> total_shift;
+  int nresult = result;
+  if (result > std::numeric_limits<int32_t>::max())
+    result = std::numeric_limits<int32_t>::max();
+  if (result < std::numeric_limits<int32_t>::min())
+    result = std::numeric_limits<int32_t>::min();
+  int32_t result_32 = result;
+  return result_32;
+}
 
 // BertSim delegate kernel.
 class BertSimDelegateKernel : public SimpleDelegateKernelInterface {
@@ -61,12 +79,11 @@ public:
     builtin_code_.resize(params->nodes_to_replace->size);
     opdatas.resize(params->nodes_to_replace->size);
     cparams.resize(params->nodes_to_replace->size);
-    wgt_sum.resize(params->nodes_to_replace->size);
     biases.resize(params->nodes_to_replace->size);
-    crf.resize(params->nodes_to_replace->size);
-    crx.resize(params->nodes_to_replace->size);
-    weight_offsets.resize(params->nodes_to_replace->size);
-    del_weights.resize(params->nodes_to_replace->size);
+    padded_input_d.resize(params->nodes_to_replace->size);
+    padded_weights_d.resize(params->nodes_to_replace->size);
+    padded_output_d.resize(params->nodes_to_replace->size);
+    biases_d.resize(params->nodes_to_replace->size);
 
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
@@ -88,7 +105,6 @@ public:
           reinterpret_cast<TfLiteFullyConnectedParams *>(
               delegated_node->builtin_data);
       OpData *opdata = reinterpret_cast<OpData *>(delegated_node->user_data);
-
       cparams[i] = cparam;
       opdatas[i] = opdata;
     }
@@ -115,11 +131,15 @@ public:
       GetOutputSafe(context, outputs_[i][0], &output);
       GetInputSafe(context, inputs_[i][0], &input);
       GetInputSafe(context, inputs_[i][1], &filter);
+      biases_d[i].resize(filter->dims->data[0]);
       if (inputs_[i].size() == 3 && inputs_[i][2] >= 0) {
         GetInputSafe(context, inputs_[i][2], &bias);
         biases[i] = bias->data.i32;
       } else {
-        biases[i] = nullptr;
+        for (int j = 0; j < filter->dims->data[0]; j++) {
+          biases_d[i][j] = 0;
+        }
+        biases[i] = &biases_d[i][0];
         bias = nullptr;
       }
 
@@ -128,7 +148,8 @@ public:
       int exponent;
       GetQuantizedConvolutionMultipler(context, input, filter, bias, output,
                                        &real_multiplier);
-      QuantizeMultiplier(real_multiplier, &data->output_multiplier, &exponent);
+      QuantizeMultiplier(real_multiplier, &data->output_multiplier,
+                         &data->output_shift);
       CalculateActivationRangeQuantized(context, params->activation, output,
                                         &data->output_activation_min,
                                         &data->output_activation_max);
@@ -155,7 +176,6 @@ public:
           context, node, req_temp_out, outputs_[i][0], temp_out_id,
           inputs_[i][0], inputs_[i][1]));
 
-      int k = node->outputs->data[out_tid];
 
       if (req_temp_out) {
         node->temporaries->data[temp_out_id] = outputs_[i][0];
@@ -170,6 +190,17 @@ public:
             context, temp_out_tensor, temp_out_tensor_size);
         if (temp_out_tensor_status != kTfLiteOk) return temp_out_tensor_status;
       }
+
+      int N = batch_size;
+      int M = num_units;
+      int K = filter->dims->data[1];
+      int rfactor = 16;
+      int pN = roundUp(N, rfactor);
+      int pM = roundUp(M, rfactor);
+      int pK = roundUp(K, rfactor);
+      padded_input_d[i].resize(pN * pK);
+      padded_weights_d[i].resize(pM * pK);
+      padded_output_d[i].resize(pM * pN);
     }
     return kTfLiteOk;
   }
@@ -193,7 +224,7 @@ public:
       GetOutputSafe(context, outputs_[i][0], &output);
 
       const TfLiteTensor *bias;
-      bool isBias = biases[i] ? true : false;
+      bool isBias =  (inputs_[i].size() == 3 && inputs_[i][2] >= 0);
       if (isBias) GetInputSafe(context, inputs_[i][2], &bias);
       else bias = nullptr;
 
@@ -235,7 +266,6 @@ public:
       const int batches = output_shape.Dims(0);
       const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
 
-
       int N = batches;
       int M = output_depth;
       int K = accum_depth;
@@ -248,15 +278,46 @@ public:
       std::vector<int> wt_sum;
       int *idims = input->dims->data;
       int *wdims = filter->dims->data;
-      int8_t *padded_input = new int8_t[pN * pK];
-      int8_t *padded_weights = new int8_t[pM * pK];
-      int8_t *padded_output = new int8_t[pM * pN];
+
+      int8_t *padded_input = &padded_input_d[i][0];
+      int8_t *padded_weights = &padded_weights_d[i][0];
+      int8_t *padded_output = &padded_output_d[i][0];
 
       // Calls the fc_driver to re-shape TFLite input/weight tensor and also
       // produces vector of sums from the tensor's rows (required for
       // re-quantization)
       precal_sum_load_pad(input->data.int8, N, K, padded_input, in_sum);
       precal_sum_load_pad(filter->data.int8, M, K, padded_weights, wt_sum);
+
+      int8_t *input_data_p = input->data.int8;
+      int8_t *filter_data_p = filter->data.int8;
+      int8_t *output_data_p = output->data.int8;
+
+      // // MatMul + Bias + InSum + WgtSum + Requantize + Clamp
+      // for (int n = 0; n < N; n++) {
+      //   for (int m = 0; m < M; m++) {
+      //     int sum = 0;
+      //     for (int k = 0; k < K; k++) {
+      //       int in = input_data_p[n * K + k];
+      //       int wt = filter_data_p[m * K + k];
+      //       int mul = in * wt;
+      //       sum += in * wt;
+      //     }
+      //     // add bias
+      //     if(associated_nodes[i]==98 && n == 0 && m ==511){
+      //       int k=0;
+      //     }
+      //     sum += biases[i][m] + (wt_sum[m] * (-rhs_offset)) +
+      //            (in_sum[n] * (-lhs_offset));
+      //     // re-quantize
+      //     sum = Quantised_Multiplier_S(sum, output_multiplier, output_shift);
+      //     sum += output_offset;
+      //     // clamp
+      //     sum = std::max(sum, output_activation_min);
+      //     sum = std::min(sum, output_activation_max);
+      //     output_data_p[n * M + m] = sum;
+      //   }
+      // }
 
       // acc_container is used to wrap all the paramters the
       // fc_driver/accelerator needs from the delegate
@@ -281,11 +342,10 @@ public:
       drv.ra = output_offset;
       drv.rhs_offset = -rhs_offset;
       drv.lhs_offset = -lhs_offset;
-      if (!isBias) drv.bias = new int32_t[pM]();
-      else drv.bias = biases[i];
+      drv.bias = biases[i];
 
-
-      // I(N,K) * W(K,M) = REQUANT(O(N,M) + B(M) + WSUM(M) + ISUM(N)), output_multiplier,output_shift,rhs_offset,lhs_offset )
+      // I(N,K) * W(K,M) = REQUANT(O(N,M) + B(M) + WSUM(M) + ISUM(N)),
+      // output_multiplier,output_shift,rhs_offset,lhs_offset )
 
       // Calls the fc_driver to offload the FC operation
       drv.start_count = dparams.start_count;
@@ -294,7 +354,10 @@ public:
 
       // Calls the fc_driver unpack/unpad result to TFLite tensor
       store_unpad(padded_output, N, M, output_data);
-      if (!isBias) delete[] drv.bias;
+
+      // saveMatrixCSV("aData/fc/" + std::to_string(associated_nodes[i]) +
+      //                   "_out_acc.csv",
+      //               output_data, N, M);
 
       dparams.layer++;
       dparams.delegated_nodes--;
@@ -310,14 +373,11 @@ public:
   std::vector<std::vector<int>> inputs_, outputs_;
   std::vector<int> builtin_code_, associated_nodes;
 
-  std::vector<std::vector<int>> wgt_sum;
-  std::vector<int> weight_offsets;
-
-  std::vector<uint32_t *> del_weights;
-
   std::vector<int *> biases;
-  std::vector<int *> crf;
-  std::vector<int8_t *> crx;
+  std::vector<std::vector<int>> biases_d;
+  std::vector<std::vector<int8_t>> padded_input_d;
+  std::vector<std::vector<int8_t>> padded_weights_d;
+  std::vector<std::vector<int8_t>> padded_output_d;
 
   std::vector<OpData *> opdatas;
   std::vector<TfLiteFullyConnectedParams *> cparams;
@@ -354,7 +414,6 @@ public:
 
     // FC
     dparams.delegated_nodes++;
-    // cout << dparams.delegated_nodes << endl;
     return true;
   }
 

@@ -90,19 +90,25 @@ model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
 # DCGAN Experiment
 models = dcgan_layers
 hardware = ["mm2im_2_2","cpu"]
-# threads = [1, 2]
 threads = [1]
 num_run = 1
 model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
 
 
 # ADD Experiment
-# hardware = add_only
-# models = add_models
-# threads = [1, 2]
-# num_run = 1
-# model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
+hardware = add_only
+models = add_models
+threads = [1, 2]
+num_run = 1
+model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
 
+# CONV Experiment
+models = conv_models
+# hardware = ["vm_3_0", "cpu", "sa_2_0"]
+hardware = ["vm_3_0","cpu"]
+threads = [1]
+num_run = 1
+model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
 
 # directories within the target board
 

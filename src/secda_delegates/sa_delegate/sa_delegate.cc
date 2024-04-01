@@ -1,26 +1,28 @@
-// #define SYSC
+// Jude: New Systolic Array Delegate
+// Tested on TFLite v2.15, only simulation and mobilenetv1
+// Hardware synthesis needs to be tested
+// FPGA runtime needs to be tested
 
-#include "tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/vm_delegate.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/sa_delegate.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/accelerator/driver/gemm_driver.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/util.h"
+#include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include <utility>
 
 #ifdef SYSC
 #include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
 #endif
 
-#include "tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/accelerator/driver/gemm_driver.h"
-#include "tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/util.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-#include "tensorflow/lite/delegates/utils/simple_delegate.h"
 
 #define DMA_BC 1
 #define DELEGATE_VERSION 3
 
-static unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
-static unsigned int dma_addrs_in[4] = {dma_in0, dma_in1, dma_in2, dma_in3};
-static unsigned int dma_addrs_out[4] = {dma_out0, dma_out1, dma_out2, dma_out3};
-static struct vm_times vm_t;
+unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
+unsigned int dma_addrs_in[4] = {dma_in0, dma_in1, dma_in2, dma_in3};
+unsigned int dma_addrs_out[4] = {dma_out0, dma_out1, dma_out2, dma_out3};
+struct sa_times sa_t;
 
 #ifdef SYSC
 #define SYSC_DMA_BL 563840 * 2
@@ -51,23 +53,22 @@ struct del_params dparams;
 static struct Profile profile;
 
 namespace tflite {
-namespace vm_test {
+namespace sa_test {
 
-// VM delegate kernel
-class VMDelegateKernel : public SimpleDelegateKernelInterface {
+// SA delegate kernel.
+class SADelegateKernel : public SimpleDelegateKernelInterface {
 public:
-  explicit VMDelegateKernel(const VMDelegateOptions &options)
+  explicit SADelegateKernel(const SADelegateOptions &options)
       : options_(options) {}
 
-  // Runs once per delegate partition
   TfLiteStatus Init(TfLiteContext *context,
                     const TfLiteDelegateParams *params) override {
-    // Init SystemC Modules & Profilier
+    // Init DMA
     if (!dparams.init) {
       std::cout << "===========================" << std::endl;
 #ifdef SYSC
       static struct sysC_sigs scs1(1);
-      static ACCNAME _acc("VM");
+      static ACCNAME _acc("SA");
       sysC_init();
       sysC_binder(&_acc, &mdma, &scs1);
       acc = &_acc;
@@ -78,7 +79,7 @@ public:
       std::cout << "Initialised the DMA" << std::endl;
 #endif
 
-      std::cout << "Vector MAC";
+      std::cout << "Systolic Array";
 #ifdef ACC_NEON
       std::cout << " with Neon";
 #endif
@@ -107,9 +108,6 @@ public:
     wt_sum3.resize(params->nodes_to_replace->size);
     wt_sum4.resize(params->nodes_to_replace->size);
     temp_im2col.resize(params->nodes_to_replace->size);
-    // temp_output.resize(params->nodes_to_replace->size);
-    // temp_out_id.resize(params->nodes_to_replace->size);
-    // for (int i = 0; i < temp_out_id.size(); i++) temp_out_id[i] = -1;
 
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
@@ -136,19 +134,13 @@ public:
     return kTfLiteOk;
   }
 
-  // Runs once per node before inference/invoke()
-  // This function preloads weights, allocates additional tensors, calculates
-  // quantization parameters For more info look into
-  // "tensorflow/lite/kernels/conv.cc" for the default implementation for Conv2D
-  // Nodes
   TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) override {
+    KernelType kernel_type = kCblasOptimized;
     int node_count = inputs_.size();
     int out_tid = 0;
-
     for (int i = 0; i < node_count; i++) {
       TfLiteConvParams *params = cparams[i];
       OpData *data = opdatas[i];
-
       TfLiteTensor *output;
       const TfLiteTensor *input;
       const TfLiteTensor *filter;
@@ -176,7 +168,6 @@ public:
           width, filter_height, filter_width, padding, &out_height, &out_width);
 
       size_t im2col_type_size = sizeof(int8_t);
-
       const size_t im2col_bytes = static_cast<size_t>(batches) * out_height *
                                   out_width * channels_in * filter_height *
                                   filter_width * im2col_type_size;
@@ -188,8 +179,8 @@ public:
       if (!req_temp_out) out_tid++;
 
       TF_LITE_ENSURE_STATUS(AllocateTemporaryTensorsIfRequired(
-          context, node, is_hybrid, data->is_hybrid_per_channel, im2col_bytes,
-          params, data, req_temp_out, outputs_[i][0], temp_o_id,
+          context, node, is_hybrid, data->is_hybrid_per_channel, kernel_type,
+          im2col_bytes, params, data, req_temp_out, outputs_[i][0], temp_o_id,
           inputs_[i][0], inputs_[i][1]));
 
       TF_LITE_ENSURE_EQ(context, filter->quantization.type,
@@ -202,6 +193,7 @@ public:
       TF_LITE_ENSURE(context,
                      (affine_quantization->scale->size == 1 ||
                       affine_quantization->scale->size == channels_out));
+
       data->per_channel_output_shift.resize(channels_out);
       crf[i].resize(channels_out);
       crx[i].resize(channels_out);
@@ -268,17 +260,17 @@ public:
       }
 
       if (req_temp_out) {
-        // temp_output[i].resize(output->bytes);
-        // temp_out_id[i] = outputs_[i][0];
         node->temporaries->data[temp_o_id] = outputs_[i][0];
-        TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
-        temp_out_tensor->type = kTfLiteInt8;
-        temp_out_tensor->allocation_type = kTfLiteArenaRw;
+
         TfLiteIntArray *temp_out_tensor_size = TfLiteIntArrayCreate(4);
         temp_out_tensor_size->data[0] = output_size->data[0];
         temp_out_tensor_size->data[1] = output_size->data[1];
         temp_out_tensor_size->data[2] = output_size->data[2];
         temp_out_tensor_size->data[3] = output_size->data[3];
+
+        TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
+        temp_out_tensor->type = kTfLiteInt8;
+        temp_out_tensor->allocation_type = kTfLiteArenaRw;
         auto temp_out_tensor_status = context->ResizeTensor(
             context, temp_out_tensor, temp_out_tensor_size);
         if (temp_out_tensor_status != kTfLiteOk) return temp_out_tensor_status;
@@ -289,14 +281,10 @@ public:
       preload_weights(filter->data.int8, dims, wb0[i], wb1[i], wb2[i], wb3[i],
                       wt_sum1[i], wt_sum2[i], wt_sum3[i], wt_sum4[i]);
     }
+
     return kTfLiteOk;
   }
 
-  // Runs once per node during inference/invoke()
-  // This function executes the operations required by node by offloading the
-  // computation to the gemm_driver For more info look into
-  // "tensorflow/lite/kernels/conv.cc" for the default implementation for Conv2D
-  // Nodes
   TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
     prf_start(0);
     int out_tid = 0;
@@ -313,36 +301,6 @@ public:
       GetInputSafe(context, inputs_[i][1], &filter);
       GetOutputSafe(context, outputs_[i][0], &output);
 
-
-      // bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
-      // if (!req_temp_out) out_tid++;
-      // bool req_temp_in = false;
-      // int temp_in_id = 0;
-      // for (int j=0; j< temp_out_id.size(); j++){
-      //   if (inputs_[i][0] == temp_out_id[j]){
-      //     req_temp_in = true;
-      //     temp_in_id = j;
-      //     break;
-      //   }
-      // }
-
-      // // const int8 *input_data = input->data.int8;
-      // const int8 *input_data;
-      // if (req_temp_in) {
-      //   input_data = &temp_output[temp_in_id][0];
-      // } else {
-      //   input_data = input->data.int8;
-      // }
-      // // int8 *output_data = output->data.int8;
-      // int8 *output_data;
-      // if (req_temp_out) {
-      //   output_data = &temp_output[i][0];
-      //   // output_data = output->data.int8;
-      // }else{
-      //   output_data = output->data.int8;
-      // }
-
-
       TfLiteTensor *im2col =
           data->need_im2col
               ? &context->tensors[node->temporaries->data[data->im2col_index]]
@@ -350,7 +308,6 @@ public:
 
       const int8 *input_data = input->data.int8;
       const int8 *filter_data = filter->data.int8;
-      // int8 *im2col_data = data->need_im2col ? im2col->data.int8 : nullptr;
       int8 *im2col_data = data->need_im2col ? &temp_im2col[i][0] : nullptr;
       int8 *output_data = output->data.int8;
 
@@ -475,24 +432,21 @@ public:
       drv.in_sum3 = in_sum3;
       drv.in_sum4 = in_sum4;
       drv.bias = biases[i];
+      drv.recv_len = recv_len;
       drv.ra = output_offset;
       drv.inp_offset = input_offset;
       drv.wgt_offset = 0;
       drv.t.layer = associated_nodes[i];
-      drv.recv_len = recv_len;
       drv.rows = gemm_input_cols;
       drv.cols = filter_rows;
       drv.depth = filter_cols;
 
-      // drv.use_sim = options_.use_simmode;
-      drv.use_sim = false;
-      // drv.clear_traces();
-
-      prf_end(1, vm_t.ipack);
+      prf_end(1, sa_t.ipack);
       // Calls the gemm_driver to offload the CONV2D operation
-      drv.t2 = vm_t;
-      tflite_vm::Entry(drv, output_data);
-      vm_t = drv.t2;
+      drv.t2 = sa_t;
+      tflite_sa::Entry(drv, output_data);
+      sa_t = drv.t2;
+
 #ifdef DELEGATE_VERBOSE
       cout << "===========================" << endl;
       cout << "Layer: " << dparams.layer
@@ -508,18 +462,15 @@ public:
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_out_acc.csv",
       //               output_data, gemm_input_cols, filter_rows);
+
       dparams.layer++;
       dparams.delegated_nodes--;
     }
-
-    // for (int j = 0; j < temp_output_tensors.size(); j++)
-    //   temp_output_tensors.at(j).free();
-    prf_end(0, vm_t.conv_total);
+    prf_end(0, sa_t.conv_total);
     return kTfLiteOk;
   }
 
   std::vector<std::vector<int>> inputs_, outputs_;
-  // std::vector<temp_tensor> temp_output_tensors;
   std::vector<int> builtin_code_, associated_nodes;
   std::vector<std::vector<int>> wt_sum1;
   std::vector<std::vector<int>> wt_sum2;
@@ -531,22 +482,21 @@ public:
   std::vector<std::vector<int8_t>> wb3;
   std::vector<int *> biases;
   std::vector<std::vector<int8_t>> temp_im2col;
-  // std::vector<std::vector<int8_t>> temp_output;
-  // std::vector<int> temp_out_id;
   std::vector<std::vector<int>> crf;
   std::vector<std::vector<int8_t>> crx;
   std::vector<OpData *> opdatas;
   std::vector<TfLiteConvParams *> cparams;
 
 private:
-  const VMDelegateOptions options_;
+  const SADelegateOptions options_;
 };
 
-// VMDelegate implements the interface of SimpleDelegateInterface.
+// SADelegate implements the interface of SimpleDelegateInterface.
 // This holds the Delegate capabilities.
-class VMDelegate : public SimpleDelegateInterface {
+class SADelegate : public SimpleDelegateInterface {
 public:
-  explicit VMDelegate(const VMDelegateOptions &options) : options_(options) {}
+  explicit SADelegate(const SADelegateOptions &options)
+      : options_(options) {}
 
   bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
                                  const TfLiteNode *node,
@@ -554,19 +504,17 @@ public:
     // Only supports CONV2D op
     if (kTfLiteBuiltinConv2d != registration->builtin_code) return false;
 
-    // This delegate only supports int8 types.
+    // This delegate only supports int8 types
     if (node->inputs->size != 3) return false;
     for (int i = 0; i < 2; ++i) {
       auto &tensor = context->tensors[node->inputs->data[i]];
       if (tensor.type != kTfLiteInt8) return false;
-      // if (tensor.dims->data[0] == 1000) return false;
     }
 
     // Ensures bias tensor is supports int32 type
     auto &tensor = context->tensors[node->inputs->data[2]];
     if (tensor.type != kTfLiteInt32) return false;
 
-    // if (dparams.delegated_nodes > 3) return false;
     // Adds node for delegation
     dparams.delegated_nodes++;
     return true;
@@ -575,13 +523,13 @@ public:
   TfLiteStatus Initialize(TfLiteContext *context) override { return kTfLiteOk; }
 
   const char *Name() const override {
-    static constexpr char kName[] = "VMDelegate";
+    static constexpr char kName[] = "SADelegate";
     return kName;
   }
 
   std::unique_ptr<SimpleDelegateKernelInterface>
   CreateDelegateKernelInterface() override {
-    return std::make_unique<VMDelegateKernel>(options_);
+    return std::make_unique<SADelegateKernel>(options_);
   }
 
   SimpleDelegateInterface::Options DelegateOptions() const override {
@@ -590,38 +538,37 @@ public:
   }
 
 private:
-  const VMDelegateOptions options_;
+  const SADelegateOptions options_;
 };
 
-} // namespace vm_test
+} // namespace sa_test
 } // namespace tflite
 
-VMDelegateOptions TfLiteVMDelegateOptionsDefault() {
-  VMDelegateOptions options = {0};
-  // Just assign an invalid builtin code so that this vm test delegate will
-  // not support any node by default.
+SADelegateOptions TfLiteSADelegateOptionsDefault() {
+  SADelegateOptions options = {0};
+  // Just assign an invalid builtin code so that this sa test delegate
+  // will not support any node by default.
   options.allowed_builtin_code = -1;
   return options;
 }
 
 // Creates a new delegate instance that need to be destroyed with
-// `TfLiteVMDelegateDelete` when delegate is no longer used by TFLite.
+// `TfLiteSADelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate *TfLiteVMDelegateCreate(const VMDelegateOptions *options) {
-  std::cout << "===========================" << std::endl;
-  std::cout << "Created" << std::endl;
-  std::cout << "===========================" << std::endl;
-  std::unique_ptr<tflite::vm_test::VMDelegate> vm(
-      new tflite::vm_test::VMDelegate(
-          options ? *options : TfLiteVMDelegateOptionsDefault()));
-  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(vm));
+TfLiteDelegate *
+TfLiteSADelegateCreate(const SADelegateOptions *options) {
+  std::unique_ptr<tflite::sa_test::SADelegate> sa(
+      new tflite::sa_test::SADelegate(
+          options ? *options : TfLiteSADelegateOptionsDefault()));
+  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
+      std::move(sa));
 }
 
-// Destroys a delegate created with `TfLiteVMDelegateCreate` call.
-void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
+// Destroys a delegate created with `TfLiteSADelegateCreate` call.
+void TfLiteSADelegateDelete(TfLiteDelegate *delegate) {
   // Saves profilier records once all delegated nodes are executed
   // SYSC_ON(profile.saveProfile(acc->profiling_vars));
-  SYSC_ON(profile.saveCSVRecords(".data/VMv3"));
+  SYSC_ON(profile.saveCSVRecords(".data/SAv3"));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
@@ -633,8 +580,8 @@ void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
     for (int i = 0; i < 4; i++) dfs[i].free();
   }
 #endif
-  vm_t.print();
-  vm_t.save_prf();
+  sa_t.print();
+  sa_t.save_prf();
   std::cout << "===========================" << std::endl;
   std::cout << "Deleted" << std::endl;
   std::cout << "===========================" << std::endl;

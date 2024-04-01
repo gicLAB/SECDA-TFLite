@@ -1,62 +1,34 @@
-// #define SYSC
+#define SYSC
 
-#include "tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/vm_delegate.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/vm_sim_delegate.h"
+
 #include <utility>
 
-#ifdef SYSC
 #include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
-#endif
-
-#include "tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/accelerator/driver/gemm_driver.h"
-#include "tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/util.h"
+#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/accelerator/driver/gemm_driver.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/util.h"
 
-#define DMA_BC 1
-#define DELEGATE_VERSION 3
-
-static unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
-static unsigned int dma_addrs_in[4] = {dma_in0, dma_in1, dma_in2, dma_in3};
-static unsigned int dma_addrs_out[4] = {dma_out0, dma_out1, dma_out2, dma_out3};
-static struct vm_times vm_t;
-
-#ifdef SYSC
-#define SYSC_DMA_BL 563840 * 2
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
-                             SYSC_DMA_BL);
+// Some variables needs to be defined across multiple instances of the delegate
+unsigned int dma_addrs[4] = {0, 0, 0, 0};
+unsigned int dma_addrs_in[4] = {0x16000000, 0x18000000, 0x1a000000, 0x1c000000};
+unsigned int dma_addrs_out[4] = {0x16800000, 0x18800000, 0x1a800000,
+                                 0x1c800000};
+struct multi_dma *mdma;
 ACCNAME *acc;
-struct dma_buffer_set dfs[4] = {
-    {DMA_BC, (SYSC_DMA_BL / DMA_BC), dma_in0},
-    {DMA_BC, (SYSC_DMA_BL / DMA_BC), dma_in1},
-    {DMA_BC, (SYSC_DMA_BL / DMA_BC), dma_in2},
-    {DMA_BC, (SYSC_DMA_BL / DMA_BC), dma_in3},
-};
-int recv_len = (SYSC_DMA_BL / DMA_BC);
-#else
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
-int *acc;
-struct dma_buffer_set dfs[4] = {
-    {DMA_BC, (DMA_BL / DMA_BC), dma_in0},
-    {DMA_BC, (DMA_BL / DMA_BC), dma_in1},
-    {DMA_BC, (DMA_BL / DMA_BC), dma_in2},
-    {DMA_BC, (DMA_BL / DMA_BC), dma_in3},
-};
-int recv_len = (DMA_BL / DMA_BC);
-#endif
-
-struct store_params st_params[DMA_BC];
 struct del_params dparams;
-static struct Profile profile;
+struct Profile *profile;
 
 namespace tflite {
-namespace vm_test {
+namespace vmsim_test {
 
-// VM delegate kernel
-class VMDelegateKernel : public SimpleDelegateKernelInterface {
+// VMSim delegate kernel
+class VMSimDelegateKernel : public SimpleDelegateKernelInterface {
 public:
-  explicit VMDelegateKernel(const VMDelegateOptions &options)
+  explicit VMSimDelegateKernel(const VMSimDelegateOptions &options)
       : options_(options) {}
 
   // Runs once per delegate partition
@@ -64,27 +36,23 @@ public:
                     const TfLiteDelegateParams *params) override {
     // Init SystemC Modules & Profilier
     if (!dparams.init) {
-      std::cout << "===========================" << std::endl;
-#ifdef SYSC
       static struct sysC_sigs scs1(1);
       static ACCNAME _acc("VM");
+      static struct multi_dma _mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
+                                    563840*2);
+      static struct Profile _profile;
       sysC_init();
-      sysC_binder(&_acc, &mdma, &scs1);
+      sysC_binder(&_acc, &_mdma, &scs1);
+      mdma = &_mdma;
       acc = &_acc;
-      std::cout << "Initialised the SystemC Modules" << std::endl;
-#else
-      dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
-      acc = dparams.acc;
-      std::cout << "Initialised the DMA" << std::endl;
-#endif
+      profile = &_profile;
+      dparams.init = true;
 
-      std::cout << "Vector MAC";
-#ifdef ACC_NEON
-      std::cout << " with Neon";
-#endif
+      std::cout << "===========================" << std::endl;
+      std::cout << "Initialised the SystemC Modules" << std::endl;
+      std::cout << "Vector MAC Accelerator";
       std::cout << std::endl;
       std::cout << "===========================" << std::endl;
-      dparams.init = true;
     }
 
     // Save Tensors input & outputs
@@ -106,10 +74,6 @@ public:
     wt_sum2.resize(params->nodes_to_replace->size);
     wt_sum3.resize(params->nodes_to_replace->size);
     wt_sum4.resize(params->nodes_to_replace->size);
-    temp_im2col.resize(params->nodes_to_replace->size);
-    // temp_output.resize(params->nodes_to_replace->size);
-    // temp_out_id.resize(params->nodes_to_replace->size);
-    // for (int i = 0; i < temp_out_id.size(); i++) temp_out_id[i] = -1;
 
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
@@ -181,15 +145,13 @@ public:
                                   out_width * channels_in * filter_height *
                                   filter_width * im2col_type_size;
 
-      int temp_o_id;
-      int nod = node->outputs->data[out_tid];
-      int oi = outputs_[i][0];
+      int temp_out_id;
       bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
       if (!req_temp_out) out_tid++;
 
       TF_LITE_ENSURE_STATUS(AllocateTemporaryTensorsIfRequired(
           context, node, is_hybrid, data->is_hybrid_per_channel, im2col_bytes,
-          params, data, req_temp_out, outputs_[i][0], temp_o_id,
+          params, data, req_temp_out, outputs_[i][0], temp_out_id,
           inputs_[i][0], inputs_[i][1]));
 
       TF_LITE_ENSURE_EQ(context, filter->quantization.type,
@@ -242,7 +204,6 @@ public:
         auto im2col_status =
             context->ResizeTensor(context, im2col, im2col_size);
         if (im2col_status != kTfLiteOk) return im2col_status;
-        temp_im2col[i].resize(im2col_bytes);
       }
 
       if (data->need_hwcn_weights) {
@@ -267,10 +228,29 @@ public:
         data->have_weights_been_transposed = false;
       }
 
+      // if (data->need_im2col) {
+      //   node->temporaries->data[data->im2col_index] = data->im2col_id;
+      //   TfLiteIntArray* im2col_size = TfLiteIntArrayCreate(4);
+      //   int input_depth = input->dims->data[3];
+      //   im2col_size->data[0] = output_size->data[0];
+      //   im2col_size->data[1] = output_size->data[1];
+      //   im2col_size->data[2] = output_size->data[2];
+      //   im2col_size->data[3] = input_depth * filter_height * filter_width;
+
+      //   TfLiteTensor* im2col =
+      //       &context->tensors[node->temporaries->data[data->im2col_index]];
+      //   im2col->type = input->type;
+      //   if (is_hybrid) {
+      //     im2col->type = filter->type;
+      //   }
+      //   im2col->allocation_type = kTfLiteArenaRw;
+      //   auto im2col_status =
+      //       context->ResizeTensor(context, im2col, im2col_size);
+      //   if (im2col_status != kTfLiteOk) return im2col_status;
+      // }
+
       if (req_temp_out) {
-        // temp_output[i].resize(output->bytes);
-        // temp_out_id[i] = outputs_[i][0];
-        node->temporaries->data[temp_o_id] = outputs_[i][0];
+        node->temporaries->data[temp_out_id] = outputs_[i][0];
         TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
         temp_out_tensor->type = kTfLiteInt8;
         temp_out_tensor->allocation_type = kTfLiteArenaRw;
@@ -282,6 +262,13 @@ public:
         auto temp_out_tensor_status = context->ResizeTensor(
             context, temp_out_tensor, temp_out_tensor_size);
         if (temp_out_tensor_status != kTfLiteOk) return temp_out_tensor_status;
+        // struct temp_tensor temp_tensor_output;
+        // temp_tensor_output.tensor_id = outputs_[i][0];
+        // temp_tensor_output.dims = temp_out_tensor_size;
+        // temp_tensor_output.type = kTfLiteInt8;
+        // temp_tensor_output.bytes = temp_out_tensor->bytes;
+        // temp_tensor_output.data.int8 = new int8_t[temp_out_tensor->bytes];
+        // temp_output_tensors.push_back(temp_tensor_output);
       }
 
       biases[i] = bias->data.i32;
@@ -298,11 +285,8 @@ public:
   // "tensorflow/lite/kernels/conv.cc" for the default implementation for Conv2D
   // Nodes
   TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
-    prf_start(0);
-    int out_tid = 0;
     int node_count = inputs_.size();
     for (int i = 0; i < node_count; i++) {
-      prf_start(1);
       auto *params = cparams[i];
       OpData *data = opdatas[i];
       const TfLiteTensor *input;
@@ -313,35 +297,14 @@ public:
       GetInputSafe(context, inputs_[i][1], &filter);
       GetOutputSafe(context, outputs_[i][0], &output);
 
-
-      // bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
-      // if (!req_temp_out) out_tid++;
-      // bool req_temp_in = false;
-      // int temp_in_id = 0;
-      // for (int j=0; j< temp_out_id.size(); j++){
-      //   if (inputs_[i][0] == temp_out_id[j]){
-      //     req_temp_in = true;
-      //     temp_in_id = j;
+      // loop through temp_output_tensors and check if tensor_id matches with
+      // outputs_[i][0]
+      // for (int j = 0; j < temp_output_tensors.size(); j++) {
+      //   if (temp_output_tensors.at(j).tensor_id == outputs_[i][0]) {
+      //     output->data.int8 = temp_output_tensors.at(j).data.int8;
       //     break;
       //   }
       // }
-
-      // // const int8 *input_data = input->data.int8;
-      // const int8 *input_data;
-      // if (req_temp_in) {
-      //   input_data = &temp_output[temp_in_id][0];
-      // } else {
-      //   input_data = input->data.int8;
-      // }
-      // // int8 *output_data = output->data.int8;
-      // int8 *output_data;
-      // if (req_temp_out) {
-      //   output_data = &temp_output[i][0];
-      //   // output_data = output->data.int8;
-      // }else{
-      //   output_data = output->data.int8;
-      // }
-
 
       TfLiteTensor *im2col =
           data->need_im2col
@@ -350,8 +313,7 @@ public:
 
       const int8 *input_data = input->data.int8;
       const int8 *filter_data = filter->data.int8;
-      // int8 *im2col_data = data->need_im2col ? im2col->data.int8 : nullptr;
-      int8 *im2col_data = data->need_im2col ? &temp_im2col[i][0] : nullptr;
+      int8 *im2col_data = data->need_im2col ? im2col->data.int8 : nullptr;
       int8 *output_data = output->data.int8;
 
       ConvParams op_params;
@@ -433,17 +395,61 @@ public:
       int w = ((width + 3) - ((width + 3) % 4));
       int depth = filter_cols;
       int d = ((depth + 15) - ((depth + 15) % 16));
+      int d2 = depth * 2;
+      int d3 = depth * 3;
+      int d4 = depth * 4;
+
       int s_need = w * d / 4 + 1;
-      int in_sum1[w / 4];
-      int in_sum2[w / 4];
-      int in_sum3[w / 4];
-      int in_sum4[w / 4];
       int8_t inb0[s_need];
       int8_t inb1[s_need];
       int8_t inb2[s_need];
       int8_t inb3[s_need];
-      precal_sum_load_pad(gemm_input_data, width, depth, inb0, inb1, inb2, inb3,
-                          in_sum1, in_sum2, in_sum3, in_sum4);
+      int i_c = 0;
+      int sums_curr = 0;
+
+      int in_sum1[w / 4];
+      int in_sum2[w / 4];
+      int in_sum3[w / 4];
+      int in_sum4[w / 4];
+
+      int dm = 0;
+      for (int i = 0; i < w / 4; i++) {
+        int id = i * d4;
+        int i0 = id;
+        int i1 = id + depth;
+        int i2 = id + d2;
+        int i3 = id + d3;
+        int ss0 = 0;
+        int ss1 = 0;
+        int ss2 = 0;
+        int ss3 = 0;
+
+        for (int j = dm; j < d; j++) {
+          if (j < depth) {
+            unsigned char w0 = gemm_input_data[i0 + j];
+            unsigned char w1 = gemm_input_data[i1 + j];
+            unsigned char w2 = gemm_input_data[i2 + j];
+            unsigned char w3 = gemm_input_data[i3 + j];
+            ss0 += w0;
+            ss1 += w1;
+            ss2 += w2;
+            ss3 += w3;
+            inb0[i_c] = w0;
+            inb1[i_c] = w1;
+            inb2[i_c] = w2;
+            inb3[i_c++] = w3;
+          } else {
+            inb0[i_c] = 0;
+            inb1[i_c] = 0;
+            inb2[i_c] = 0;
+            inb3[i_c++] = 0;
+          }
+        }
+        in_sum1[sums_curr] = (ss0);
+        in_sum2[sums_curr] = (ss1);
+        in_sum3[sums_curr] = (ss2);
+        in_sum4[sums_curr++] = (ss3);
+      }
 
       int *wb_0 = reinterpret_cast<int *>(&wb0[i][0]);
       int *wb_1 = reinterpret_cast<int *>(&wb1[i][0]);
@@ -452,15 +458,11 @@ public:
 
       // acc_container is used to wrap all the paramters the
       // gemm_driver/accelerator needs from the delegate
-      struct acc_container drv(wb_0, wb_1, wb_2, wb_3, wt_sum1[i], wt_sum2[i],
-                               wt_sum3[i], wt_sum4[i], crf[i], crx[i]);
-      drv.acc = acc;
-      drv.mdma = &mdma;
-      drv.profile = &profile;
-      drv.st_params = st_params;
-      drv.dfs = dfs;
-      drv.mt_context = &dparams.mt_context;
-      drv.thread_count = context->recommended_num_threads;
+      struct acc_container drv(acc, wb_0, wb_1, wb_2, wb_3, wt_sum1[i],
+                               wt_sum2[i], wt_sum3[i], wt_sum4[i], crf[i],
+                               crx[i]);
+      drv.mdma = mdma;
+      drv.profile = profile;
       drv.in_id = 0;
       int *inb_0 = reinterpret_cast<int *>(inb0);
       int *inb_1 = reinterpret_cast<int *>(inb1);
@@ -476,50 +478,62 @@ public:
       drv.in_sum4 = in_sum4;
       drv.bias = biases[i];
       drv.ra = output_offset;
-      drv.inp_offset = input_offset;
-      drv.wgt_offset = 0;
-      drv.t.layer = associated_nodes[i];
-      drv.recv_len = recv_len;
+      drv.rhs_offset = input_offset;
+      drv.lhs_offset = 0;
+      drv.t.layer = dparams.layer;
+
       drv.rows = gemm_input_cols;
       drv.cols = filter_rows;
       drv.depth = filter_cols;
 
-      // drv.use_sim = options_.use_simmode;
-      drv.use_sim = false;
-      // drv.clear_traces();
+      int8_params ts_lhs_params;
+      int8_params ts_rhs_params;
+      int8_params ts_dst_params;
+      ts_lhs_params.Init(filter_data, 0, filter_rows, filter_cols, filter_cols,
+                         0);
+      ts_rhs_params.Init(gemm_input_data, 1, gemm_input_rows, gemm_input_cols,
+                         gemm_input_rows, 0);
+      ts_dst_params.Init(output_data, 1, output_rows, output_cols, 0);
 
-      prf_end(1, vm_t.ipack);
       // Calls the gemm_driver to offload the CONV2D operation
-      drv.t2 = vm_t;
-      tflite_vm::Entry(drv, output_data);
-      vm_t = drv.t2;
-#ifdef DELEGATE_VERBOSE
-      cout << "===========================" << endl;
-      cout << "Layer: " << dparams.layer
-           << "      Node: " << associated_nodes[i] << endl;
-      cout << "===========================" << endl;
-#endif
-      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-      //                   "_wgt_acc.csv",
-      //               filter_data, filter_rows, filter_cols);
-      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-      //                   "_inp_acc.csv",
-      //               gemm_input_data, gemm_input_cols, gemm_input_rows);
-      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-      //                   "_out_acc.csv",
-      //               output_data, gemm_input_cols, filter_rows);
+      // tflite_vmsim::Entry(drv, ts_lhs_params, ts_rhs_params, ts_dst_params);
+
+      drv.use_sim = options_.use_simmode;
+      drv.layer = dparams.layer;
+
+      mdma->dmas[0].dmad->rm.use_sim = options_.use_simmode;
+      mdma->dmas[0].dmad->rm.layer = dparams.layer;
+      mdma->dmas[1].dmad->rm.use_sim = options_.use_simmode;
+      mdma->dmas[1].dmad->rm.layer = dparams.layer;
+      mdma->dmas[2].dmad->rm.use_sim = options_.use_simmode;
+      mdma->dmas[2].dmad->rm.layer = dparams.layer;
+      mdma->dmas[3].dmad->rm.use_sim = options_.use_simmode;
+      mdma->dmas[3].dmad->rm.layer = dparams.layer;
+
+      drv.clear_traces();
+
+      tflite_vmsim::Entry(drv, output_data);
+      saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
+                        "_del_out_acc.csv",
+                    output_data, gemm_input_cols, filter_rows);
       dparams.layer++;
       dparams.delegated_nodes--;
     }
 
     // for (int j = 0; j < temp_output_tensors.size(); j++)
     //   temp_output_tensors.at(j).free();
-    prf_end(0, vm_t.conv_total);
+
+    // Saves profilier records once all delegated nodes are executed
+    if (dparams.delegated_nodes == 0) {
+      profile->saveProfile(acc->profiling_vars);
+      profile->saveCSVRecords(".data/vm_sim");
+    }
     return kTfLiteOk;
   }
 
   std::vector<std::vector<int>> inputs_, outputs_;
   // std::vector<temp_tensor> temp_output_tensors;
+
   std::vector<int> builtin_code_, associated_nodes;
   std::vector<std::vector<int>> wt_sum1;
   std::vector<std::vector<int>> wt_sum2;
@@ -530,23 +544,21 @@ public:
   std::vector<std::vector<int8_t>> wb2;
   std::vector<std::vector<int8_t>> wb3;
   std::vector<int *> biases;
-  std::vector<std::vector<int8_t>> temp_im2col;
-  // std::vector<std::vector<int8_t>> temp_output;
-  // std::vector<int> temp_out_id;
   std::vector<std::vector<int>> crf;
   std::vector<std::vector<int8_t>> crx;
   std::vector<OpData *> opdatas;
   std::vector<TfLiteConvParams *> cparams;
 
 private:
-  const VMDelegateOptions options_;
+  const VMSimDelegateOptions options_;
 };
 
-// VMDelegate implements the interface of SimpleDelegateInterface.
+// VMSimDelegate implements the interface of SimpleDelegateInterface.
 // This holds the Delegate capabilities.
-class VMDelegate : public SimpleDelegateInterface {
+class VMSimDelegate : public SimpleDelegateInterface {
 public:
-  explicit VMDelegate(const VMDelegateOptions &options) : options_(options) {}
+  explicit VMSimDelegate(const VMSimDelegateOptions &options)
+      : options_(options) {}
 
   bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
                                  const TfLiteNode *node,
@@ -559,14 +571,12 @@ public:
     for (int i = 0; i < 2; ++i) {
       auto &tensor = context->tensors[node->inputs->data[i]];
       if (tensor.type != kTfLiteInt8) return false;
-      // if (tensor.dims->data[0] == 1000) return false;
     }
 
     // Ensures bias tensor is supports int32 type
     auto &tensor = context->tensors[node->inputs->data[2]];
     if (tensor.type != kTfLiteInt32) return false;
 
-    // if (dparams.delegated_nodes > 3) return false;
     // Adds node for delegation
     dparams.delegated_nodes++;
     return true;
@@ -575,13 +585,13 @@ public:
   TfLiteStatus Initialize(TfLiteContext *context) override { return kTfLiteOk; }
 
   const char *Name() const override {
-    static constexpr char kName[] = "VMDelegate";
+    static constexpr char kName[] = "VMSimDelegate";
     return kName;
   }
 
   std::unique_ptr<SimpleDelegateKernelInterface>
   CreateDelegateKernelInterface() override {
-    return std::make_unique<VMDelegateKernel>(options_);
+    return std::make_unique<VMSimDelegateKernel>(options_);
   }
 
   SimpleDelegateInterface::Options DelegateOptions() const override {
@@ -590,53 +600,31 @@ public:
   }
 
 private:
-  const VMDelegateOptions options_;
+  const VMSimDelegateOptions options_;
 };
 
-} // namespace vm_test
+} // namespace vmsim_test
 } // namespace tflite
 
-VMDelegateOptions TfLiteVMDelegateOptionsDefault() {
-  VMDelegateOptions options = {0};
-  // Just assign an invalid builtin code so that this vm test delegate will
+VMSimDelegateOptions TfLiteVMSimDelegateOptionsDefault() {
+  VMSimDelegateOptions options = {0};
+  // Just assign an invalid builtin code so that this vmsim test delegate will
   // not support any node by default.
   options.allowed_builtin_code = -1;
   return options;
 }
 
 // Creates a new delegate instance that need to be destroyed with
-// `TfLiteVMDelegateDelete` when delegate is no longer used by TFLite.
+// `TfLiteVMSimDelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate *TfLiteVMDelegateCreate(const VMDelegateOptions *options) {
-  std::cout << "===========================" << std::endl;
-  std::cout << "Created" << std::endl;
-  std::cout << "===========================" << std::endl;
-  std::unique_ptr<tflite::vm_test::VMDelegate> vm(
-      new tflite::vm_test::VMDelegate(
-          options ? *options : TfLiteVMDelegateOptionsDefault()));
-  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(vm));
+TfLiteDelegate *TfLiteVMSimDelegateCreate(const VMSimDelegateOptions *options) {
+  std::unique_ptr<tflite::vmsim_test::VMSimDelegate> vmsim(
+      new tflite::vmsim_test::VMSimDelegate(
+          options ? *options : TfLiteVMSimDelegateOptionsDefault()));
+  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(vmsim));
 }
 
-// Destroys a delegate created with `TfLiteVMDelegateCreate` call.
-void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
-  // Saves profilier records once all delegated nodes are executed
-  // SYSC_ON(profile.saveProfile(acc->profiling_vars));
-  SYSC_ON(profile.saveCSVRecords(".data/VMv3"));
-#ifndef SYSC
-  if (!dparams.unmap) {
-    mdma.multi_free_dmas();
-    munmap(dparams.acc, 65536);
-    std::cout << "===========================" << std::endl;
-    std::cout << "Unmapped DMA I/O Buffers" << std::endl;
-    std::cout << "===========================" << std::endl;
-    dparams.unmap = true;
-    for (int i = 0; i < 4; i++) dfs[i].free();
-  }
-#endif
-  vm_t.print();
-  vm_t.save_prf();
-  std::cout << "===========================" << std::endl;
-  std::cout << "Deleted" << std::endl;
-  std::cout << "===========================" << std::endl;
+// Destroys a delegate created with `TfLiteVMSimDelegateCreate` call.
+void TfLiteVMSimDelegateDelete(TfLiteDelegate *delegate) {
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }

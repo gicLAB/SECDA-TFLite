@@ -12,12 +12,7 @@
 #include <sys/stat.h>
 #include <typeinfo>
 
-// GEMM_Driver for simulated VM acccelerator
-namespace tflite_vm {
-
-// void gen_opcode(opcode &op, int layer, bool load_wgt, bool load_inp,
-//                 bool compute){
-// };
+namespace tflite_sa {
 
 void Config_Acc(acc_container &drv) {
   drv.mdma->multi_dma_change_start_4(0);
@@ -30,7 +25,6 @@ void Config_Acc(acc_container &drv) {
   drv.mdma->dmas[0].dma_wait_send();
 }
 
-// Previously called Load_inp_Data
 void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
                      int depth, int rdepth) {
   prf_start(1);
@@ -130,6 +124,7 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
     in3[inl3++] = (p_inp_sums4[i] + offdepth) * drv.wgt_offset;
   }
 #endif
+
   drv.mdma->dmas[0].dma_start_send(inl0);
   drv.mdma->dmas[1].dma_start_send(inl1);
   drv.mdma->dmas[2].dma_start_send(inl2);
@@ -254,7 +249,6 @@ void Store_Results(acc_container &drv) {
   int output_stride = sp.dcs;
   int rcols_step = sp.cols;
   int rows_step = sp.rrows;
-  int cols_step = sp.rcols;
   int8_t *base = reinterpret_cast<int8_t *>(sp.dst);
   int *o0 = drv.mdma->dmas[0].dma_get_outbuffer() + (offset / 4);
   int *o1 = drv.mdma->dmas[1].dma_get_outbuffer() + (offset / 4);
@@ -268,81 +262,189 @@ void Store_Results(acc_container &drv) {
   int out1 = 0;
   int out2 = 0;
   int out3 = 0;
-  int drows = rows_step - (rows_step % 4);
-  int colsr = rcols_step - cols_step;
-  int unrolled_cols = cols_step - cols_step % 16;
+  int acc_rows = SA_SIZE_Y;
+  int acc_cols = SA_SIZE_X;
+  int unrolled_cols = rcols_step - rcols_step % acc_cols;
+  int unrolled_rows = rows_step - (rows_step % acc_rows);
 
 #ifndef ACC_NEON
-  for (int i = 0; i < drows; i += 4) {
-    for (int j = 0; j < cols_step; j++) {
+  for (int i = 0; i < unrolled_rows; i += acc_rows) {
+    for (int j = 0; j < unrolled_cols; j += acc_cols) {
+      for (int k = 0; k < acc_cols; k++) {
+        base[(i + 0) * output_stride + (j) + k] = bo0[out0++];
+        base[(i + 1) * output_stride + (j) + k] = bo1[out1++];
+        base[(i + 2) * output_stride + (j) + k] = bo2[out2++];
+        base[(i + 3) * output_stride + (j) + k] = bo3[out3++];
+      }
+      for (int k = 0; k < acc_cols; k++) {
+        base[(i + 4) * output_stride + (j) + k] = bo0[out0++];
+        base[(i + 5) * output_stride + (j) + k] = bo1[out1++];
+        base[(i + 6) * output_stride + (j) + k] = bo2[out2++];
+        base[(i + 7) * output_stride + (j) + k] = bo3[out3++];
+      }
+      if (acc_rows == 8) continue;
+      for (int k = 0; k < acc_cols; k++) {
+        base[(i + 8) * output_stride + (j) + k] = bo0[out0++];
+        base[(i + 9) * output_stride + (j) + k] = bo1[out1++];
+        base[(i + 10) * output_stride + (j) + k] = bo2[out2++];
+        base[(i + 11) * output_stride + (j) + k] = bo3[out3++];
+      }
+      for (int k = 0; k < acc_cols; k++) {
+        base[(i + 12) * output_stride + (j) + k] = bo0[out0++];
+        base[(i + 13) * output_stride + (j) + k] = bo1[out1++];
+        base[(i + 14) * output_stride + (j) + k] = bo2[out2++];
+        base[(i + 15) * output_stride + (j) + k] = bo3[out3++];
+      }
+    }
+
+    for (int j = unrolled_cols; j < rcols_step; j++) {
       base[(i + 0) * output_stride + j] = bo0[out0++];
       base[(i + 1) * output_stride + j] = bo1[out1++];
       base[(i + 2) * output_stride + j] = bo2[out2++];
       base[(i + 3) * output_stride + j] = bo3[out3++];
     }
-    out0 += colsr;
-    out1 += colsr;
-    out2 += colsr;
-    out3 += colsr;
+    for (int j = unrolled_cols; j < rcols_step; j++) {
+      base[(i + 4) * output_stride + j] = bo0[out0++];
+      base[(i + 5) * output_stride + j] = bo1[out1++];
+      base[(i + 6) * output_stride + j] = bo2[out2++];
+      base[(i + 7) * output_stride + j] = bo3[out3++];
+    }
+    if (acc_rows == 8) continue;
+    for (int j = unrolled_cols; j < rcols_step; j++) {
+      base[(i + 8) * output_stride + j] = bo0[out0++];
+      base[(i + 9) * output_stride + j] = bo1[out1++];
+      base[(i + 10) * output_stride + j] = bo2[out2++];
+      base[(i + 11) * output_stride + j] = bo3[out3++];
+    }
+    for (int j = unrolled_cols; j < rcols_step; j++) {
+      base[(i + 12) * output_stride + j] = bo0[out0++];
+      base[(i + 13) * output_stride + j] = bo1[out1++];
+      base[(i + 14) * output_stride + j] = bo2[out2++];
+      base[(i + 15) * output_stride + j] = bo3[out3++];
+    }
   }
 #else
-  for (int i = 0; i < drows; i += 4) {
-    int8x16_t tmp0;
-    int8x16_t tmp1;
-    int8x16_t tmp2;
-    int8x16_t tmp3;
+  for (int i = 0; i < unrolled_rows; i += 16) {
     int di0 = i * output_stride;
     int di1 = (i + 1) * output_stride;
     int di2 = (i + 2) * output_stride;
     int di3 = (i + 3) * output_stride;
+    int di4 = (i + 4) * output_stride;
+    int di5 = (i + 5) * output_stride;
+    int di6 = (i + 6) * output_stride;
+    int di7 = (i + 7) * output_stride;
+    int di8 = (i + 8) * output_stride;
+    int di9 = (i + 9) * output_stride;
+    int di10 = (i + 10) * output_stride;
+    int di11 = (i + 11) * output_stride;
+    int di12 = (i + 12) * output_stride;
+    int di13 = (i + 13) * output_stride;
+    int di14 = (i + 14) * output_stride;
+    int di15 = (i + 15) * output_stride;
+
     for (int j = 0; j < unrolled_cols; j += 16) {
-      tmp0 = vld1q_s8(bo0 + out0);
-      tmp1 = vld1q_s8(bo1 + out1);
-      tmp2 = vld1q_s8(bo2 + out2);
-      tmp3 = vld1q_s8(bo3 + out3);
-      vst1q_s8(base + di0 + j, tmp0);
-      vst1q_s8(base + di1 + j, tmp1);
-      vst1q_s8(base + di2 + j, tmp2);
-      vst1q_s8(base + di3 + j, tmp3);
-      out0 += 16;
-      out1 += 16;
-      out2 += 16;
-      out3 += 16;
+      vst1q_s8(base + di0 + j, vld1q_s8(bo0 + out0));
+      vst1q_s8(base + di1 + j, vld1q_s8(bo1 + out1));
+      vst1q_s8(base + di2 + j, vld1q_s8(bo2 + out2));
+      vst1q_s8(base + di3 + j, vld1q_s8(bo3 + out3));
+      vst1q_s8(base + di4 + j, vld1q_s8(bo0 + out0 + 16));
+      vst1q_s8(base + di5 + j, vld1q_s8(bo1 + out1 + 16));
+      vst1q_s8(base + di6 + j, vld1q_s8(bo2 + out2 + 16));
+      vst1q_s8(base + di7 + j, vld1q_s8(bo3 + out3 + 16));
+      vst1q_s8(base + di8 + j, vld1q_s8(bo0 + out0 + 32));
+      vst1q_s8(base + di9 + j, vld1q_s8(bo1 + out1 + 32));
+      vst1q_s8(base + di10 + j, vld1q_s8(bo2 + out2 + 32));
+      vst1q_s8(base + di11 + j, vld1q_s8(bo3 + out3 + 32));
+      vst1q_s8(base + di12 + j, vld1q_s8(bo0 + out0 + 48));
+      vst1q_s8(base + di13 + j, vld1q_s8(bo1 + out1 + 48));
+      vst1q_s8(base + di14 + j, vld1q_s8(bo2 + out2 + 48));
+      vst1q_s8(base + di15 + j, vld1q_s8(bo3 + out3 + 48));
+      out0 += 64;
+      out1 += 64;
+      out2 += 64;
+      out3 += 64;
     }
-    for (int j = unrolled_cols; j < cols_step; j++) {
+    for (int j = unrolled_cols; j < rcols_step; j++) {
       base[di0 + j] = bo0[out0++];
       base[di1 + j] = bo1[out1++];
       base[di2 + j] = bo2[out2++];
       base[di3 + j] = bo3[out3++];
     }
-    out0 += colsr;
-    out1 += colsr;
-    out2 += colsr;
-    out3 += colsr;
+    for (int j = unrolled_cols; j < rcols_step; j++) {
+      base[di4 + j] = bo0[out0++];
+      base[di5 + j] = bo1[out1++];
+      base[di6 + j] = bo2[out2++];
+      base[di7 + j] = bo3[out3++];
+    }
+    for (int j = unrolled_cols; j < rcols_step; j++) {
+      base[di8 + j] = bo0[out0++];
+      base[di9 + j] = bo1[out1++];
+      base[di10 + j] = bo2[out2++];
+      base[di11 + j] = bo3[out3++];
+    }
+    for (int j = unrolled_cols; j < rcols_step; j++) {
+      base[di12 + j] = bo0[out0++];
+      base[di13 + j] = bo1[out1++];
+      base[di14 + j] = bo2[out2++];
+      base[di15 + j] = bo3[out3++];
+    }
   }
 #endif
 
-  if ((rows_step % 4) == 3) {
-    for (int j = 0; j < cols_step; j++) {
-      base[(drows + 0) * output_stride + j] = bo0[out0++];
-      base[(drows + 1) * output_stride + j] = bo1[out1++];
-      base[(drows + 2) * output_stride + j] = bo2[out2++];
+  for (int j = 0; j < unrolled_cols; j += acc_cols) {
+    for (int i = unrolled_rows; i < rows_step; i++) {
+      int8_t *bos;
+      int outs;
+      if (i % 4 == 0) {
+        bos = bo0;
+        outs = out0;
+      }
+      if (i % 4 == 1) {
+        bos = bo1;
+        outs = out1;
+      }
+      if (i % 4 == 2) {
+        bos = bo2;
+        outs = out2;
+      }
+      if (i % 4 == 3) {
+        bos = bo3;
+        outs = out3;
+      }
+      for (int k = 0; k < acc_cols; k++)
+        base[(i)*output_stride + j + k] = bos[outs++];
+      if (i % 4 == 0) out0 = outs;
+      if (i % 4 == 1) out1 = outs;
+      if (i % 4 == 2) out2 = outs;
+      if (i % 4 == 3) out3 = outs;
     }
-    out0 += colsr;
-    out1 += colsr;
-    out2 += colsr;
-  } else if ((rows_step % 4) == 2) {
-    for (int j = 0; j < cols_step; j++) {
-      base[(drows + 0) * output_stride + j] = bo0[out0++];
-      base[(drows + 1) * output_stride + j] = bo1[out1++];
+  }
+
+  for (int i = unrolled_rows; i < rows_step; i++) {
+    int8_t *bos;
+    int outs;
+    if (i % 4 == 0) {
+      bos = bo0;
+      outs = out0;
     }
-    out0 += colsr;
-    out1 += colsr;
-  } else if ((rows_step % 4) == 1) {
-    for (int j = 0; j < cols_step; j++) {
-      base[(drows + 0) * output_stride + j] = bo0[out0++];
+    if (i % 4 == 1) {
+      bos = bo1;
+      outs = out1;
     }
-    out0 += colsr;
+    if (i % 4 == 2) {
+      bos = bo2;
+      outs = out2;
+    }
+    if (i % 4 == 3) {
+      bos = bo3;
+      outs = out3;
+    }
+    for (int j = unrolled_cols; j < rcols_step; j++)
+      base[(i)*output_stride + j] = bos[outs++];
+    if (i % 4 == 0) out0 = outs;
+    if (i % 4 == 1) out1 = outs;
+    if (i % 4 == 2) out2 = outs;
+    if (i % 4 == 3) out3 = outs;
   }
   prf_end(1, drv.t2.store);
 }
@@ -367,14 +469,14 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   prf_start(1);
   drv.t.layer_weight_tile = 0;
   drv.t.layer_input_tile = 0;
-  int acc_weight_buffer_size = WGT_BUF_LEN * 16;
-  int acc_input_buffer_size = GINP_BUF_LEN * 16;
+  int acc_weight_buffer_size = 4096 * 16;
+  int acc_input_buffer_size = 8192 * 16;
   int max_cols = acc_weight_buffer_size / rdepth;
   max_cols = max_cols - (max_cols % 4);
-  int col_inc = std::min(std::min(rcols, max_cols), WSUMS_BUF_LEN);
+  int col_inc = std::min(std::min(rcols, max_cols), IN_BUF_LEN);
   int max_rows = acc_input_buffer_size / rdepth;
   max_rows = max_rows - (max_rows % 4);
-  int row_inc = std::min(std::min(rrows, max_rows), ISUMS_BUF_LEN);
+  int row_inc = std::min(std::min(rrows, max_rows), WE_BUF_LEN);
 
   Config_Acc(drv);
   for (int r = 0; r < rrows; r += row_inc) {
@@ -402,20 +504,20 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
     drv.mdma->multi_dma_change_start_4(0);
     drv.t.layer_input_tile++;
   }
-  prf_end(1, drv.t2.vm_acc);
+  prf_end(1, drv.t2.sa_acc);
 }
 
 void Entry(acc_container &drv, int8_t *dst) {
   int rows = drv.rows;
   int cols = drv.cols;
   int depth = drv.depth;
-  int rrows = roundUp(drv.rows, 2);
+  int rrows = roundUp(drv.rows, 1);
   int rcols = roundUp(drv.cols, 4);
   int rdepth = roundUp(drv.depth, 16);
   int output_stride = drv.cols;
 
 #if defined(SYSC) || defined(DELEGATE_VERBOSE)
-  cerr << "VM" << endl;
+  cerr << "Systolic Array" << endl;
   cerr << "===========================" << endl;
   cerr << "Pre-ACC Info: " << drv.t.layer << endl;
   cerr << "rdepth: " << rdepth << " depth: " << depth << endl;
@@ -427,10 +529,11 @@ void Entry(acc_container &drv, int8_t *dst) {
 
   TileGEMM(drv, output_stride, depth, rdepth, rows, rrows, cols, rcols, dst);
   SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
+
 #ifdef DELEGATE_DEBUG
   mkdir("aData", 0777);
   ofstream myfile;
-  myfile.open("aData/out_vm_" + std::to_string(drv.t.layer) + "_1.csv");
+  myfile.open("aData/out_sa" + std::to_string(drv.t.layer) + "_1.csv");
   int8_t *res_pointer = dst;
   int index = 0;
   for (int r = 0; r < rows; r++) {
@@ -443,6 +546,5 @@ void Entry(acc_container &drv, int8_t *dst) {
   myfile.close();
 #endif
 }
-
-} // namespace tflite_vm
+} // namespace tflite_sa
 #endif // GEMM_DRIVER

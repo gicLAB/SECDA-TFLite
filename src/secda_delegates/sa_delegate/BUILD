@@ -8,13 +8,19 @@ package(
     licenses = ["notice"],
 )
 
+config_setting(
+    name = "linux_armhf",
+    values = {"cpu": "armhf"},
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
-    name = "bert_sim_delegate",
+    name = "sa_delegate",
     srcs = [
-        "bert_sim_delegate.cc",
+        "sa_delegate.cc",
     ],
     hdrs = [
-        "bert_sim_delegate.h",
+        "sa_delegate.h",
         "util.h",
     ],
     deps = [
@@ -22,34 +28,35 @@ cc_library(
         "//tensorflow/lite/delegates/utils:simple_delegate",
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
-         "//tensorflow/lite/kernels/internal:types",
-        "//tensorflow/lite/kernels/internal:optimized_4bit",
-        "//tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/accelerator/driver:driver",
-    ],
+         "//tensorflow/lite/kernels/internal:types"
+    ] + select({
+        ":linux_armhf": ["//tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/accelerator/driver:driver"],
+        "//conditions:default": ["//tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/accelerator/driver:driver_sysc"],
+    }),
 )
 
 cc_binary(
-    name = "bert_sim_external_delegate.so",
+    name = "sa_external_delegate.so",
     srcs = [
         "external_delegate_adaptor.cc",
     ],
     linkshared = 1,
     linkstatic = 1,
     deps = [
-        ":bert_sim_delegate",
+        ":sa_delegate",
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/tools:command_line_flags",
         "//tensorflow/lite/tools:logging",
     ],
 )
 
-#### The following are for using the bert_sim test delegate in TFLite tooling ####
+#### The following are for using the secda test delegate in TFLite tooling ####
 cc_library(
-    name = "bert_sim_delegate_provider",
-    srcs = ["bert_sim_delegate_provider.cc"],
+    name = "sa_delegate_provider",
+    srcs = ["sa_delegate_provider.cc"],
     copts = tflite_copts(),
     deps = [
-        ":bert_sim_delegate",
+        ":sa_delegate",
         "//tensorflow/lite/tools/delegates:delegate_provider_hdr",
     ],
     alwayslink = 1,
@@ -58,64 +65,64 @@ cc_library(
 
 
 cc_binary(
-    name = "eval_model_plus_bert_sim_delegate",
+    name = "eval_model_plus_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/examples/secda_apps/eval_model:eval_model_lib",
-        ":bert_sim_delegate_provider", 
+        ":sa_delegate_provider", 
     ],
 )
 
 cc_binary(
-    name = "label_image_plus_bert_sim_delegate",
+    name = "label_image_plus_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/examples/label_image:label_image_lib",
-        ":bert_sim_delegate_provider", 
+        ":sa_delegate_provider", 
     ],
 )
 
 cc_binary(
-    name = "benchmark_model_plus_bert_sim_delegate",
+    name = "benchmark_model_plus_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/tools/benchmark:benchmark_model_main",
-        ":bert_sim_delegate_provider",
+        ":sa_delegate_provider",
     ],
 )
 
 cc_binary(
-    name = "inference_diff_plus_bert_sim_delegate",
+    name = "inference_diff_plus_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval_lib",
-        ":bert_sim_delegate_provider",
+        ":sa_delegate_provider",
     ],
 )
 
 cc_binary(
-    name = "imagenet_classification_eval_plus_bert_sim_delegate",
+    name = "imagenet_classification_eval_plus_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/imagenet_image_classification:run_eval_lib",
-        ":bert_sim_delegate_provider",
+        ":sa_delegate_provider",
     ],
 )
 
 cc_binary(
-    name = "coco_object_detection_eval_plus_bert_sim_delegate",
+    name = "coco_object_detection_eval_plus_sa_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
+        ":sa_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/coco_object_detection:run_eval_lib",
-        ":bert_sim_delegate_provider",
     ],
 )

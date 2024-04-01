@@ -133,6 +133,24 @@ SC_MODULE(PE) {
     int res = result_32;
     return result_32;
   }
+
+  // //  ARM-Neon version CPU
+  // int Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
+  //   int nshift = shift;
+  //   int total_shift = 31 - shift;
+  //   sc_int<64> x_64 = x;
+  //   sc_int<64> quantized_multiplier_64(qm);
+  //   sc_int<64> one = 1;
+  //   sc_int<64> round = one << (total_shift - 1); // ALU ADD + ALU SHLI
+  //   sc_int<64> result =
+  //       x_64 * quantized_multiplier_64 + round; // ALU ADD + ALU MUL
+  //   result = result >> total_shift;             // ALU SHRI
+  //   int nresult = result;
+  //   if (result > MAX) result = MAX; // ALU MIN
+  //   if (result < MIN) result = MIN; // ALU MAX
+  //   sc_int<32> result_32 = result;
+  //   return result_32;
+  // }
 #else
   //  ARM-Neon version CPU
   int Quantised_Multiplier(int x, int qm, sc_int<8> shift) {

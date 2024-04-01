@@ -1,4 +1,5 @@
-
+// Jude: This Delegate will be deprecated soon, and merged with BERT_SIM
+// Updates were made for 2.15 but was not tested
 #include "tensorflow/lite/delegates/utils/secda_delegates/secda_bert_delegate/secda_bert_delegate.h"
 
 #include <fstream>
@@ -70,6 +71,7 @@ public:
     opdatas.resize(params->nodes_to_replace->size);
     cparams.resize(params->nodes_to_replace->size);
     biases.resize(params->nodes_to_replace->size);
+    biases_d.resize(params->nodes_to_replace->size);
 
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
@@ -115,11 +117,15 @@ public:
       GetOutputSafe(context, outputs_[i][0], &output);
       GetInputSafe(context, inputs_[i][0], &input);
       GetInputSafe(context, inputs_[i][1], &filter);
+      biases_d[i].resize(filter->dims->data[0]);
       if (inputs_[i].size() == 3 && inputs_[i][2] >= 0) {
         GetInputSafe(context, inputs_[i][2], &bias);
         biases[i] = bias->data.i32;
       } else {
-        biases[i] = nullptr;
+        for (int j = 0; j < filter->dims->data[0]; j++) {
+          biases_d[i][j] = 0;
+        }
+        biases[i] = &biases_d[i][0];
         bias = nullptr;
       }
 
@@ -128,7 +134,8 @@ public:
       int exponent;
       GetQuantizedConvolutionMultipler(context, input, filter, bias, output,
                                        &real_multiplier);
-      QuantizeMultiplier(real_multiplier, &data->output_multiplier, &exponent);
+      QuantizeMultiplier(real_multiplier, &data->output_multiplier,
+                         &data->output_shift);
       CalculateActivationRangeQuantized(context, params->activation, output,
                                         &data->output_activation_min,
                                         &data->output_activation_max);
@@ -174,11 +181,13 @@ public:
         if (temp_out_tensor_status != kTfLiteOk) return temp_out_tensor_status;
       }
 
-      // Might need to transform this in a bias matrix
-      // int* dims = filter->dims->data;
-      // int width = dims[0];
-      // int depth = dims[1];
-      // precal_sums(filter->data.int8, width, depth, wt_sum[i]);
+      int N = batch_size;
+      int M = num_units;
+      int K = filter->dims->data[1];
+      int rfactor = 16;
+      int pN = roundUp(N, rfactor);
+      int pM = roundUp(M, rfactor);
+      int pK = roundUp(K, rfactor);
     }
     return kTfLiteOk;
   }
@@ -204,7 +213,7 @@ public:
       GetOutputSafe(context, outputs_[i][0], &output);
 
       const TfLiteTensor *bias;
-      bool isBias = biases[i] ? true : false;
+      bool isBias = (inputs_[i].size() == 3 && inputs_[i][2] >= 0);
       if (isBias) GetInputSafe(context, inputs_[i][2], &bias);
       else bias = nullptr;
 
@@ -312,10 +321,7 @@ public:
       drv.ra = output_offset;
       drv.rhs_offset = -rhs_offset;
       drv.lhs_offset = -lhs_offset;
-
-      if (!isBias) drv.bias = new int32_t[pM]();
-      else drv.bias = biases[i];
-
+      drv.bias = biases[i];
       drv.t = fc_t;
       drv.start_count = dparams.start_count;
       tflite_bert::Entry(drv);
@@ -347,8 +353,6 @@ public:
       }
       prf_end(2, fc_t.unpack);
 
-      if (!isBias) delete[] drv.bias;
-
       dparams.layer++;
       dparams.delegated_nodes--;
     }
@@ -366,6 +370,7 @@ public:
   std::vector<OpData *> opdatas;
   std::vector<TfLiteFullyConnectedParams *> cparams;
   std::vector<int *> biases;
+  std::vector<std::vector<int>> biases_d;
 
 private:
   const SecdaBertDelegateOptions options_;

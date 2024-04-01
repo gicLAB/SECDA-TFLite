@@ -30,7 +30,7 @@ void ACCNAME::fetch() {
     wait();
 
     if (start_acc.read() > start_count) {
-      cout << start_acc.read() << endl;
+      // cout << start_acc.read() << endl;
       start_count++;
       done_count++;
       fetch_resetted.write(false);

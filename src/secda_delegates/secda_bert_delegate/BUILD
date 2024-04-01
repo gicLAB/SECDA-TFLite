@@ -23,6 +23,7 @@ cc_library(
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
          "//tensorflow/lite/kernels/internal:types",
+        "//tensorflow/lite/kernels/internal:optimized_4bit",
         "//tensorflow/lite/delegates/utils/secda_delegates/secda_bert_delegate/driver:fc_driver",
     ],
 )
@@ -91,9 +92,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":secda_bert_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval_lib",
+        ":secda_bert_delegate_provider",
     ],
 )
 
@@ -102,9 +103,9 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":secda_bert_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/imagenet_image_classification:run_eval_lib",
+        ":secda_bert_delegate_provider",
     ],
 )
 
@@ -113,8 +114,8 @@ cc_binary(
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [
-        ":secda_bert_delegate_provider",
         "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
         "//tensorflow/lite/tools/evaluation/tasks/coco_object_detection:run_eval_lib",
+        ":secda_bert_delegate_provider",
     ],
 )

@@ -33,19 +33,15 @@ cc_library(
 cc_library(
     name = "accelerator",
     srcs = [
-        "acc.sc.cc",
+        "acc.cc",
         ],
     hdrs = [
-        # "acc_config.sc.h",
         "acc.sc.h",
         "in.sc.h",
         "data_in.sc.h",
         "scheduler.sc.h",
-        "vm_gemm.sc.h",
-        "vmm_unit.sc.h",
-        "vmm_control.sc.h",
-        "vmm_modules.sc.h",
-        "write_sync.sc.h",
+        "w1.sc.h",
+        "post1.sc.h",
         "out.sc.h",
         "counter.sc.h",
     ],
