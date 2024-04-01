@@ -1,5 +1,6 @@
 from string import Template
 import json
+from gen_benchmark import gen_benchmark
 
 ####################################################
 ## MODELS
@@ -55,29 +56,31 @@ with open("model_gen/configs/tconv_models_synth.json") as f:
 
 with open("model_gen/configs/dcgan_layers.json") as f:
     dcgan_layers = json.load(f)["dcgan_layers"]
-    
+
 ####################################################
 ## HARDWARE
 ####################################################
-all_supported_hardware = ["vm_3_0", "sa_2_0", "cpu", "mm2im_1_0","toyadd_1_0"]
+all_supported_hardware = [
+    "vm_3_0",
+    "sa_2_0",
+    "cpu",
+    "mm2im_1_0",
+    "toyadd_1_0",
+    "mm2im_2_0",
+    "mm2im_2_1",
+    "mm2im_2_2",
+    "mm2im_2_3",
+]
 conv_only = ["vm_3_0", "sa_2_0"]
-tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1"]
+tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1", "mm2im_2_2", "mm2im_2_3"]
 add_only = ["toyadd_1_0", "cpu"]
 
 
-
 ####################################################
-## CURRENT CONFIG
+## EXPERIMENT CONFIGS
 ####################################################
 bitstream_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams"
 bin_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bins"
-
-# Current benchmark suite config
-# models = conv_models
-# hardware = ["vm_3_0", "cpu", "sa_2_0"]
-# threads = [1, 2]
-# num_run = 1
-# model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
 
 # TCONV Synth Experiment
 models = tconv_models_synth
@@ -86,13 +89,15 @@ hardware = ["mm2im_2_1"]
 threads = [1, 2]
 num_run = 1
 model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
-
-# DCGAN Experiment
-models = dcgan_layers
-hardware = ["mm2im_2_2","cpu"]
-threads = [1]
-num_run = 1
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
+tconv_synth_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+]
 
 
 # ADD Experiment
@@ -101,78 +106,31 @@ models = add_models
 threads = [1, 2]
 num_run = 1
 model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
+add_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir]
 
 # CONV Experiment
 models = conv_models
 # hardware = ["vm_3_0", "cpu", "sa_2_0"]
-hardware = ["vm_3_0","cpu"]
+hardware = ["vm_3_0", "cpu"]
 threads = [1]
 num_run = 1
 model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
+conv_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir]
 
-# directories within the target board
 
-
+# DCGAN Experiment
+# models = dcgan_layers
+models = ["tconv_2_2_512_5_4_4_1024"]
+hardware = ["mm2im_2_3", "cpu"]
+threads = [1, 2]
+num_run = 1
+model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
+dc_gan_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir]
 
 
 ####################################################
 ####################################################
 
+# Current experiment
+gen_benchmark(dc_gan_exp)
 
-def load_config(hw):
-    with open(f"configs/{hw}.json") as f:
-        config = json.load(f)
-    return config
-
-
-def declare_array(f, name, list):
-    f.write("declare -a {}_array=(\n".format(name))
-    for i in list:
-        f.write('  "{}" \n'.format(i))
-    f.write(")\n")
-
-
-class mt(Template):
-    delimiter = "£"
-    idpattern = r"[a-z][_a-z0-9]*"
-
-
-## Generate configs.sh
-config_list = []
-hw_list = []
-model_list = []
-thread_list = []
-num_run_list = []
-version_list = []
-del_version_list = []
-delegate_list = []
-for hw in hardware:
-    config = load_config(hw)
-    for model in models:
-        for thread in threads:
-            hw_list.append(config["hardware"])
-            model_list.append(model)
-            thread_list.append(thread)
-            num_run_list.append(num_run)
-            version_list.append(config["version"])
-            del_version_list.append(config["del_version"])
-            delegate_list.append(config["del"])
-            config_list.append(config)
-
-f = open("generated/configs.sh", "w+")
-# list of all the config properties
-declare_array(f, "hw", hw_list)
-declare_array(f, "model", model_list)
-declare_array(f, "thread", thread_list)
-declare_array(f, "num_run", num_run_list)
-declare_array(f, "version", version_list)
-declare_array(f, "del_version", del_version_list)
-declare_array(f, "del", delegate_list)
-f.close()
-
-## Generate run_collect.sh
-r_dict = {"model_dir": model_dir, "bitstream_dir": bitstream_dir, "bin_dir": bin_dir}
-with open("scripts/run_collect.tpl.sh") as f:
-    script = str(mt(f.read()).substitute(r_dict))
-with open("generated/run_collect.sh", "w+") as f:
-    f.write(script)

@@ -1,9 +1,9 @@
 import os
 
 supported_delegates = {
-    "vm_delegate": "1",
+    # "vm_delegate": "1",
     # "secda_sa_delegate": "1",
-    # "mm2im_delegate": "1",
+    "mm2im_delegate": "1",
     # "mm2im_fpga_delegate": "1",
     # "add_delegate": "1",
     "cpu": "1",
