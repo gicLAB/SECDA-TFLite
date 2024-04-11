@@ -25,7 +25,7 @@ Our research paper covers the the SECDA-TFLite toolkit in detail including case 
 # Accelerator Designs
 * We provide pre-compiled binaries/bitstream for the PYNQ Z1 along with archived Vivado and Vivado HLS project folders ([release](https://github.com/gicLAB/SECDA-TFLite/releases/tag/v1.0)) to enable synthesis from scratch.
 * We also provide source code for all accelerators
-* For more information please check out the [accelerator source-code](secda_tflite_accel)
+* For more information please check out the [accelerator source-code](secda_tflite_accelerator)
 
 ## Synthesis for PYNQ-Z1
 To perform logic synthesis, we provide Vivado project folders ([release](https://github.com/gicLAB/SECDA-TFLite/releases/tag/v1.0)). These contain the necessary block diagram configuration including AXI DMA's and the accelerators to ensure correct connectivity to the processing system.
@@ -33,6 +33,15 @@ To perform logic synthesis, we provide Vivado project folders ([release](https:/
 **Requirements**
 * Vivado HLS 2018.3
 * Vivado 2018.3
+
+**Instructions**
+To perform create Vivado IP from SystemC source code, do the following:
+* Unzip [HLS](https://github.com/gicLAB/SECDA-TFLite/releases/download/v1.0/HLS_projects.zip) accelerator project you want to use.
+* Load up Vivado HLS and choose the project folder within the unzipped folder to open the pre-configured Vivado project and solution.
+* Here, we can ask Vivado HLS to perform HLS and export RTL using the menu bar at the top.
+* For logic synthesis, simply open up Vivado and loaded up [HLx](https://github.com/gicLAB/SECDA-TFLite/releases/download/v1.0/Vivado_projects.zip) project's .xpr file within the tool.
+* Use the "Generate Bitstream" option to synthesize and export the FPGA mapping.
+* The bitmap and confirguration files will be saved in the HLx project folder: ```project_name.srcs/sources_1/bd/design_1/hw_handoff/design_1.hwh``` and ```project_name.runs/impl_1/design_1_wrapper.bit```
 
 
 # Docker Setup for SECDA-TFLite (TF2.7)
