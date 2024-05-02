@@ -37,3 +37,6 @@ __pycache__
 /src/secda_benchmark_suite/files
 
 
+## rpp add
+/analysis/*
+/src/data/*
