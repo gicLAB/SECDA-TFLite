@@ -43,11 +43,11 @@ SC_MODULE(PE) {
   sc_in<bool> process_cal;
   sc_out<bool> process_cal_done;
 
-  // sc_out<int> computeS;
-  // sc_out<int> sendS;
+  sc_out<int> computeS;
+  sc_out<int> sendS;
 
-  sc_out_sig computeS;
-  sc_out_sig sendS;
+  // sc_out_sig computeS;
+  // sc_out_sig sendS;
 
   sc_in<int> oh;
   sc_in<int> ow;
@@ -216,7 +216,7 @@ SC_MODULE(PE) {
         }
         if (!online) break;
 
-        // computeS.write(6);
+        computeS.write(6);
         // loads inputs
         for (int d = 0; d < depth; d++) {
 #pragma HLS PIPELINE II = 1
@@ -239,7 +239,7 @@ SC_MODULE(PE) {
         }
         DWAIT(7);
 
-        // computeS.write(7);
+        computeS.write(7);
         for (int d = 0; d < depth; d++) {
           // load input
           for (int u = 0; u < UF; u++) {
@@ -262,9 +262,9 @@ SC_MODULE(PE) {
           }
           DWAIT(11);
         }
-        // computeS.write(71);
+        computeS.write(71);
         DWAIT();
-        computeS.write(6);
+        // computeS.write(6);
         for (int i = 0; i < pouts; i++) {
 #pragma HLS PIPELINE II = 1
           int dout = out_buf[i];

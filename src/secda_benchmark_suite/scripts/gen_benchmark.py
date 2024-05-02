@@ -1,3 +1,5 @@
+import sys
+sys.dont_write_bytecode = True
 from string import Template
 import json
 
@@ -22,12 +24,19 @@ class mt(Template):
 
 def gen_benchmark(params):
     gen_benchmark_imp(
-        params[0], params[1], params[2], params[3], params[4], params[5], params[6]
+        params[0],
+        params[1],
+        params[2],
+        params[3],
+        params[4],
+        params[5],
+        params[6],
+        params[7],
     )
 
 
 def gen_benchmark_imp(
-    models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir
+    models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir, board_user
 ):
     ## Generate configs.sh
     config_list = []
@@ -67,6 +76,7 @@ def gen_benchmark_imp(
         "model_dir": model_dir,
         "bitstream_dir": bitstream_dir,
         "bin_dir": bin_dir,
+        "board_user": board_user,
     }
     with open("scripts/run_collect.tpl.sh") as f:
         script = str(mt(f.read()).substitute(r_dict))

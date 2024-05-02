@@ -250,15 +250,9 @@ struct mm2im_params {
   bool compute = false;
 
   vector<vector<int>> mm2im_map;
-  vector<vector<vector<int>>> oh_map;
-  vector<int> oh_starts;
   vector<int> oh_ends;
-  vector<int> oh_lengths;
 
-  vector<vector<int>> col_dexs;
-  vector<vector<int>> out_dexs;
-  // vector<int> cols_indices_starts;
-  // vector<int> cols_indices_lens;
+
 
   unsigned int output_size;
   unsigned int output_rows;
@@ -284,66 +278,23 @@ struct mm2im_params {
     }
   }
 
-  void create_col_indices_map() {
-    int f_rows = rows / f;
-    for (int c = 0; c < cols; c++) {
-      vector<int> col_dex_of_row;
-      vector<int> out_dex_of_row;
-      for (int r = 0; r < f_rows; r++) {
-        int o_dex = c * rows + r;
-        if (dex_map[o_dex] != -1) {
-          col_dex_of_row.push_back(r);
-          out_dex_of_row.push_back(dex_map[o_dex] / f);
-        }
-      }
-      col_dexs.push_back(col_dex_of_row);
-      out_dexs.push_back(out_dex_of_row);
-    }
-    int k = 0;
-  }
 
   void MM2IM_oh_map() {
     create_MM2IM_map();
-    create_col_indices_map();
-
     // We create oh_map for each row, map is used by the accelerator
     for (int o_3 = 0; o_3 < output_cols; o_3++) {
-      int f_hi = std::numeric_limits<int>::min();
-      int f_lo = std::numeric_limits<int>::max();
       for (int o_1 = 0; o_1 < oh; o_1++) {
         int hi = std::numeric_limits<int>::min();
-        int lo = std::numeric_limits<int>::max();
-        vector<vector<int>> oh_row_map;
         for (int o_2 = 0; o_2 < ow; o_2++) {
           int o_dex = ((o_1 * ow) + o_2) * output_cols + o_3;
           int size = mm2im_map[o_dex].size();
           for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
             int orow = mm2im_map[o_dex][i] % rows;
             int ocol = mm2im_map[o_dex][i] / rows;
-            lo = min(lo, ocol);
             hi = max(hi, ocol);
-            f_lo = min(f_lo, orow);
-            f_hi = max(f_hi, orow);
           }
         }
-
-        for (int o_2 = 0; o_2 < ow; o_2++) {
-          vector<int> output_map;
-          int o_dex = ((o_1 * ow) + o_2) * output_cols + o_3;
-          for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
-            int orow = mm2im_map[o_dex][i] % rows;
-            int ocol = mm2im_map[o_dex][i] / rows;
-            // This is ensures accelerator start at row 0 for each output row
-            output_map.push_back(ocol - lo);
-            output_map.push_back(orow);
-          }
-          oh_row_map.push_back(output_map);
-        }
-
-        if (o_3 == 0) oh_map.push_back(oh_row_map);
         oh_ends.push_back(hi);
-        oh_starts.push_back(lo);
-        oh_lengths.push_back(hi - lo);
       }
     }
   };

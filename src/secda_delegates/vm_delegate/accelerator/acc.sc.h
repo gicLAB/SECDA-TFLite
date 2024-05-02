@@ -131,22 +131,39 @@ SC_MODULE(ACCNAME) {
   BufferSpace *weightbuf_p = new BufferSpace("weightbuf_p", INP_BUF_LEN);
   DataCountArray *gmacs = new DataCountArray("gmacs", 4);
   DataCountArray *gouts = new DataCountArray("gouts", 4);
-  SignalTrack *shS = new SignalTrack("shS", true);
-  SignalTrack *gmSA = new SignalTrack("gmSA", true);
-  SignalTrack *gmSB = new SignalTrack("gmSB", true);
-  SignalTrack *gmSC = new SignalTrack("gmSC", true);
-  SignalTrack *gmSD = new SignalTrack("gmSD", true);
-  SignalTrack *psSA = new SignalTrack("psSA", true);
-  SignalTrack *psSB = new SignalTrack("psSB", true);
-  SignalTrack *psSC = new SignalTrack("psSC", true);
-  SignalTrack *psSD = new SignalTrack("psSD", true);
 
-  std::vector<Metric *> profiling_vars = {
-      cycles, load_inps,    load_wgts,  compute,     idle1,   idle2,   idle3,
-      idle4,  post1,        post2,      post3,       post4,   gemm1,   gemm2,
-      gemm3,  gemm4,        wstall1,    wstall2,     wstall3, wstall4, shS,
-      gmSA,   gmSB,         gmSC,       gmSD,        psSA,    psSB,    psSC,
-      psSD,   gweightbuf_p, inputbuf_p, weightbuf_p, gmacs,   gouts};
+  // SignalTrack *shS = new SignalTrack("shS", true);
+  // SignalTrack *gmSA = new SignalTrack("gmSA", true);
+  // SignalTrack *gmSB = new SignalTrack("gmSB", true);
+  // SignalTrack *gmSC = new SignalTrack("gmSC", true);
+  // SignalTrack *gmSD = new SignalTrack("gmSD", true);
+  // SignalTrack *psSA = new SignalTrack("psSA", true);
+  // SignalTrack *psSB = new SignalTrack("psSB", true);
+  // SignalTrack *psSC = new SignalTrack("psSC", true);
+  // SignalTrack *psSD = new SignalTrack("psSD", true);
+
+  SignalTrack *shS = new SignalTrack("T_shS", true);
+  SignalTrack *gmSA = new SignalTrack("T_gmSA", true);
+  SignalTrack *gmSB = new SignalTrack("T_gmSB", true);
+  SignalTrack *gmSC = new SignalTrack("T_gmSC", true);
+  SignalTrack *gmSD = new SignalTrack("T_gmSD", true);
+  SignalTrack *psSA = new SignalTrack("T_psSA", true);
+  SignalTrack *psSB = new SignalTrack("T_psSB", true);
+  SignalTrack *psSC = new SignalTrack("T_psSC", true);
+  SignalTrack *psSD = new SignalTrack("T_psSD", true);
+
+  // std::vector<Metric *> profiling_vars = {shS,  gmSA, gmSB, gmSC, gmSD,
+  //                                         psSA, psSB, psSC, psSD};
+  // std::vector<Metric *> profiling_vars = {shS, gmSA, gmSB, psSA, psSB};
+  std::vector<Metric *> profiling_vars = {shS, gmSB, psSB};
+
+
+  // std::vector<Metric *> profiling_vars = {
+  //     cycles, load_inps,    load_wgts,  compute,     idle1,   idle2,   idle3,
+  //     idle4,  post1,        post2,      post3,       post4,   gemm1,   gemm2,
+  //     gemm3,  gemm4,        wstall1,    wstall2,     wstall3, wstall4, shS,
+  //     gmSA,   gmSB,         gmSC,       gmSD,        psSA,    psSB,    psSC,
+  //     psSD,   gweightbuf_p, inputbuf_p, weightbuf_p, gmacs,   gouts};
 #endif
 
   void init_VMM();

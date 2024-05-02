@@ -28,7 +28,12 @@ scripts/hardwareFilesGeneration
 /src/secda_benchmark_suite/model_gen/models
 /src/secda_delegates/mm2im_delegate_v2
 /src/secda_delegates/mm2im_delegate_v2_1
+/src/secda_delegates/mm2im_delegate_v2_2
 /src/secda_delegates/vm_delegate/accelerator_4
 /src/secda_delegates/vm_delegate/accelerator_old
 # src/secda_benchmark_suite/scripts/__pycache__
 __pycache__
+/src/secda_benchmark_suite/power/files
+/src/secda_benchmark_suite/files
+
+

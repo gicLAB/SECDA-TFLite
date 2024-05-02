@@ -13,7 +13,7 @@ SC_MODULE(ACCNAME) {
   sc_out<int> data_loadS;
   sc_out<int> scheduleS;
   sc_out<int> outS;
-  sc_signal<int> pdS;
+  sc_out<int> pdS;
   sc_out<int> tempS;
 
   // sc_out_sig inS;
@@ -107,12 +107,13 @@ SC_MODULE(ACCNAME) {
   ClockCycles *load_col_map_cycles =
       new ClockCycles("load_col_map_cycles", true);
 
-  SignalTrack *T_in = new SignalTrack("T_in", true);
-  SignalTrack *T_sh = new SignalTrack("T_sh", true);
-  SignalTrack *T_ld = new SignalTrack("T_ld", true);
-  SignalTrack *T_com = new SignalTrack("T_com", true);
-  SignalTrack *T_sd = new SignalTrack("T_sd", true);
-  SignalTrack *T_pd = new SignalTrack("T_pd", true);
+  SignalTrack *T_in = new SignalTrack("T_Input-Handler", true);
+  SignalTrack *T_sh = new SignalTrack("T_Scheduler", true);
+  SignalTrack *T_ld = new SignalTrack("T_Data-Loader", true);
+  SignalTrack *T_com = new SignalTrack("T_PE-Compute", true);
+  SignalTrack *T_sd = new SignalTrack("T_PE-Output", true);
+  SignalTrack *T_pd = new SignalTrack("T_Pattern-Decoder", true);
+  SignalTrack *T_var = new SignalTrack("T_Custom1", true);
 
   // ClockCycles *idle1 = new ClockCycles("idle1", true);
   // ClockCycles *idle2 = new ClockCycles("idle2", true);
@@ -127,7 +128,8 @@ SC_MODULE(ACCNAME) {
   //     load_wgt_cycles,   load_inp_cycles};
 
   std::vector<Metric *> profiling_vars = {
-      process_cycles, compute_cycles, T_in, T_sh, T_ld, T_com, T_sd, T_pd};
+      process_cycles, compute_cycles, T_in, T_sh, T_ld,
+      T_com,          T_sd,           T_pd, T_var};
 
   void In_Counter();
 #endif

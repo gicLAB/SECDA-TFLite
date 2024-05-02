@@ -1,5 +1,6 @@
 import os
 
+# These needs to be abstracted to a config file
 supported_delegates = {
     # "vm_delegate": "1",
     # "secda_sa_delegate": "1",
@@ -25,7 +26,10 @@ cpu_paths = {
 
 
 bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
-bb_po = "--cxxopt='-mfpu=neon' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+# bb_po = "--cxxopt='-mfpu=neon' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+bb_po = "--cxxopt='-mfpu=neon' --copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+
+# This needs to be abstracted to a config file
 board_user = "xilinx"
 board_hostname = "jharis.ddns.net"
 arm_dir = "/home/xilinx/Workspace/secda_benchmark_suite"
@@ -52,6 +56,8 @@ def generate_generation_script(output_path):
             script += f"rsync -r -avz -e 'ssh -p 2202' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{arm_dir}/bins/{name}\n"
     script += f"ssh -t -p 2202 {board_user}@{board_hostname} 'cd {arm_dir}/bins/ && chmod 775 ./*'\n"
     script += "popd\n"
+    # create folder to output
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(script)
     os.system(f"chmod +x {output_path}")

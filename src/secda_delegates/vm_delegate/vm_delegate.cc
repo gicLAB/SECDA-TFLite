@@ -189,8 +189,8 @@ public:
 
       TF_LITE_ENSURE_STATUS(AllocateTemporaryTensorsIfRequired(
           context, node, is_hybrid, data->is_hybrid_per_channel, im2col_bytes,
-          params, data, req_temp_out, outputs_[i][0], temp_o_id,
-          inputs_[i][0], inputs_[i][1]));
+          params, data, req_temp_out, outputs_[i][0], temp_o_id, inputs_[i][0],
+          inputs_[i][1]));
 
       TF_LITE_ENSURE_EQ(context, filter->quantization.type,
                         kTfLiteAffineQuantization);
@@ -313,7 +313,6 @@ public:
       GetInputSafe(context, inputs_[i][1], &filter);
       GetOutputSafe(context, outputs_[i][0], &output);
 
-
       // bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
       // if (!req_temp_out) out_tid++;
       // bool req_temp_in = false;
@@ -341,7 +340,6 @@ public:
       // }else{
       //   output_data = output->data.int8;
       // }
-
 
       TfLiteTensor *im2col =
           data->need_im2col
@@ -621,7 +619,14 @@ TfLiteDelegate *TfLiteVMDelegateCreate(const VMDelegateOptions *options) {
 void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
   // Saves profilier records once all delegated nodes are executed
   // SYSC_ON(profile.saveProfile(acc->profiling_vars));
-  SYSC_ON(profile.saveCSVRecords(".data/VMv3"));
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  std::string date =
+      std::to_string(1900 + ltm->tm_year) + "-" +
+      std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +
+      "-" + std::to_string(ltm->tm_hour) + "-" + std::to_string(ltm->tm_min) +
+      "-" + std::to_string(ltm->tm_sec);
+  SYSC_ON(profile.saveCSVRecords(".data/vm_profs/vm_" + date));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();

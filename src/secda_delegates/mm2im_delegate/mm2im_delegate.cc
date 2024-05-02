@@ -36,6 +36,9 @@ int *acc;
 #endif
 struct MultiThreadContext mt_context;
 
+#define DTOG(X)
+
+
 namespace tflite {
 namespace mm2im_test {
 
@@ -50,25 +53,25 @@ public:
                     const TfLiteDelegateParams *params) override {
     // // Init SystemC Modules & Profilier
     if (!dparams.init) {
-      std::cout << "===========================" << std::endl;
+      DTOG(std::cout << "===========================" << std::endl);
 #ifdef SYSC
       static struct sysC_sigs scs1(1);
       static ACCNAME _acc("MM2IM");
       sysC_init();
       sysC_binder(&_acc, &mdma, &scs1);
       acc = &_acc;
-      std::cout << "Initialised the SystemC Modules" << std::endl;
+      DTOG(std::cout << "Initialised the SystemC Modules" << std::endl);
 #else
       dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
       acc = dparams.acc;
-      std::cout << "Initialised the DMA" << std::endl;
+      DTOG(std::cout << "Initialised the DMA" << std::endl);
 #endif
-      std::cout << "MM2IM Accelerator";
+      DTOG(std::cout << "MM2IM Accelerator");
 #ifdef ACC_NEON
-      std::cout << " with Neon";
+      DTOG(std::cout << " with Neon");
 #endif
-      std::cout << std::endl;
-      std::cout << "===========================" << std::endl;
+      DTOG(std::cout << std::endl);
+      DTOG(std::cout << "===========================" << std::endl);
       dparams.init = true;
     }
 
@@ -321,6 +324,14 @@ public:
                         amp.pb, amp.pr, amp.sx, amp.sy, acc_dex_map);
       amp.dex_map = acc_dex_map;
       amp.MM2IM_oh_map();
+      for (int j = 0; j < amp.mm2im_map.size(); j++) {
+        // free vector
+        amp.mm2im_map[j].clear();
+        // shrink vector
+        amp.mm2im_map[j].shrink_to_fit();
+      }
+      amp.mm2im_map.clear();
+      amp.mm2im_map.shrink_to_fit();
       mm2im_params.push_back(amp);
     }
 
@@ -509,6 +520,9 @@ public:
       drv.profile = &profile;
       drv.mt_context = &mt_context;
       drv.thread_count = context->recommended_num_threads;
+      // if (drv.oh > 14 && drv.oc <=16) drv.thread_count = 1;
+      if (drv.oh * drv.ow * drv.oc <= 3136) drv.thread_count = 1;
+
 
       drv.lhs_offset = 0;
       drv.ih = par->ih;
@@ -539,13 +553,8 @@ public:
       drv.crf = &crf[i][0];
       drv.crx = &crx_8[i][0];
       drv.ra = par->ra;
-      drv.mm2im_map = &par->mm2im_map;
-      drv.col_dexs = &par->col_dexs;
-      drv.out_dexs = &par->out_dexs;
-      drv.oh_lengths = &par->oh_lengths[0];
-      drv.oh_starts = &par->oh_starts[0];
+      // drv.mm2im_map = &par->mm2im_map;
       drv.oh_ends = &par->oh_ends[0];
-      drv.oh_map = &par->oh_map;
 
       // drv.output_data = acc_dst; // output_data
       drv.output_data = output_data;
@@ -556,7 +565,7 @@ public:
       drv.t.layer = dparams.layer;
       prf_end(1, p_t.ipack);
 
-#ifndef RUN_CPU_TCONV
+#ifdef RUN_CPU_TCONV
       cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data, rhs_params,
                              input_data, dst_params, col2im_data, gemm_params,
                              cpu_backend_context);
@@ -598,10 +607,10 @@ public:
 
 // CPU implemented here does provide correct results
 #ifdef DELEGATE_VERBOSE
-      cout << "===========================" << endl;
-      cout << "Layer: " << dparams.layer
-           << "      Node: " << associated_nodes[i] << endl;
-      cout << "===========================" << endl;
+      DTOG(cout << "===========================" << endl);
+      DTOG(cout << "Layer: " << dparams.layer
+           << "      Node: " << associated_nodes[i] << endl);
+      DTOG(cout << "===========================" << endl);
 #endif
       drv.p_t = p_t;
       mm2im_driver::Entry(drv);
@@ -677,8 +686,8 @@ public:
     int filter_dim = tensor0.dims->data[0];
 
     // TODO JUDE: Support any filter dim (make this better)
-    // if (filter_dim < PE_COUNT)
-    //   return false;
+    if (filter_dim < PE_COUNT)
+      return false;
 
     // Adds node for delegation
     dparams.delegated_nodes++;
@@ -739,21 +748,30 @@ TfLiteDelegate *TfLiteMM2IMDelegateCreate(const MM2IMDelegateOptions *options) {
 
 // Destroys a delegate created with `TfLiteMM2IMDelegateCreate` call.
 void TfLiteMM2IMDelegateDelete(TfLiteDelegate *delegate) {
-  SYSC_ON(profile.saveCSVRecords(".data/mm2im"));
+  // get current date and time
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  std::string date = std::to_string(1900 + ltm->tm_year) + "-" +
+                     std::to_string(1 + ltm->tm_mon) + "-" +
+                     std::to_string(ltm->tm_mday) + "-" +
+                     std::to_string(ltm->tm_hour) + "-" +
+                     std::to_string(ltm->tm_min) + "-" +
+                     std::to_string(ltm->tm_sec);
+  SYSC_ON(profile.saveCSVRecords(".data/mm2im_profs/mm2im_"+ date));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
     munmap(dparams.acc, 65536);
-    std::cout << "===========================" << std::endl;
-    std::cout << "Unmapped DMA I/O Buffers" << std::endl;
-    std::cout << "===========================" << std::endl;
+    DTOG(std::cout << "===========================" << std::endl);
+    DTOG(std::cout << "Unmapped DMA I/O Buffers" << std::endl);
+    DTOG(std::cout << "===========================" << std::endl);
     dparams.unmap = true;
   }
 #endif
   p_t.print();
   p_t.save_prf();
-  std::cout << "===========================" << std::endl;
-  std::cout << "Deleted" << std::endl;
-  std::cout << "===========================" << std::endl;
+  DTOG(std::cout << "===========================" << std::endl);
+  DTOG(std::cout << "Deleted" << std::endl);
+  DTOG(std::cout << "===========================" << std::endl);
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }

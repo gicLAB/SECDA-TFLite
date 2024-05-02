@@ -29,54 +29,85 @@
 #define dma_out3 0x1c800000
 #define DMA_BL 4194304
 
-// HERE
-#define SUP_STRIDE 2
-#define SUP_IHW 16
-#define SUP_KS 5
-#define SUP_DEPTH 1024
-
-#define SUP_IR 8
-#define SUP_OHW (SUP_IHW * SUP_STRIDE)
-
-// #define SUP_OHW ((SUP_IHW - 1) * SUP_STRIDE) + SUP_KS // 27
-
-// Number of PEs
+// HERE //TCONV SYNTH v2_1/v2_4  Works
 #define PE_COUNT 8
 #define UF 16
-
+#define SUP_STRIDE 2
+#define SUP_IHW 11
+#define SUP_KS 7
+#define SUP_DEPTH 256
+#define SUP_IR 8
+#define SUP_OHW ((SUP_IHW - 1) * SUP_STRIDE) + SUP_KS // 27
+// #define SUP_OHW (SUP_IHW * SUP_STRIDE)
 #define INP_BUF_LEN 2048
-#define WGT_BUF_LEN (SUP_DEPTH * SUP_KS * SUP_KS * PE_COUNT) / UF
-
-// needs to support ks * ks * depth / UF
-#define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 1936
-// #define PE_WGTCOLBUF_SIZE 512
-
-// wgt_col_sum needs to support ks * ks
+// #define WGT_BUF_LEN (SUP_DEPTH * SUP_KS * SUP_KS * PE_COUNT) / UF
+#define WGT_BUF_LEN 2048 * 4
+#define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 784
+// #define PE_WGTCOLBUF_SIZE 784
 #define PE_WGTCOLSUMBUF_SIZE (SUP_KS * SUP_KS) // 49
 // #define PE_WGTCOLSUMBUF_SIZE 64
-
-// inp_row_buf needs to support depth / UF
 #define PE_INPROWBUF_SIZE (SUP_DEPTH / UF) // 16
 // #define PE_INPROWBUF_SIZE 16
-
-// support input_rows * ks * ks gemm outputs
-#define PE_OUTBUF_SIZE (SUP_IR * SUP_KS * SUP_KS) // 968
-// #define PE_OUTBUF_SIZE 1024
-
-// max value is ks * ks
-#define PE_POUTDEXBUF_SIZE (SUP_KS * SUP_KS) // 121
+#define PE_OUTBUF_SIZE (SUP_IR * SUP_KS * SUP_KS) // 392
+// #define PE_OUTBUF_SIZE 512
+#define PE_POUTDEXBUF_SIZE (SUP_KS * SUP_KS) // 49
 // #define PE_POUTDEXBUF_SIZE 64
-
-// Max number of MM2IM outputs storable per PE, should allow OH * OW
-// #define PE_ACC_BUF_SIZE (SUP_OHW * SUP_OHW) // 729
-#define PE_ACC_BUF_SIZE (1024) // 729
-// #define PE_ACC_BUF_SIZE 256
-
-// Needs to support ks * ks * PE_COUNT
-#define G_WGTSUMBUF_SIZE (SUP_KS * SUP_KS * PE_COUNT) // 968
-// #define G_WGTSUMBUF_SIZE 200
-
+// #define PE_ACC_BUF_SIZE (SUP_OHW * SUP_OHW) // 484
+#define PE_ACC_BUF_SIZE 1024
+#define G_WGTSUMBUF_SIZE (SUP_KS * SUP_KS * PE_COUNT) // 392
+// #define G_WGTSUMBUF_SIZE 512
 // TO HERE
+
+
+
+// // HERE //DCGAN  v2_3
+// #define SUP_STRIDE 2
+// #define SUP_IHW 16
+// #define SUP_KS 5
+// #define SUP_DEPTH 1024
+
+// #define SUP_IR 8
+// #define SUP_OHW (SUP_IHW * SUP_STRIDE)
+
+// // #define SUP_OHW ((SUP_IHW - 1) * SUP_STRIDE) + SUP_KS // 27
+
+// // Number of PEs
+// #define PE_COUNT 8
+// #define UF 16
+
+// #define INP_BUF_LEN 2048
+// #define WGT_BUF_LEN (SUP_DEPTH * SUP_KS * SUP_KS * PE_COUNT) / UF
+
+// // needs to support ks * ks * depth / UF
+// #define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 1936
+// // #define PE_WGTCOLBUF_SIZE 512
+
+// // wgt_col_sum needs to support ks * ks
+// #define PE_WGTCOLSUMBUF_SIZE (SUP_KS * SUP_KS) // 49
+// // #define PE_WGTCOLSUMBUF_SIZE 64
+
+// // inp_row_buf needs to support depth / UF
+// #define PE_INPROWBUF_SIZE (SUP_DEPTH / UF) // 16
+// // #define PE_INPROWBUF_SIZE 16
+
+// // support input_rows * ks * ks gemm outputs
+// #define PE_OUTBUF_SIZE (SUP_IR * SUP_KS * SUP_KS) // 968
+// // #define PE_OUTBUF_SIZE 1024
+
+// // max value is ks * ks
+// #define PE_POUTDEXBUF_SIZE (SUP_KS * SUP_KS) // 121
+// // #define PE_POUTDEXBUF_SIZE 64
+
+// // Max number of MM2IM outputs storable per PE, should allow OH * OW
+// // #define PE_ACC_BUF_SIZE (SUP_OHW * SUP_OHW) // 729
+// #define PE_ACC_BUF_SIZE (1024) // 729
+// // #define PE_ACC_BUF_SIZE 256
+
+// // Needs to support ks * ks * PE_COUNT
+// #define G_WGTSUMBUF_SIZE (SUP_KS * SUP_KS * PE_COUNT) // 968
+// // #define G_WGTSUMBUF_SIZE 200
+
+// // TO HERE
 
 #if defined(SYSC) || defined(__SYNTHESIS__)
 
@@ -394,8 +425,10 @@ struct PE_vars {
         crow((std::string("crow") + std::to_string(sid)).c_str()),
         num_rows((std::string("num_rows") + std::to_string(sid)).c_str()),
         wgt_sum_fifo(size), wgt_fifo(size), inp_fifo(size), out_fifo(size),
-        temp_fifo(size), col_indices_fifo(SUP_KS * SUP_KS),
-        out_indices_fifo(SUP_KS * SUP_KS),
+        // temp_fifo(size), col_indices_fifo(SUP_KS * SUP_KS),
+        // out_indices_fifo(SUP_KS * SUP_KS),
+        temp_fifo(size), col_indices_fifo(SUP_KS * SUP_KS* 10),
+        out_indices_fifo(SUP_KS * SUP_KS * 10),
         computeS((std::string("computeS") + std::to_string(sid)).c_str()),
         sendS((std::string("sendS") + std::to_string(sid)).c_str()) {}
 #else

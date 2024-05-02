@@ -315,4 +315,45 @@ void create_2d_biases(int sn, int N_dim, int sm, int M_dim, int32_t *new_bias,
 #endif
 }
 
+
+// void store_unpad(int8_t *data, int width, int depth, int8_t *shape_data,
+//                  int w_pad, int d_pad) {
+//   // Jude's code to store unpadded
+//   int w = roundUp(width, w_pad);
+//   int d = roundUp(depth, d_pad);
+//   int i_c = 0;
+//   for (int i = 0; i < width; i++) {
+//     for (int j = 0; j < depth; j++) {
+//       int8_t val = data[(i * d) + j];
+//       shape_data[i_c++] = val;
+//     }
+//   }
+// }
+
+// void precal_sum_load_pad(int8_t *data, int width, int depth, int8_t *shape_data,
+//                          vector<int> &sums, int w_pad, int d_pad) {
+//   int w = roundUp(width, w_pad);
+//   int d = roundUp(depth, d_pad);
+//   int max = width * depth;
+//   int i_c = 0;
+//   for (int i = 0; i < w; i++) {
+//     int s0 = 0;
+//     if (i < width) {
+//       for (int j = 0; j < d; j++) {
+//         if (j < depth) {
+//           int8_t val = data[(i * depth) + j];
+//           s0 += val;
+//           shape_data[i_c++] = val;
+//         } else {
+//           shape_data[i_c++] = 0;
+//         }
+//       }
+
+//     } else {
+//       for (int j = 0; j < d; j++) shape_data[i_c++] = 0;
+//     }
+//     sums.push_back(s0);
+//   }
+// }
+
 #endif // ACC_CONTAINER

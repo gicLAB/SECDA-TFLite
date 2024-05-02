@@ -1,0 +1,13 @@
+{
+  "acc_name": "MM2IM",
+  "acc_version": 2,
+  "acc_sub_version": 4,
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_link_folder": "mm2im_src_v2",
+  "hlx_tcl_script": "./hlx_scripts/mm2im_hlx.tcl",
+  "top": "MM2IMv1",
+  "pynq_dir": "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams",
+  "board_script": ""
+}

@@ -13,10 +13,14 @@
 
 #include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <iomanip>
+
+#include "../secda_profiler/profiler.h"
+#define TSCALE microseconds
+#define TSCAST duration_cast<nanoseconds>
 
 // TODO: Remove hardcode addresses, make it cleaner
 using namespace std;
@@ -154,6 +158,9 @@ struct stream_dma {
   const int id;
 
   int data_transfered = 0;
+  int data_transfered_recv = 0;
+  duration_ns send_wait;
+  duration_ns recv_wait;
 
 #ifdef SYSC
   // AXIS_ENGINE rdmad;
@@ -165,8 +172,8 @@ struct stream_dma {
              unsigned int _output_size);
 
   stream_dma(unsigned int _dma_addr, unsigned int _input, unsigned int _r_paddr,
-             unsigned int _input_size, unsigned int _output, unsigned int _w_paddr,
-             unsigned int _output_size);
+             unsigned int _input_size, unsigned int _output,
+             unsigned int _w_paddr, unsigned int _output_size);
 
   stream_dma();
 
@@ -197,6 +204,8 @@ struct stream_dma {
   void dma_wait_recv();
 
   int dma_check_recv();
+
+  void print_times();
 
   //********************************** Unexposed Functions
   //**********************************
@@ -242,18 +251,19 @@ struct multi_dma {
   void multi_dma_wait_recv_4();
 
   int multi_dma_check_recv();
+
+  void print_times();
 };
 
 // ================================================================================
 // Memory Access API
 // ================================================================================
 
-struct mcontroller{
+struct mcontroller {
 
+  void assign(int *dst, int *src, int value);
 
-  void assign(int* dst, int* src, int value);
-
-  void assign_sim(int* dst, int* src, int value);
+  void assign_sim(int *dst, int *src, int value);
 };
 
 #endif

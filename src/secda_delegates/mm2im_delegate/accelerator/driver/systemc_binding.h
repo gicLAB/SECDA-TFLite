@@ -28,6 +28,7 @@ struct sysC_sigs {
   sc_signal<int> scheduleS;
   sc_signal<int> outS;
   sc_signal<int> tempS;
+  sc_signal<int> pdS;
 
   sc_signal<int> computeS0;
   sc_signal<int> sendS0;
@@ -89,6 +90,7 @@ void sysC_binder(ACCNAME *acc, multi_dma *mdma, sysC_sigs *scs) {
   acc->scheduleS(scs->scheduleS);
   acc->outS(scs->outS);
   acc->tempS(scs->tempS);
+  acc->pdS(scs->pdS);
 
   acc->vars.vars_0.computeS(scs->computeS0);
   acc->vars.vars_0.sendS(scs->sendS0);

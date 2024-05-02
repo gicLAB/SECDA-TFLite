@@ -3,7 +3,7 @@ void ACCNAME::Data_In() {
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=data_loadS
   // clang-format on
 
-  data_loadS.write(50);
+  data_loadS.write(0);
   wait();
   while (1) {
     data_loadS.write(1);
@@ -18,7 +18,7 @@ void ACCNAME::Data_In() {
       int pe_dex = 0;
       for (int pe_dex = 0; pe_dex < PE_COUNT; pe_dex++) {
 #pragma HLS unroll
-        data_loadS.write(20 + pe_dex);
+        // data_loadS.write(20 + pe_dex);
         for (int i = 0; i < cpf; i++) {
           for (int j = 0; j < wp.wgt_depth; j++) {
             bUF d1;
@@ -40,7 +40,7 @@ void ACCNAME::Data_In() {
           DWAIT();
         }
       }
-      data_loadS.write(3);
+      // data_loadS.write(3);
       for (int i = 0; i < nfilters; i++) {
         sc_uint<32> data = din1.read().data;
         sc_uint<32> data1 = din1.read().data;
@@ -50,7 +50,7 @@ void ACCNAME::Data_In() {
         crx_buf[i] = data2;
         DWAIT(3);
       }
-      data_loadS.write(4);
+      // data_loadS.write(4);
       while (!wgt_loaded()) wait();
     }
 

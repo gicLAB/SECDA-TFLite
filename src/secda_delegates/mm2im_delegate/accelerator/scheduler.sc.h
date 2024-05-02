@@ -25,11 +25,13 @@ void ACCNAME::Pattern_Decoder() {
 #pragma HLS PIPELINE II = 1
         for (int iw = 0; iw < kernel_size; iw++) {
 #pragma HLS PIPELINE II = 1
+          pdS.write(31);
           if (ih + h_pad >= 0 and ih + h_pad < oh and iw + w_pad >= 0 and
               iw + w_pad < ow) {
             col_indices_write(row, false);
             out_indices_write(im_dex, false);
           }
+          pdS.write(32);
           im_dex += 1;
           row += 1;
           DWAIT();
@@ -91,23 +93,23 @@ void ACCNAME::load_inp_PEs() {
   start_decode.write(true);
   DWAIT();
   for (int r = 0; r < number_of_rows; r++) {
-    // scheduleS.write(62);
+    scheduleS.write(62);
     wait();
     start_compute();
-    // scheduleS.write(63);
+    scheduleS.write(63);
     DWAIT(5);
 
     while (compute_done()) {
-      // scheduleS.write(66);
+      scheduleS.write(66);
       DWAIT();
     }
     // wait();
-    // scheduleS.write(67);
+    scheduleS.write(67);
     stop_compute();
     DWAIT();
 
     while (compute_resetted()) {
-      // scheduleS.write(68);
+      scheduleS.write(68);
       DWAIT();
     }
 
@@ -116,7 +118,7 @@ void ACCNAME::load_inp_PEs() {
       vars[i].reset_compute.write(false);
     }
     DWAIT();
-    // scheduleS.write(69);
+    scheduleS.write(69);
     // wait();
   }
   while (load_fifo || start_decode) {

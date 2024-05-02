@@ -15,7 +15,7 @@ void ACCNAME::Writer_Cycle_Counter() {
       compute->value++;
       int s1 = schS.read();
       shS->increment(s1);
-      int s2 = schS.read()*10;
+      int s2 = s1*10;
 
 
       int w1 = vars.vars_0.computeS.read();
@@ -25,7 +25,7 @@ void ACCNAME::Writer_Cycle_Counter() {
       if (w1 == 4) wstall1->value++;
       if (p1 != 1) post1->value++;
       gmSA->increment(w1+s2);
-      // psSA->increment(p1);
+      psSA->increment(p1);
 
       int w2 = vars.vars_1.computeS.read();
       int p2 = vars.vars_1.postS.read();
@@ -33,8 +33,8 @@ void ACCNAME::Writer_Cycle_Counter() {
       if (w2 == 3) gemm2->value++;
       if (w2 == 4) wstall2->value++;
       if (p2 != 1) post2->value++;
-      // gmSB->increment(w2);
-      // psSB->increment(p2);
+      gmSB->increment(w2);
+      psSB->increment(p2);
 
       int w3 = vars.vars_2.computeS.read();
       int p3 = vars.vars_2.postS.read();

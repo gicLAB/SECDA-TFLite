@@ -2,6 +2,9 @@ from string import Template
 import json
 from gen_benchmark import gen_benchmark
 
+board_user = "xilinx"
+
+
 ####################################################
 ## MODELS
 ####################################################
@@ -41,9 +44,9 @@ bert_models = ["albert_int8", "mobilebert_quant"]
 
 # manually supported gan models
 gan_models = [
-    "dcgan_gen",
-    "new_cycle_gan_f",
-    "new_cycle_gan_g",
+    # "dcgan_gen",
+    # "new_cycle_gan_f",
+    # "new_cycle_gan_g",
     "pix2pix_g",
     "magenta_gen",
 ]
@@ -79,16 +82,16 @@ add_only = ["toyadd_1_0", "cpu"]
 ####################################################
 ## EXPERIMENT CONFIGS
 ####################################################
-bitstream_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams"
-bin_dir = "/home/xilinx/Workspace/secda_benchmark_suite/bins"
+bitstream_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/bitstreams"
+bin_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/bins"
 
 # TCONV Synth Experiment
 models = tconv_models_synth
 # hardware = ["mm2im_1_0", "cpu", "mm2im_2_0"]
-hardware = ["mm2im_2_1"]
+hardware = ["mm2im_2_4", "cpu"]
 threads = [1, 2]
-num_run = 1
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
+num_run = 1000
+model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
 tconv_synth_exp = [
     models,
     hardware,
@@ -97,6 +100,7 @@ tconv_synth_exp = [
     model_dir,
     bitstream_dir,
     bin_dir,
+    board_user,
 ]
 
 
@@ -105,8 +109,17 @@ hardware = add_only
 models = add_models
 threads = [1, 2]
 num_run = 1
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
-add_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir]
+model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
+add_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_user,
+]
 
 # CONV Experiment
 models = conv_models
@@ -114,18 +127,56 @@ models = conv_models
 hardware = ["vm_3_0", "cpu"]
 threads = [1]
 num_run = 1
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models"
-conv_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir]
+model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
+conv_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_user,
+]
 
 
 # DCGAN Experiment
 # models = dcgan_layers
-models = ["tconv_2_2_512_5_4_4_1024"]
-hardware = ["mm2im_2_3", "cpu"]
+# models = ["tconv_2_2_512_5_4_4_1024"]
+models = ["dcgan_gen"]
+# hardware = ["mm2im_2_3", "cpu"]
+hardware = ["mm2im_2_3"]
+threads = [1, 2]
+num_run = 1000
+# model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
+model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
+dc_gan_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_user,
+]
+
+# GAN Experiment
+models = gan_models
+hardware = ["mm2im_2_4", "cpu"]
 threads = [1, 2]
 num_run = 1
-model_dir = "/home/xilinx/Workspace/secda_benchmark_suite/models/tconv"
-dc_gan_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir]
+model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/gans"
+gan_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_user,
+]
 
 
 ####################################################
@@ -133,4 +184,3 @@ dc_gan_exp = [models, hardware, threads, num_run, model_dir, bitstream_dir, bin_
 
 # Current experiment
 gen_benchmark(dc_gan_exp)
-

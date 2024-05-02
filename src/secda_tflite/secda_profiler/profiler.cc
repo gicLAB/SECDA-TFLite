@@ -26,7 +26,7 @@ SignalTrack::SignalTrack(string _name) {
 }
 
 void SignalTrack::increment(int val) {
-  if (values.size() < val+1) values.resize(val + 1);
+  if (values.size() < val + 1) values.resize(val + 1);
   values[val]++;
 }
 
@@ -194,11 +194,42 @@ void Profile::saveCSVRecords(string filename) {
     else per_sim_file << endl;
   }
 
+  std::vector<std::string> metric_names;
   for (int r = 0; r < records.size(); r++) {
     for (int m = 0; m < records[r].size(); m++) {
-      per_sim_file << records[r][m].value;
-      if (m + 1 != records[r].size()) per_sim_file << ",";
-      else per_sim_file << endl;
+      if (std::find(metric_names.begin(), metric_names.end(),
+                    records[r][m].name) == metric_names.end()) {
+        metric_names.push_back(records[r][m].name);
+      }
+      // push  records[r][m].name to metric_names if not already there
+      // bool add = true;
+      // for (int i = 0; i < metric_names.size(); i++) {
+      //   if (metric_names[i] == records[r][m].name) {
+      //     add = false;
+      //     break;
+      //   }
+      // }
+      // if (add) metric_names.push_back(records[r][m].name);
+    }
+  }
+
+  // create csv columns
+  for (int r = 0; r < records.size(); r++) {
+    for (int m = 0; m < metric_names.size(); m++) {
+      bool found = false;
+      for (int i = 0; i < records[r].size(); i++) {
+        if (records[r][i].name == metric_names[m]) {
+          per_sim_file << records[r][i].value;
+          if (m + 1 != metric_names.size()) per_sim_file << ",";
+          else per_sim_file << endl;
+          found = true;
+        }
+      }
+      if (!found) {
+        per_sim_file << "0";
+        if (m + 1 != metric_names.size()) per_sim_file << ",";
+        else per_sim_file << endl;
+      }
     }
   }
   per_sim_file.close();

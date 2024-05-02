@@ -268,7 +268,9 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
           }
           // Last ejects acc from schedule mode
           bool last = (o_1 == drv.oh - 1);
+          TOG(cerr << "Pre Store" << endl;);
           StoreOutTileRow(drv, o_1, o_3, filter_step, last);
+          TOG(cerr << "Post Store" << endl;);
           starting = drv.oh_ends[o_1] + 1;
         }
       }
@@ -276,36 +278,36 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
   }
 
   // Handle remaining filters
-  vector<vector<int>> &mm2im_map = *drv.mm2im_map;
-  for (; o_3 < output_cols; o_3++) {
-    for (int o_1 = 0; o_1 < drv.oh; o_1++) {
-      for (int o_2 = 0; o_2 < drv.ow; o_2++) {
-        int o_dex = ((o_1 * drv.ow) + o_2) * output_cols + o_3;
-        int32_t sum = 0;
-        for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
-          int orow = mm2im_map[o_dex][i] % drv.rows;
-          int ocol = mm2im_map[o_dex][i] / drv.rows;
-          for (int d = 0; d < drv.depth; d++) {
-            int weight_index = orow * drv.depth + d;
-            int input_index = ocol * drv.depth + d;
-            int weight = drv.weights[weight_index];
-            int input = drv.inputs[input_index];
-            sum += weight * input;
-          }
-          int offset = drv.acc_wt_sum[orow] * drv.rhs_offset;
-          sum += offset;
-        }
-        int bias = drv.bias[o_3];
-        int crf_data = drv.crf[o_3];
-        int crx_data = drv.crx[o_3];
-        int qm_ret =
-            drv.ra + CPU_Quantised_Multiplier(sum + bias, crf_data, crx_data);
-        if (qm_ret > MAX8) qm_ret = MAX8;
-        else if (qm_ret < MIN8) qm_ret = MIN8;
-        drv.output_data[o_dex] = qm_ret;
-      }
-    }
-  }
+  // vector<vector<int>> &mm2im_map = *drv.mm2im_map;
+  // for (; o_3 < output_cols; o_3++) {
+  //   for (int o_1 = 0; o_1 < drv.oh; o_1++) {
+  //     for (int o_2 = 0; o_2 < drv.ow; o_2++) {
+  //       int o_dex = ((o_1 * drv.ow) + o_2) * output_cols + o_3;
+  //       int32_t sum = 0;
+  //       for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
+  //         int orow = mm2im_map[o_dex][i] % drv.rows;
+  //         int ocol = mm2im_map[o_dex][i] / drv.rows;
+  //         for (int d = 0; d < drv.depth; d++) {
+  //           int weight_index = orow * drv.depth + d;
+  //           int input_index = ocol * drv.depth + d;
+  //           int weight = drv.weights[weight_index];
+  //           int input = drv.inputs[input_index];
+  //           sum += weight * input;
+  //         }
+  //         int offset = drv.acc_wt_sum[orow] * drv.rhs_offset;
+  //         sum += offset;
+  //       }
+  //       int bias = drv.bias[o_3];
+  //       int crf_data = drv.crf[o_3];
+  //       int crx_data = drv.crx[o_3];
+  //       int qm_ret =
+  //           drv.ra + CPU_Quantised_Multiplier(sum + bias, crf_data, crx_data);
+  //       if (qm_ret > MAX8) qm_ret = MAX8;
+  //       else if (qm_ret < MIN8) qm_ret = MIN8;
+  //       drv.output_data[o_dex] = qm_ret;
+  //     }
+  //   }
+  // }
   SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
   prf_end(1, drv.p_t.driver_total);
 };

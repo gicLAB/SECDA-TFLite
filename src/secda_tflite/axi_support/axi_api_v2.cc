@@ -131,8 +131,13 @@ int *stream_dma::dma_get_inbuffer() { return input; }
 int *stream_dma::dma_get_outbuffer() { return output; }
 
 void stream_dma::dma_start_send(int length) {
+  prf_dma_start(0);
+#ifdef DMA_PROFILE
+  data_transfered += length * 4;
+#endif
   msync(input, input_size, MS_SYNC);
   writeMappedReg(MM2S_LENGTH, length * 4);
+  prf_dma_end(0, send_wait);
 }
 
 void stream_dma::dma_wait_send() { dma_mm2s_sync(); }
@@ -148,14 +153,32 @@ void stream_dma::dma_start_recv(int length) {
 }
 
 void stream_dma::dma_wait_recv() {
+  prf_dma_start(0);
   dma_s2mm_sync();
   msync(output, output_size, MS_SYNC);
+#ifdef DMA_PROFILE
+  data_transfered_recv += readMappedReg(S2MM_LENGTH);
+#endif
+  prf_dma_end(0, recv_wait);
 }
 
 int stream_dma::dma_check_recv() {
   unsigned int s2mm_status = readMappedReg(S2MM_STATUS_REGISTER);
   bool done = !((!(s2mm_status & 1 << 12)) || (!(s2mm_status & 1 << 1)));
   return done ? 0 : -1;
+}
+
+void stream_dma::print_times() {
+#ifdef DMA_PROFILE
+  cout << "================================================" << endl;
+  cout << "-----------"
+       << "DMA: " << id << "-----------" << endl;
+  cout << "Data Transfered: " << data_transfered << endl;
+  cout << "Data Transfered Recv: " << data_transfered_recv << endl;
+  prf_out(TSCALE, send_wait);
+  prf_out(TSCALE, recv_wait);
+  cout << "================================================" << endl;
+#endif
 }
 
 // =========================== Multi DMAs
@@ -245,6 +268,12 @@ int multi_dma::multi_dma_check_recv() {
   for (int i = 0; i < dma_count; i++)
     done = done && (dmas[i].dma_check_recv() == 0);
   return done ? 0 : -1;
+}
+
+void multi_dma::print_times() {
+  for (int i = 0; i < dma_count; i++) {
+    dmas[i].print_times();
+  }
 }
 
 #endif

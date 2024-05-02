@@ -25,6 +25,7 @@ cc_library(
     deps = [
         "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
     ],
 )
 
@@ -40,6 +41,7 @@ cc_library(
     deps = [
         "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
     ],
 )
 
@@ -56,6 +58,7 @@ cc_library(
     copts = common_copts,
     deps = [
         "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
     ],
 )
 
@@ -70,6 +73,7 @@ cc_library(
     copts = common_copts,
     deps = [
         "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
     ],
 )
 
@@ -83,5 +87,6 @@ cc_library(
     ],
     copts = common_copts,
     deps = [
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
     ],
 )

@@ -50,7 +50,7 @@ pip3 install numpy
 conda activate secda-tflite
 cd tensorflow
 # make sure to set python path to /home/your_user/miniconda3/bin/python3
-./configure 
+./configure # make sure say no to clang as the default compiler
 bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
 bazel run //tensorflow/lite/examples/systemc:hello_systemc
 ```

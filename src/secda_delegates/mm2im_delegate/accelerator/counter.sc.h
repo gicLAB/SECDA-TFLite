@@ -16,6 +16,7 @@ void ACCNAME::In_Counter() {
     T_com->increment(compute);
     T_sd->increment(send);
     T_pd->increment(pd);
+    T_var->increment(compute*100 + sched);
 
     if (ins == 4) schedule_cycles->value++;
     if (sched == 6) process_cycles->value++;

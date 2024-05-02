@@ -7,6 +7,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
+
+using namespace std;
+using namespace std::chrono;
 
 #ifdef ACC_PROFILE
 #define prf_start(N) auto start##N = chrono::high_resolution_clock::now();
@@ -18,8 +22,18 @@
 #define prf_end(N, X)
 #endif
 
-using namespace std;
-using namespace std::chrono;
+
+#ifdef DMA_PROFILE
+#define prf_start(N) auto start##N = chrono::high_resolution_clock::now();
+#define prf_end(N, X)                                                          \
+  auto end##N = chrono::high_resolution_clock::now();                          \
+  X += end##N - start##N;
+#else
+#define prf_dma_start(N)
+#define prf_dma_end(N, X)
+#endif
+
+
 #define prf_out(TSCALE, X)                                                     \
   cerr << #X << ": " << duration_cast<TSCALE>(X).count() << endl;
 
@@ -129,7 +143,7 @@ void saveMatrixCSV(string filename, T *matrix, int rows, int cols) {
     }
   }
   file.close();
-};
+}
 
 template <typename T>
 void printMatrixCSV(T *matrix, int rows, int cols) {
@@ -141,6 +155,6 @@ void printMatrixCSV(T *matrix, int rows, int cols) {
       index++;
     }
   }
-};
+}
 
 #endif // PROFILER_HEADER

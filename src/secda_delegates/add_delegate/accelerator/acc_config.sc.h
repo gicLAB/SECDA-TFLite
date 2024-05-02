@@ -59,6 +59,9 @@
 
 #else // __SYNTHESIS__
 
+#define ALOG(x)
+
+
 #define DWAIT(x)
 typedef struct _DATA {
   sc_uint<32> data;

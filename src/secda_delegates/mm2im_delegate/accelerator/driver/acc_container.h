@@ -117,16 +117,20 @@ struct acc_container {
   const int8_t *inputs;
 
   // mm2im map
-  vector<vector<int>> *mm2im_map;
-  vector<vector<vector<int>>> *oh_map;
-  int *oh_lengths;
-  int *oh_starts;
+  // vector<vector<int>> *mm2im_map;
   int *oh_ends;
 
-  // vector<vector<int>> col_dexs;
-  // vector<vector<int>> out_dexs;
-  vector<vector<int>> *col_dexs;
-  vector<vector<int>> *out_dexs;
+
+  // // mm2im map
+  // vector<vector<int>> *mm2im_map;
+  // vector<vector<vector<int>>> *oh_map;
+  // int *oh_lengths;
+  // int *oh_starts;
+  // int *oh_ends;
+  // // vector<vector<int>> col_dexs;
+  // // vector<vector<int>> out_dexs;
+  // vector<vector<int>> *col_dexs;
+  // vector<vector<int>> *out_dexs;
 
   // Output Pipeline Metadata
   int32_t *acc_wt_sum;

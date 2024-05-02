@@ -17,7 +17,7 @@ int VMM_UNIT::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
   sc_int<64> quantized_multiplier_64(qm);
   sc_int<64> one = 1;
   sc_int<64> round = one << (total_shift - 1); // ALU ADD + ALU SHLI
-  sc_int<64> result =
+  int64_t result =
       x_64 * quantized_multiplier_64 + round; // ALU ADD + ALU MUL
   result = result >> total_shift;             // ALU SHRI
   int nresult = result;
@@ -100,7 +100,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       r[j * 4 + i] = f1_a1.range(7, 0);
     }
   }
-  DWAIT(44);
+  DWAIT(10);
 }
 
 void VMM_UNIT::LoadWeights() {
@@ -152,12 +152,15 @@ void VMM_UNIT::Compute() {
     vmm_ready.write(false);
     computeS.write(4);
     wait();
-    while (!post_ready) wait();
+    while (!post_ready) {
+      computeS.write(5);
+      wait();
+    }
     for (int i = 0; i < 16; i++) {
 #pragma HLS unroll
       g[i] = out[i][0];
     }
-    computeS.write(5);
+    computeS.write(6);
     post_ready.write(false);
     // wait();
     DWAIT(1);

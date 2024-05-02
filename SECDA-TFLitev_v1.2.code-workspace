@@ -5,8 +5,14 @@
 			"path": "tensorflow"
 		},
 		{
-			"name": "SECDA-TFLite",
+			"name": "SECDA-TFLite_v1.2",
 			"path": "."
+		},
+		{
+			"path": "../../../../proc/self/cwd/external/ruy/ruy"
+		},
+		{
+			"path": "../../.cache/bazel/_bazel_jude/26a7eb093797e0c120b3febb86571871/external/ruy/ruy"
 		}
 	],
 	"settings": {

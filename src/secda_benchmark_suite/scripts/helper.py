@@ -1,4 +1,5 @@
-
+import sys
+sys.dont_write_bytecode = True
 import math
 def find_len_of_needed_outputs_of_outrows(id,oh,ow,pl,pr,pt,ks,sx,sy):
     width_col = (ow + pl + pr - ks) // sy + 1
@@ -239,6 +240,14 @@ def nofSteps(length,stride,kernel_size):
 
 
 def tconv_model_info(params):
+    stride_x = params[0]
+    stride_y = params[1]
+    filters = params[2]
+    kernel_size = params[3]
+    in1 = params[4]
+    in2 = params[5]
+    in3 = params[6]
+    padding_val = params[7]
     rows, cols, depth, out1, out2, out3, pt, pb, pl, pr = calParams(params)
     rdepth = math.ceil(depth / 16) * 16
     total_macs = rows * cols * rdepth
