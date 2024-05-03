@@ -90,10 +90,9 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
     for (int i = 0; i < 4; i++) {
 #pragma HLS pipeline II = 1
       int accum1 = accum[j * 4 + i];
-      // int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j],
-      // prs[j],
-      //                                          msks[j], sms[j]);
-      int ret_accum1 = Quantised_Multiplier(accum1, pcrf[j], pex[j]);
+      int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j], prs[j],
+                                               msks[j], sms[j]);
+      // int ret_accum1 = Quantised_Multiplier(accum1, pcrf[j], pex[j]);
       sc_int<32> f1_a1 = ret_accum1 + ra;
       int res = f1_a1;
       if (f1_a1 > MAX8) f1_a1 = MAX8;
@@ -101,7 +100,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       r[j * 4 + i] = f1_a1.range(7, 0);
     }
   }
-  DWAIT(10);
+  DWAIT(44);
 }
 
 void VMM_UNIT::LoadWeights() {

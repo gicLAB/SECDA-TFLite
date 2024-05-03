@@ -1,5 +1,6 @@
 #!/bin/bash
 # set -e
+pushd "$(dirname "$0")"
 
 run_hls=1
 run_hlx=1
@@ -103,3 +104,5 @@ echo ""
 echo "HLS runtime: $(($hls_runtime / 60)):$(($hls_runtime % 60)) mins"
 echo "HLX runtime: $(($hlx_runtime / 60)):$(($hlx_runtime % 60)) mins"
 echo "Run runtime: $(($run_runtime/1000)) ms"
+
+popd

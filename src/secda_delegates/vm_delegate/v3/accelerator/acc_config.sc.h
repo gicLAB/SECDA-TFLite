@@ -3,7 +3,7 @@
 #define ACC_CONFIG_H
 
 // Name of the accelerator
-#define ACCNAME VM_INT8_V3_0
+#define ACCNAME VM_INT8_V4_0
 
 // Pre-Defined Address for Accelerator
 #define acc_address 0x43C00000

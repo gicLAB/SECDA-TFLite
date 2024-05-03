@@ -138,7 +138,8 @@ tconv_synth_exp = [
 
 # CONV Experiment
 models = conv_models
-hardware = ["VMv3_0", "SAv3_0", "CPU"]
+# hardware = ["VMv3_0", "SAv3_0", "CPU"]
+hardware = ["VMv3_0"]
 threads = [1, 2]
 num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"

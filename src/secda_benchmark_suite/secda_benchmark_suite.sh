@@ -80,7 +80,8 @@ echo "--------------------------------"
 
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  rsync -q -r -avz -e 'ssh -p 2202' ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
 
@@ -111,7 +112,7 @@ if [ $skip_bench -eq 0 ]; then
   echo "Transferring Experiment Configurations to Target Device"
   rsync -q -r -avz -e 'ssh -p 2202' ./generated/configs.sh $board_user@$board_hostname:$board_dir/
   rsync -q -r -avz -e 'ssh -p 2202' ./generated/run_collect.sh $board_user@$board_hostname:$board_dir/
-  ssh -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
+  ssh -o LogLevel=QUIET  -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
 
   if [ $collect_power -eq 1 ]; then
     echo "--------------------------------"
@@ -124,7 +125,7 @@ if [ $skip_bench -eq 0 ]; then
   echo "--------------------------------"
   echo "Running Benchmarks"
   echo "--------------------------------"
-  ssh -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power"
+  ssh -o LogLevel=QUIET  -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power"
   rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$board_dir/tmp ./
   echo "--------------------------------"
 

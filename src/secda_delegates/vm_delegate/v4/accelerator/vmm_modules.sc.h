@@ -17,7 +17,7 @@ int VMM_UNIT::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
   sc_int<64> quantized_multiplier_64(qm);
   sc_int<64> one = 1;
   sc_int<64> round = one << (total_shift - 1); // ALU ADD + ALU SHLI
-  sc_int<64>  result =
+  sc_int<64> result =
       x_64 * quantized_multiplier_64 + round; // ALU ADD + ALU MUL
   result = result >> total_shift;             // ALU SHRI
   int nresult = result;
@@ -90,9 +90,9 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
     for (int i = 0; i < 4; i++) {
 #pragma HLS pipeline II = 1
       int accum1 = accum[j * 4 + i];
-      // int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j], prs[j],
-      //                                          msks[j], sms[j]);
-      int ret_accum1 = Quantised_Multiplier(accum1, pcrf[j], pex[j]);
+      int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j], prs[j],
+                                               msks[j], sms[j]);
+      // int ret_accum1 = Quantised_Multiplier(accum1, pcrf[j], pex[j]);
       sc_int<32> f1_a1 = ret_accum1 + ra;
       int res = f1_a1;
       if (f1_a1 > MAX8) f1_a1 = MAX8;
@@ -100,7 +100,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       r[j * 4 + i] = f1_a1.range(7, 0);
     }
   }
-  DWAIT(10);
+  DWAIT(44);
 }
 
 void VMM_UNIT::LoadWeights() {

@@ -60,6 +60,13 @@ touch ./commands.txt
 rm -f ./runs.csv
 touch ./runs.csv
 
+function ctrl_c() {
+  echo "Exiting"
+  exit 1
+}
+
+trap ctrl_c INT
+
 for ((i = 0; i < length; i++)); do
   index=$((i + 1))
   HW=${hw_array[$i]}

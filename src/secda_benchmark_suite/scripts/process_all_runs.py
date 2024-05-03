@@ -47,6 +47,7 @@ ordered_keys = [
     "total_latency",
 ]
 unique_keys = unique_keys + [key for key in common_keys if key not in ordered_keys]
+unique_keys.sort()
 final_keys = ordered_keys + unique_keys
 # re-order columns
 df = df[final_keys]
