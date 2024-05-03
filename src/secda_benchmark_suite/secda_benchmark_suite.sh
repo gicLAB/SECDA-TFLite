@@ -1,10 +1,14 @@
 #!/bin/bash
-board_user=xilinx
-board_hostname=jharis.ddns.net
-arm_dir=/home/xilinx/Workspace/secda_benchmark_suite/
+# board_user=xilinx
+# board_hostname=jharis.ddns.net
+# board_dir=/home/xilinx/Workspace/secda_benchmark_suite/
 
+# Requires jq to be installed
+board_user=$(jq -r '.board_user' ../../config.json)
+board_hostname=$(jq -r '.board_hostname' ../../config.json)
+board_dir=$(jq -r '.board_dir' ../../config.json)
 
-
+# exit 0
 # Optional arguments
 # 1: skip_bench: Skip running benchmarks on the target board
 # 2: bin_gen: Generate binaries
@@ -49,8 +53,9 @@ fi
 
 if [ "$name" == "" ]; then
   name="run_${now}"
+else
+  name="${name}_${now}"
 fi
-
 
 function ctrl_c() {
   echo "Exiting"
@@ -59,62 +64,96 @@ function ctrl_c() {
 
 trap ctrl_c INT
 
+echo "--------------------------------"
+echo "-- SECDA-TFLite Benchmark Suite --"
+echo "--------------------------------"
+echo "Configurations"
+echo "Board User: ${board_user}"
+echo "Board Hostname: ${board_hostname}"
+echo "Board Dir: ${board_dir}"
+echo "Skip Bench: ${skip_bench}"
+echo "Bin Gen: ${bin_gen}"
+echo "Skip Inf Diff: ${skip_inf_diff}"
+echo "Collect Power: ${collect_power}"
+echo "Name: ${name}"
+echo "--------------------------------"
 
-# define function to which create secda_benchmark_suite directory on the board at arm_dir
+# define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $arm_dir"
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $arm_dir/tmp"
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $arm_dir/results"
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $arm_dir/bitstreams"
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $arm_dir/bins"
-  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $arm_dir/models"
+  ssh -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  echo "Initialization Done"
 }
 
-echo "Initializing secda_benchmark_suite on the board"
-# create_dir(); # fix
+echo "--------------------------------"
+echo "Initializing SECDA-TFLite Benchmark Suite on Target Device"
+create_dir # fix
+echo "--------------------------------"
+
+# Generate binaries and experiment configurations
+echo "--------------------------------"
+echo "Configuring Benchmark"
+echo "--------------------------------"
+python3 scripts/configure_benchmark.py $bin_gen
 
 if [ $bin_gen -eq 1 ]; then
-  source ./bin_gen.sh
+  echo "--------------------------------"
+  echo "Generating Binaries"
+  source ./generated/gen_bins.sh
+  echo "--------------------------------"
 fi
-source /home/jude/miniconda3/bin/activate tf # current the tf environment can#t be used for bazel build (glibc version issue)
 
 source ./generated/configs.sh
 length=${#hw_array[@]}
+source /home/jude/miniconda3/bin/activate tf # current the tf environment can#t be used for bazel build (glibc version issue)
 
-python3 scripts/configure_benchmark.py
 if [ $skip_bench -eq 0 ]; then
-
-  rsync -q -r -avz -e 'ssh -p 2202' ./generated/configs.sh $board_user@$board_hostname:$arm_dir/
-  rsync -q -r -avz -e 'ssh -p 2202' ./generated/run_collect.sh $board_user@$board_hostname:$arm_dir/
-  ssh -t -p 2202 $board_user@$board_hostname "cd $arm_dir/ && chmod +x ./*.sh"
+  echo "--------------------------------"
+  echo "Transferring Experiment Configurations to Target Device"
+  rsync -q -r -avz -e 'ssh -p 2202' ./generated/configs.sh $board_user@$board_hostname:$board_dir/
+  rsync -q -r -avz -e 'ssh -p 2202' ./generated/run_collect.sh $board_user@$board_hostname:$board_dir/
+  ssh -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
 
   if [ $collect_power -eq 1 ]; then
+    echo "--------------------------------"
+    echo "Initializing Power Capture"
     python3 scripts/record_power.py $name &
     echo $! >/tmp/record_power.py.pid
+    echo "--------------------------------"
   fi
 
-  ssh -t -p 2202 $board_user@$board_hostname "cd $arm_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power"
-  rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$arm_dir/tmp ./
-  echo "Runs can be found in:" ./tmp/runs.csv
+  echo "--------------------------------"
+  echo "Running Benchmarks"
+  echo "--------------------------------"
+  ssh -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power"
+  rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$board_dir/tmp ./
+  echo "--------------------------------"
+
+  # echo "Runs can be found in:" ./tmp/runs.csv
   if [ $collect_power -eq 1 ]; then
     if [[ -e /tmp/record_power.py.pid ]]; then
       kill $(cat /tmp/record_power.py.pid)
+      echo "--------------------------------"
       echo "Power Capture Done"
+      echo "--------------------------------"
       echo "Processing Power Data"
+      echo "--------------------------------"
+
       python3 scripts/process_power.py $name $length
       echo "Power Processing Done"
+      echo "--------------------------------"
     else
       echo $(cat /tmp/record_power.py.pid) "not found"
     fi
+    echo "Simple csv:" ./files/${name}_clean.csv
+    echo "--------------------------------"
   fi
-
 fi
 
 # Post processing on host
 # if [ $process_on_fpga -eq 0 ] && [ $collect_power -eq 0 ]; then
 if [ $process_on_fpga -eq 0 ]; then
-  # rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$arm_dir/tmp ./
-  # source ./generated/configs.sh
+  echo "--------------------------------"
+  echo "Post Processing"
   prev_failed=0
   prev_hw=""
   length=${#hw_array[@]}
@@ -143,9 +182,16 @@ if [ $process_on_fpga -eq 0 ]; then
       if [ $? -ne 0 ]; then valid=0 && echo "Correctness Check Failed ${runname}"; fi
     }; fi
     # echo "Processing run"
-    python3 scripts/process_run.py ${MODEL} ${THREAD} ${NUM_RUN} ${HW} ${VERSION} ${DEL} ${DEL_VERSION} ${valid} ${now}
+    python3 scripts/process_run.py ${MODEL} ${THREAD} ${NUM_RUN} ${HW} ${VERSION} ${DEL} ${DEL_VERSION} ${valid} ${name}
     if [ $? -ne 0 ]; then prev_failed=1 && echo "Process Run Failed" && continue; fi
   done # HW
 
-  python3 scripts/process_all_runs.py ${now}
+  python3 scripts/process_all_runs.py ${name}
+  echo "--------------------------------"
+  echo "Post Processing Done"
+  echo "--------------------------------"
 fi
+
+echo "--------------------------------"
+echo "Exiting SECDA-TFLite Benchmark Suite"
+echo "--------------------------------"

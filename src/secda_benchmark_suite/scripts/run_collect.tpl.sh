@@ -126,16 +126,11 @@ for ((i = 0; i < length; i++)); do
 
   # Run benchmark
   if [ ${valid} -eq 1 ]; then
-
     if [ ${collect_power} -eq 1 ]; then
       echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" --collect_power=true ${usedel} >>commands.txt
       sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} 2>/dev/null | tee tmp/${runname}_bm.txt
-      
-    #   echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true ${usedel} >>commands.txt
-      # sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true ${usedel}  2>/dev/null
-      ## echo to power.csv the current model, hw, version, del, del_version, thread, num_run
-      rtime=`cat runtime.txt`
-      echo "${MODEL},${HW},${VERSION},${DEL},${DEL_VERSION},${THREAD},${NUM_RUN},${rtime}" >> runs.csv
+      rtime=$(cat runtime.txt)
+      echo "${MODEL},${HW},${VERSION},${DEL},${DEL_VERSION},${THREAD},${NUM_RUN},${rtime}" >>runs.csv
       if [ $? -ne 0 ]; then
         echo "bm failed"
         echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true ${usedel}
@@ -146,8 +141,8 @@ for ((i = 0; i < length; i++)); do
       echo "Running benchmark"
       echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} >>commands.txt
       sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} >tmp/${runname}_bm.txt 2>&1
-      rtime=`cat runtime.txt`
-      echo "${MODEL},${HW},${VERSION},${DEL},${DEL_VERSION},${THREAD},${NUM_RUN},${rtime}" >> runs.csv
+      rtime=$(cat runtime.txt)
+      echo "${MODEL},${HW},${VERSION},${DEL},${DEL_VERSION},${THREAD},${NUM_RUN},${rtime}" >>runs.csv
       if [ $? -ne 0 ]; then
         echo "bm failed"
         echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel}

@@ -1,21 +1,13 @@
-
 import sys
+
 sys.dont_write_bytecode = True
 
 import os
 from string import Template
 import json
 
+hw_gen_tpl = "hw_gen.tpl.sh"
 
-vivado_path = "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/"
-board_user = "jude"
-board_hostname = "jharis.ddns.net"
-board_port = "2202"
-run_template = "run_template.sh"
-out_dir = "generated"
-script_dir = "hlx_scripts/"
-config_dir = "configs/"
-acc_link_dir = "acc_srcs/"
 
 # open c++ header file and parse all the #define and their values into a dictionary
 def parse_defines(file_name="test.h"):
@@ -52,26 +44,39 @@ class mt(Template):
     delimiter = "&"
     idpattern = r"[a-z][_a-z0-9]*"
 
+
 class hardware_exp:
     def __init__(
         self,
         config,
+        sc,
     ):
+        self.sc = sc
+        self.hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
+        self.vp = sc["vivado_path"]
+        self.hlx_script = (
+            f"{sc['secda_tflite_path']}/{sc['hlx_scripts']}/{config['hlx_tcl_script']}"
+        )
         self.acc_name = config["acc_name"]
         self.acc_version = config["acc_version"]
         self.acc_sub_version = config["acc_sub_version"]
         self.acc_test = config["acc_test"]
         self.acc_test_id = ("_" + self.acc_test_id) if self.acc_test else ""
         self.acc_test_desc = config["acc_test_desc"]
-        self.acc_link_folder = os.path.abspath(acc_link_dir + config["acc_link_folder"])
+        self.acc_link_folder = os.path.abspath(
+            self.hw_link_dir + config["acc_link_folder"]
+        )
         self.acc_part = "xc7z020clg400-1"
-        self.hlx_tcl_script = config["hlx_tcl_script"]
         self.top = config["top"]
-        self.pynq_dir = config["pynq_dir"]
+        self.pynq_dir = sc["board_dir"] + "/bitstreams"
         self.board_script = config["board_script"]
-        self.bitstream = config["acc_name"]+ "_"+  str(config["acc_version"])+ "_" + str(config["acc_sub_version"])
-        
-        self.vp = vivado_path
+        self.bitstream = (
+            config["acc_name"]
+            + "_"
+            + str(config["acc_version"])
+            + "_"
+            + str(config["acc_sub_version"])
+        )
         self.acc_tag = (
             str(self.acc_name)
             + "_"
@@ -99,7 +104,7 @@ class hardware_exp:
             f.write(s)
 
     def generate_hlx_tcl(self, output_dir):
-        with open((script_dir + self.hlx_tcl_script)) as f:
+        with open((self.hlx_script)) as f:
             tcl_script = str(mt(f.read()).substitute({"top": self.top}))
         with open(f"{output_dir}/hlx_script.tcl", "w") as f:
             f.write(tcl_script)
@@ -112,12 +117,12 @@ class hardware_exp:
             "vp": self.vp,
             "bitstream": self.bitstream,
             "pynq_dir": self.pynq_dir,
-            "board_user": board_user,
-            "board_hostname": board_hostname,
-            "board_port": board_port,
+            "board_user": self.sc["board_user"],
+            "board_hostname": self.sc["board_hostname"],
+            "board_port": self.sc["board_port"],
             "board_script": self.board_script,
         }
-        with open(run_template) as f:
+        with open(hw_gen_tpl) as f:
             run_script = str(mt(f.read()).substitute(run_dict))
 
         with open(f"{output_dir}/run.sh", "w") as f:
@@ -140,29 +145,40 @@ def main():
         print("Usage: hw_gen.py <config_file>")
         sys.exit(1)
 
-    config_file = args[0]
-    if config_file.endswith(".json") == False:
-        config_file += ".json"
+    hw_config_file = args[0]
+    if hw_config_file.endswith(".json") == False:
+        hw_config_file += ".json"
 
-    config_file = config_dir + config_file
-    config = load_config(config_file)
-  
+    sc = load_config("../config.json")
+
+    if not os.path.exists(hw_config_file):
+        hw_config_file = (
+            f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw_config_file}"
+        )
+
+    hw_config = load_config(hw_config_file)
+    out_dir = sc["out_dir"]
+    hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
+
     # create acc_link_folder if it does not exist
-    if not os.path.exists(acc_link_dir + config["acc_link_folder"]):
-        os.makedirs(acc_link_dir + config["acc_link_folder"])
+    if not os.path.exists(hw_link_dir + hw_config["acc_link_folder"]):
+        os.makedirs(hw_link_dir + hw_config["acc_link_folder"])
 
     # if output directory does not exist create it
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
     # then force symlink all the files in the acc_src to the acc_link_folder
-    for file in os.listdir(config["acc_src"]):
+    acc_src_dir = (
+        f"{sc['secda_tflite_path']}/{sc['path_to_dels']}/{hw_config['acc_src']}/"
+    )
+    for file in os.listdir(acc_src_dir):
         if file.endswith(".cc") or file.endswith(".h"):
-            source = os.path.abspath(config["acc_src"] + "/" + file)
-            target = os.path.abspath(acc_link_dir + config["acc_link_folder"] + "/")
+            source = os.path.abspath(acc_src_dir + file)
+            target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
             os.system(f"ln -sf {source} {target}")
-    
-    acc_proj = hardware_exp(config)
+
+    acc_proj = hardware_exp(hw_config, sc)
     acc_proj.create_project(out_dir)
     # print out cli for running the script
     # absolute path to the project
@@ -173,8 +189,8 @@ def main():
     print(f"{acc_proj_path}/run.sh")
 
 
-if __name__ == '__main__':
-  abspath = os.path.abspath(__file__)
-  dname = os.path.dirname(abspath)
-  os.chdir(dname)
-  main()
+if __name__ == "__main__":
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+    main()

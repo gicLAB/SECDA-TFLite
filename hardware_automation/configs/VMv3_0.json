@@ -5,9 +5,12 @@
   "acc_test": false,
   "acc_test_id": 0,
   "acc_test_desc": "",
+  "acc_src": "vm_delegate/v3/accelerator",
   "acc_link_folder": "vm_src_v3",
-  "hlx_tcl_script": "./hlx_scripts/vm_hlx.tcl",
+  "hlx_tcl_script": "mdma_axilite_hlx.tcl",
   "top": "VM_INT8_V3_0",
-  "pynq_dir": "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams",
-  "board_script": ""
+  "board_script": "",
+  "del" : "vm_delegate",
+  "del_version": "3",
+  "version": "3_0"
 }

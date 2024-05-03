@@ -1,6 +1,0 @@
-{
-  "hardware": "MM2IM",
-  "version": "1_0",
-  "del": "mm2im_fpga_delegate",
-  "del_version": "1"
-}

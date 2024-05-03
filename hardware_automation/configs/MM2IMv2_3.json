@@ -5,9 +5,12 @@
   "acc_test": false,
   "acc_test_id": 0,
   "acc_test_desc": "",
-  "acc_link_folder": "mm2im_src_v2",
-  "hlx_tcl_script": "./hlx_scripts/mm2im_hlx.tcl",
-  "top": "MM2IMv1",
-  "pynq_dir": "/home/xilinx/Workspace/secda_benchmark_suite/bitstreams",
-  "board_script": ""
+  "acc_src": "mm2im_delegate/v3/accelerator",
+  "acc_link_folder": "mm2im_src_v2_3",
+  "hlx_tcl_script": "sdma_axilite_hlx.tcl",
+  "top": "MM2IMv2",
+  "board_script": "",
+  "del" : "mm2im_delegate",
+  "del_version": "3",
+  "version": "2_3"
 }

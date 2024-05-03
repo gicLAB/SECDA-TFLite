@@ -1,29 +1,12 @@
 import sys
 sys.dont_write_bytecode = True
-from string import Template
-import json
+
+from benchmark_utils import *
 
 
-def load_config(hw):
-    with open(f"configs/{hw}.json") as f:
-        config = json.load(f)
-    return config
-
-
-def declare_array(f, name, list):
-    f.write("declare -a {}_array=(\n".format(name))
-    for i in list:
-        f.write('  "{}" \n'.format(i))
-    f.write(")\n")
-
-
-class mt(Template):
-    delimiter = "£"
-    idpattern = r"[a-z][_a-z0-9]*"
-
-
-def gen_benchmark(params):
-    gen_benchmark_imp(
+def gen_bench(sc, params):
+    gen_bench_imp(
+        sc,
         params[0],
         params[1],
         params[2],
@@ -35,8 +18,16 @@ def gen_benchmark(params):
     )
 
 
-def gen_benchmark_imp(
-    models, hardware, threads, num_run, model_dir, bitstream_dir, bin_dir, board_user
+def gen_bench_imp(
+    sc,
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_user,
 ):
     ## Generate configs.sh
     config_list = []
@@ -48,17 +39,18 @@ def gen_benchmark_imp(
     del_version_list = []
     delegate_list = []
     for hw in hardware:
-        config = load_config(hw)
+        hw_config_file = f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw}"
+        hw_config = load_config(hw_config_file)
         for model in models:
             for thread in threads:
-                hw_list.append(config["hardware"])
+                hw_list.append(hw_config["acc_name"])
                 model_list.append(model)
                 thread_list.append(thread)
                 num_run_list.append(num_run)
-                version_list.append(config["version"])
-                del_version_list.append(config["del_version"])
-                delegate_list.append(config["del"])
-                config_list.append(config)
+                version_list.append(hw_config["version"])
+                del_version_list.append(hw_config["del_version"])
+                delegate_list.append(hw_config["del"])
+                config_list.append(hw_config)
 
     f = open("generated/configs.sh", "w+")
     # list of all the config properties

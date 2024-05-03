@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import glob
 import sys
+import os
 
 
 # get date and time
@@ -10,6 +11,7 @@ now = args[0]
 
 # get all json files from out folder
 json_files = glob.glob(f"results/{now}/*.json")
+json_files.sort(key=lambda x: os.path.getmtime(x))
 runs = []
 if len(json_files) == 0:
     print("No json files found")

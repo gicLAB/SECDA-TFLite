@@ -1,0 +1,16 @@
+{
+  "acc_name": "VM",
+  "acc_version": 4,
+  "acc_sub_version": 0,
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_src": "vm_delegate/v3/accelerator",
+  "acc_link_folder": "vm_src_v3",
+  "hlx_tcl_script": "mdma_axilite_hlx.tcl",
+  "top": "VM_INT8_V4_0",
+  "board_script": "",
+  "del" : "vm_delegate",
+  "del_version": "4",
+  "version": "4_0"
+}

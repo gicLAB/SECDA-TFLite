@@ -1,8 +1,27 @@
-from string import Template
+import sys
+sys.dont_write_bytecode = True
 import json
-from gen_benchmark import gen_benchmark
+from gen_benchmark import gen_bench
+from gen_bins import gen_bins
+from benchmark_utils import *
 
-board_user = "xilinx"
+
+# parse arguments if any
+arglen = len(sys.argv)
+if arglen > 1:
+    gen_bin = sys.argv[1]
+
+sc = load_config("../../config.json")
+board_user = sc["board_user"]
+
+
+def create_exp(sc, exp):
+    print("Creating experiment")
+    print("Generating benchmark")
+    gen_bench(sc, exp)
+    if gen_bin:
+        print("Generating bins")
+        gen_bins(sc, exp)
 
 
 ####################################################
@@ -64,19 +83,16 @@ with open("model_gen/configs/dcgan_layers.json") as f:
 ## HARDWARE
 ####################################################
 all_supported_hardware = [
-    "vm_3_0",
-    "sa_2_0",
-    "cpu",
-    "mm2im_1_0",
-    "toyadd_1_0",
-    "mm2im_2_0",
-    "mm2im_2_1",
-    "mm2im_2_2",
-    "mm2im_2_3",
+    "CPU",
+    "VMv3_0",
+    "VMv4_0",
+    "SAv3_0",
+    "MM2IMv2_3",
+    "MM2IMv2_4",
 ]
-conv_only = ["vm_3_0", "sa_2_0"]
-tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1", "mm2im_2_2", "mm2im_2_3"]
-add_only = ["toyadd_1_0", "cpu"]
+# conv_only = ["vm_3_0", "sa_2_0"]
+# tconv_only = ["mm2im_1_0", "mm2im_2_0", "mm2im_2_1", "mm2im_2_2", "mm2im_2_3"]
+# add_only = ["toyadd_1_0", "cpu"]
 
 
 ####################################################
@@ -87,8 +103,7 @@ bin_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/bins"
 
 # TCONV Synth Experiment
 models = tconv_models_synth
-# hardware = ["mm2im_1_0", "cpu", "mm2im_2_0"]
-hardware = ["mm2im_2_4", "cpu"]
+hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
 num_run = 1000
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
@@ -105,27 +120,26 @@ tconv_synth_exp = [
 
 
 # ADD Experiment
-hardware = add_only
-models = add_models
-threads = [1, 2]
-num_run = 1
-model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
-add_exp = [
-    models,
-    hardware,
-    threads,
-    num_run,
-    model_dir,
-    bitstream_dir,
-    bin_dir,
-    board_user,
-]
+# hardware = add_only
+# models = add_models
+# threads = [1, 2]
+# num_run = 1
+# model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
+# add_exp = [
+#     models,
+#     hardware,
+#     threads,
+#     num_run,
+#     model_dir,
+#     bitstream_dir,
+#     bin_dir,
+#     board_user,
+# ]
 
 # CONV Experiment
 models = conv_models
-# hardware = ["vm_3_0", "cpu", "sa_2_0"]
-hardware = ["vm_3_0", "cpu"]
-threads = [1]
+hardware = ["VMv3_0", "SAv3_0", "CPU"]
+threads = [1, 2]
 num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
 conv_exp = [
@@ -141,11 +155,8 @@ conv_exp = [
 
 
 # DCGAN Experiment
-# models = dcgan_layers
-# models = ["tconv_2_2_512_5_4_4_1024"]
 models = ["dcgan_gen"]
-# hardware = ["mm2im_2_3", "cpu"]
-hardware = ["mm2im_2_3"]
+hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU"]
 threads = [1, 2]
 num_run = 1000
 # model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
@@ -163,7 +174,7 @@ dc_gan_exp = [
 
 # GAN Experiment
 models = gan_models
-hardware = ["mm2im_2_4", "cpu"]
+hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
 num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/gans"
@@ -183,4 +194,4 @@ gan_exp = [
 ####################################################
 
 # Current experiment
-gen_benchmark(dc_gan_exp)
+create_exp(sc, conv_exp)

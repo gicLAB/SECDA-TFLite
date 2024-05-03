@@ -10,32 +10,34 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
  
 
 ## 1. Setup repo
-```
+```bash
 git clone git@github.com:judeharis/SECDA-TFLite.git
 cd SECDA-TFLite
+git checkout v1.2
 git submodule init
 git submodule update
 cd scripts
 ./create_symlink.sh # you might have to make this script executetable "chmod +x ./create_symlink.sh
 cd tensorflow 
-git checkout secda-tflite-v1
+git checkout secda-tflite-v1_tf_r2.15
+sudo apt install -y jq
 ```
 
 You can now setup the dev environment natively (2.A) or via docker (2.B).
  
 ## 2.A Create dev environment on natively
 ### Setup Bazel
-```
+```bash
 sudo apt install apt-transport-https curl gnupg -y && \
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg && \
 sudo mv bazel-archive-keyring.gpg /usr/share/keyrings && \
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list && \
-sudo apt update && sudo apt install bazel-3.7.2 -y && \
-sudo ln -sf /usr/bin/bazel-3.7.2 /usr/bin/bazel
+sudo apt update && sudo apt install bazel-6.1.0 -y && \
+sudo ln -sf /usr/bin/bazel-6.1.0 /usr/bin/bazel6
 ```
 
 ### Setup miniconda environment needed for Tensorflow build process (Working with Ubuntu 22.04) 
-```
+```bash
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 source ~/.bashrc
@@ -46,7 +48,7 @@ pip3 install numpy
 ```
 
 ###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflite environment)
-```
+```bash
 conda activate secda-tflite
 cd tensorflow
 # make sure to set python path to /home/your_user/miniconda3/bin/python3
@@ -57,7 +59,7 @@ bazel run //tensorflow/lite/examples/systemc:hello_systemc
 
 
 ### Optional
-```
+```bash
 sudo apt-get -y install gdb
 ```
 
