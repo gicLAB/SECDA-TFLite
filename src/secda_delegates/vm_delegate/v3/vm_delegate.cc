@@ -9,10 +9,10 @@
 #endif
 
 #include "accelerator/driver/gemm_driver.h"
-#include "util.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
+#include "util.h"
 
 #define DMA_BC 1
 #define DELEGATE_VERSION 3
@@ -500,12 +500,15 @@ public:
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_wgt_acc.csv",
       //               filter_data, filter_rows, filter_cols);
+      // saveMatrixCSV("aData/conv/" + std::to_string(dparams.layer) +
+      //                   "_inp_acc.csv",
+      //               gemm_input_data, gemm_input_cols, gemm_input_rows);
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_inp_acc.csv",
       //               gemm_input_data, gemm_input_cols, gemm_input_rows);
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_out_acc.csv",
-      //               output_data, gemm_input_cols, filter_rows);
+      // output_data, gemm_input_cols, filter_rows);
       dparams.layer++;
       dparams.delegated_nodes--;
     }

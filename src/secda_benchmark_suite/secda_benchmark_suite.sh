@@ -80,13 +80,17 @@ echo "--------------------------------"
 
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
-  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  # ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
   rsync -q -r -avz -e 'ssh -p 2202' ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
 
 echo "--------------------------------"
 echo "Initializing SECDA-TFLite Benchmark Suite on Target Device"
+echo "--------------------------------"
+echo "Clearing cache"
+rm -rf ./tmp
 create_dir # fix
 echo "--------------------------------"
 
@@ -123,7 +127,7 @@ if [ $skip_bench -eq 0 ]; then
   fi
 
   echo "--------------------------------"
-  echo "Running Benchmarks"
+  echo "Running Experiments"
   echo "--------------------------------"
   ssh -o LogLevel=QUIET  -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power"
   rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$board_dir/tmp ./

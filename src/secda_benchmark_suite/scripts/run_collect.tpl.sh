@@ -60,6 +60,10 @@ touch ./commands.txt
 rm -f ./runs.csv
 touch ./runs.csv
 
+# delete the tmp directory
+rm -rf ./tmp
+mkdir ./tmp
+
 function ctrl_c() {
   echo "Exiting"
   exit 1
@@ -130,7 +134,8 @@ for ((i = 0; i < length; i++)); do
     python3 check_valid.py tmp/${runname}_id.txt
     if [ $? -ne 0 ]; then valid=0 && echo "Correctness check failed" && echo sudo python3 /home/£{board_user}/load_bitstream.py £{bitstream_dir}/${HW}_${VERSION}.bit -q && echo sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}; fi
   }; fi
-
+  
+  # valid=0 # Add this line to skip the benchmark
   # Run benchmark
   if [ ${valid} -eq 1 ]; then
     if [ ${collect_power} -eq 1 ]; then

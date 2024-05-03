@@ -12,6 +12,7 @@ for line in open_file:
         avg_error = line.split("avg_error=")[1].split(",")[0]
 
 avg_error = float(avg_error)
+print("Average error: ", avg_error)
 if avg_error < 0.01:
     # print("No errors found")
     sys.exit(0)
