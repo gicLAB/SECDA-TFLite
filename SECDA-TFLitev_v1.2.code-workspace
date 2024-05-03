@@ -13,6 +13,9 @@
 		},
 		{
 			"path": "../../.cache/bazel/_bazel_jude/26a7eb093797e0c120b3febb86571871/external/ruy/ruy"
+		},
+		{
+			"path": "../../.cache/bazel/_bazel_jude/26a7eb093797e0c120b3febb86571871/external/gemmlowp"
 		}
 	],
 	"settings": {
@@ -111,7 +114,14 @@
 			"ranges": "cpp",
 			"span": "cpp",
 			"stacktrace": "cpp",
-			"coroutine": "cpp"
+			"coroutine": "cpp",
+			"semaphore": "cpp",
+			"stop_token": "cpp",
+			"__bit_reference": "cpp",
+			"__functional_base": "cpp",
+			"__node_handle": "cpp",
+			"__memory": "cpp",
+			"target": "cpp"
 		}
 	}
 }
