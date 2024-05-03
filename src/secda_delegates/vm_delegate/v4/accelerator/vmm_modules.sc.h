@@ -10,7 +10,7 @@ sc_int<64> VMM_UNIT::mul_s64(int a, sc_int<64> b) {
   return c;
 }
 
-int VMM_UNIT::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
+int VMM_UNIT::Quantised_Multiplier_ruy_reference(int x, int qm, sc_int<8> shift) {
   int nshift = shift;
   int total_shift = 31 - shift;
   sc_int<64> x_64 = x;
@@ -27,7 +27,7 @@ int VMM_UNIT::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
   return result_32;
 }
 
-int VMM_UNIT::Quantised_Multiplier_v2(int x, int qm, sc_int<64> pl,
+int VMM_UNIT::Quantised_Multiplier_gemmlowp(int x, int qm, sc_int<64> pl,
                                       sc_int<32> pr, sc_int<32> msk,
                                       sc_int<32> sm) {
   sc_int<64> val = mul_s64(x, pl);
@@ -90,9 +90,12 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
     for (int i = 0; i < 4; i++) {
 #pragma HLS pipeline II = 1
       int accum1 = accum[j * 4 + i];
-      int ret_accum1 = Quantised_Multiplier_v2(accum1, pcrf[j], pls[j], prs[j],
+#ifndef __SYNTHESIS__
+      int ret_accum1 = Quantised_Multiplier_ruy_reference(accum1, pcrf[j], pex[j]);
+#else
+      int ret_accum1 = Quantised_Multiplier_gemmlowp(accum1, pcrf[j], pls[j], prs[j],
                                                msks[j], sms[j]);
-      // int ret_accum1 = Quantised_Multiplier(accum1, pcrf[j], pex[j]);
+#endif
       sc_int<32> f1_a1 = ret_accum1 + ra;
       int res = f1_a1;
       if (f1_a1 > MAX8) f1_a1 = MAX8;

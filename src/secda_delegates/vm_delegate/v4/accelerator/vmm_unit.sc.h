@@ -66,10 +66,10 @@ SC_MODULE(VMM_UNIT) {
              ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *,
              ACC_DTYPE<32>[][4], int, int, int);
 
-  int Quantised_Multiplier_v2(int, int, sc_int<64>, sc_int<32>, sc_int<32>,
+  int Quantised_Multiplier_gemmlowp(int, int, sc_int<64>, sc_int<32>, sc_int<32>,
                               sc_int<32>);
 
-  int Quantised_Multiplier(int, int, sc_int<8>);
+  int Quantised_Multiplier_ruy_reference(int, int, sc_int<8>);
 
   void PPU(int *, int *, int *, sc_int<8> *, ACC_DTYPE<32> *, ACC_DTYPE<8> *);
 
