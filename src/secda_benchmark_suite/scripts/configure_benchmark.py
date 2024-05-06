@@ -79,6 +79,9 @@ with open("model_gen/configs/tconv_models_synth.json") as f:
 with open("model_gen/configs/dcgan_layers.json") as f:
     dcgan_layers = json.load(f)["dcgan_layers"]
 
+with open("model_gen/configs/tf_dcgan_layers.json") as f:
+    tf_dcgan_layers = json.load(f)["tf_dcgan_layers"]
+
 ####################################################
 ## HARDWARE
 ####################################################
@@ -119,30 +122,13 @@ tconv_synth_exp = [
 ]
 
 
-# ADD Experiment
-# hardware = add_only
-# models = add_models
-# threads = [1, 2]
-# num_run = 1
-# model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
-# add_exp = [
-#     models,
-#     hardware,
-#     threads,
-#     num_run,
-#     model_dir,
-#     bitstream_dir,
-#     bin_dir,
-#     board_user,
-# ]
-
 # CONV Experiment
 models = conv_models
-# models = ["mobilenetv1"]
-models = ["inceptionv1"]
+models = ["mobilenetv1"]
+# models = ["inceptionv1"]
 # hardware = ["VMv3_0", "SAv3_0", "CPU"]
-hardware = ["VMv3_0"]
-threads = [1]
+hardware = ["VMv4_0"]
+threads = [2]
 num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
 conv_exp = [
@@ -159,9 +145,10 @@ conv_exp = [
 
 # DCGAN Experiment
 models = ["dcgan_gen"]
-hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU"]
-threads = [1, 2]
-num_run = 1000
+# hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
+hardware = ["MM2IMv2_51"]
+threads = [1]
+num_run = 10
 # model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
 dc_gan_exp = [
@@ -197,4 +184,4 @@ gan_exp = [
 ####################################################
 
 # Current experiment
-create_exp(sc, conv_exp)
+create_exp(sc, dc_gan_exp)

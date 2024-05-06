@@ -41,35 +41,28 @@ void ACCNAME::Data_In() {
         }
       }
       // data_loadS.write(3);
-      for (int i = 0; i < nfilters; i++) {
-        sc_uint<32> data = din1.read().data;
-        sc_uint<32> data1 = din1.read().data;
-        sc_uint<32> data2 = din1.read().data;
-        bias_buf[i] = data;
-        crf_buf[i] = data1;
-        crx_buf[i] = data2;
-        DWAIT(3);
-      }
       // separate bias, crf, crx
-      // for (int i = 0; i < nfilters; i++) {
-      //   sc_uint<32> data = din1.read().data;
-      //   bias_buf[i] = data;
-      //   DWAIT();
-      // }
-      // for (int i = 0; i < nfilters; i++) {
-      //   sc_uint<32> data = din1.read().data;
-      //   crf_buf[i] = data;
-      //   DWAIT();
-      // }
-      // for (int i = 0; i < nfilters; i += 4) {
-      //   sc_uint<32> data = din1.read().data;
-      //   crx_buf[i] = data.range(7, 0);
-      //   crx_buf[i + 1] = data.range(15, 8);
-      //   crx_buf[i + 2] = data.range(23, 16);
-      //   crx_buf[i + 3] = data.range(31, 24);
-      //   // crx_buf[i] = data;
-      //   DWAIT();
-      // }
+      for (int i = 0; i < nfilters; i++) {
+        sc_int<32> data = din1.read().data.to_int();
+        bias_buf[i] = data;
+        DWAIT();
+      }
+      for (int i = 0; i < nfilters; i++) {
+        sc_int<32> data = din1.read().data.to_int();
+        crf_buf[i] = data;
+        DWAIT();
+      }
+      for (int i = 0; i < nfilters; i+=4) {
+        sc_int<32> data = din1.read().data.to_int();
+        crx_buf[i] = data.range(7, 0);
+        crx_buf[i+1] = data.range(15, 8);
+        crx_buf[i+2] = data.range(23, 16);
+        crx_buf[i+3] = data.range(31, 24);
+
+        // crx_buf[i] = data;
+        DWAIT();
+      }
+
 
       // data_loadS.write(4);
       while (!wgt_loaded()) wait();

@@ -11,35 +11,36 @@ package(
 
 common_copts = ["-Wall"] + tflite_copts()
 
+
 cc_library(
     name = "driver_sysc",
     srcs = [
         "acc_container.h",
-        "gemm_driver.h",
-        "gemm_mt.h",
+        "mm2im_driver.h",
+        "mm2im_util.h",
+        "mm2im_mt.h",
         "systemc_binding.h"
         ],
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/accelerator:accelerator",
+        "//tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v5/accelerator:accelerator",
         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
     ],
 )
-
 
 cc_library(
     name = "driver",
     srcs = [
         "acc_container.h",
-        "gemm_driver.h",
-        "gemm_mt.h",
+        "mm2im_driver.h",
+        "mm2im_util.h",
+        "mm2im_mt.h",
         ],
     copts = common_copts,
     deps = [
-        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/accelerator:accelerator_config",
+        "//tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v5/accelerator:accelerator_config",
         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite",
     ],
 )
-
 

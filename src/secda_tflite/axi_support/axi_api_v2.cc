@@ -85,7 +85,7 @@ unsigned int stream_dma::readMappedReg(uint32_t offset) {
 
 void stream_dma::dma_mm2s_sync() {
   msync(dma_addr, PAGE_SIZE, MS_SYNC);
-  unsigned int mm2s_status = readMappedReg(MM2S_STATUS_REGISTER);
+  volatile unsigned int mm2s_status = readMappedReg(MM2S_STATUS_REGISTER);
   while (!(mm2s_status & 1 << 12) || !(mm2s_status & 1 << 1)) {
     msync(dma_addr, PAGE_SIZE, MS_SYNC);
     mm2s_status = readMappedReg(MM2S_STATUS_REGISTER);
@@ -94,7 +94,7 @@ void stream_dma::dma_mm2s_sync() {
 
 void stream_dma::dma_s2mm_sync() {
   msync(dma_addr, PAGE_SIZE, MS_SYNC);
-  unsigned int s2mm_status = readMappedReg(S2MM_STATUS_REGISTER);
+  volatile unsigned int s2mm_status = readMappedReg(S2MM_STATUS_REGISTER);
   while (!(s2mm_status & 1 << 12) || !(s2mm_status & 1 << 1)) {
     msync(dma_addr, PAGE_SIZE, MS_SYNC);
     s2mm_status = readMappedReg(S2MM_STATUS_REGISTER);

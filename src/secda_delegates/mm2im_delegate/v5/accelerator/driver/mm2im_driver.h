@@ -13,7 +13,7 @@
 // #define TOG(X)                                                                 \
 //   if (drv.verb) X;
 
-#define TOG(X)
+// #define TOG(X) X
 
 int input_data_sent = 0;
 int weight_data_sent = 0;
@@ -36,7 +36,7 @@ void LoadConfig(acc_container &drv, int padded_depth) {
   int inl0 = 0;
   int opcode = 1;
   in0[inl0++] = 1;
-  in0[inl0++] = padded_depth / 16;
+  in0[inl0++] = padded_depth / UF;
   in0[inl0++] = drv.ow;
   in0[inl0++] = (drv.rows / drv.f);
   in0[inl0++] = drv.cols;
@@ -59,37 +59,37 @@ void LoadConfig(acc_container &drv, int padded_depth) {
 
 void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
                 int padded_depth, int filter_step, int starting_filter) {
-  prf_start(0);
   int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
   int inl0 = 0;
   int padded_depth_4 = padded_depth / 4;
   int opcode = 2;
   int wgt_packet_a = number_of_rows;
-  int wgt_packet_b = padded_depth_4 / 4;
+  int wgt_packet_b = padded_depth_4 / (UF / 4);
 
   in0[inl0++] = opcode;
   in0[inl0++] = wgt_packet_a;
   in0[inl0++] = wgt_packet_b;
   in0[inl0++] = filter_step;
+  prf_start(0);
   for (int i = 0; i < number_of_rows; i++) {
     int src_addr = (starting_row + i) * padded_depth_4;
     memcpy(&in0[inl0], &drv.loaded_weights[src_addr], padded_depth_4 * 4);
     inl0 += padded_depth_4;
     in0[inl0++] = drv.acc_wt_sum[starting_row + i] * drv.rhs_offset;
   }
-
+  prf_end(0, drv.p_t.p_load_wgt);
   // Send Bias
-  for (int i = 0; i < filter_step; i++) {
-    in0[inl0++] = drv.bias[starting_filter + i];
-    in0[inl0++] = drv.crf[starting_filter + i];
-    in0[inl0++] = (int)drv.crx[starting_filter + i];
-  }
-  // memcpy(&in0[inl0], &drv.bias[starting_filter], filter_step * 4);
-  // inl0 += filter_step;
-  // memcpy(&in0[inl0], &drv.crf[starting_filter], filter_step * 4);
-  // inl0 += filter_step;
-  // memcpy(&in0[inl0], &drv.crx[starting_filter], filter_step * 4);
-  // inl0 += filter_step / 4;
+  // for (int i = 0; i < filter_step; i++) {
+  //   in0[inl0++] = drv.bias[starting_filter + i];
+  //   in0[inl0++] = drv.crf[starting_filter + i];
+  //   in0[inl0++] = (int)drv.crx[starting_filter + i];
+  // }
+  memcpy(&in0[inl0], &drv.bias[starting_filter], filter_step * 4);
+  inl0 += filter_step;
+  memcpy(&in0[inl0], &drv.crf[starting_filter], filter_step * 4);
+  inl0 += filter_step;
+  memcpy(&in0[inl0], &drv.crx[starting_filter], filter_step * 4);
+  inl0 += filter_step / 4;
 
   TOG(cerr << "Sending weights: " << starting_row << " to "
            << (starting_row + number_of_rows) << endl;);
@@ -100,7 +100,6 @@ void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
   data_transfered += inl0;
   weight_data_sent += inl0;
   wgt_load_calls++;
-  prf_end(0, drv.p_t.p_load_wgt);
 }
 
 void StartSchedule(acc_container &drv) {
@@ -122,7 +121,7 @@ void LoadInput(acc_container &drv, int starting_row, int number_of_rows,
   int inl0 = 0;
   int padded_depth_4 = padded_depth / 4;
   int inp_packet_a = number_of_rows;
-  int inp_packet_b = padded_depth_4 / 4;
+  int inp_packet_b = padded_depth_4 / (UF / 4);
   int inp_packet_c = starting_row;
 
   int opcode = 4 + 16;
@@ -187,74 +186,43 @@ void MM2IM_Inner_Threaded(acc_container &drv, int o_3, int padded_depth,
 // We need to handle the case where it is not
 // By processing the last filter_step % x filters separately
 void TileMM2IM(acc_container &drv, int padded_depth) {
-  int output_rows = drv.oh * drv.ow;
-  int output_cols = drv.oc;
-
   // weight params
   int data_per_filter = drv.ks * drv.ks * padded_depth;
-  int total_weights = data_per_filter * output_cols;
-  int rows_per_filter = drv.ks * drv.ks;
-  int acc_max_weight_rows = WGT_BUF_LEN * UF / padded_depth;
-  int total_weight_rows = total_weights / padded_depth;
-  int max_weight_rows = min(total_weight_rows, acc_max_weight_rows);
-  int filter_step = min(max_weight_rows / rows_per_filter, PE_COUNT);
-  if (rows_per_filter >= max_weight_rows) {
-    cerr << "Warning: rows_per_filter: " << rows_per_filter
-         << " >= max_weight_rows: " << max_weight_rows << endl;
-    filter_step = PE_COUNT;
-  }
+  int cols_per_filter = drv.ks * drv.ks;
+  int acc_weight_cols_sup = PE_WGTCOLBUF_SIZE * UF * PE_COUNT;
+  int filter_step = min(acc_weight_cols_sup / data_per_filter, PE_COUNT);
+  assert(filter_step == PE_COUNT);
 
   // input params
-  int max_input_rows_per_output = (drv.ks * drv.ks) / (drv.sx * drv.sy);
-  int total_inputs = drv.ih * drv.iw * padded_depth;
-  int acc_max_input_rows = INP_BUF_LEN * UF / padded_depth;
-  int total_input_rows = total_inputs / padded_depth;
-  int max_input_rows = min(total_input_rows, acc_max_input_rows);
-  int input_steps = min(max_input_rows, max_input_rows_per_output);
-
-  int padded_out_width = drv.ow + drv.pl + drv.pr;
-  int padded_out_height = drv.oh + drv.pt + drv.pb;
-  int noOfStepsX = nofSteps(padded_out_width, drv.sx, drv.ks);
-  int noOfStepsY = nofSteps(padded_out_height, drv.sy, drv.ks);
-  int max_input_rows_per_o1 = noOfStepsX * ceiling(drv.ks, drv.sy);
-  if (max_input_rows != total_input_rows &&
-      max_input_rows_per_output > max_input_rows)
-    cerr << "Warning: max_input_rows_per_output: " << max_input_rows_per_output
-         << " > max_input_rows: " << max_input_rows << endl;
-
-  if (max_input_rows != total_input_rows &&
-      max_input_rows_per_o1 > max_input_rows)
-    cerr << "Warning: max_input_rows_per_o1: " << max_input_rows_per_o1
-         << " > max_input_rows: " << max_input_rows << endl;
-  int input_o1_steps = min(max_input_rows, max_input_rows_per_o1);
+  int size_per_input_row = padded_depth;
+  assert(size_per_input_row > PE_INPROWBUF_SIZE);
 
   // filter params
-  int remaining_filters = output_cols % filter_step;
-  int acc_filters = output_cols - remaining_filters;
+  int remaining_filters = drv.oc % filter_step;
+  int acc_filters = drv.oc - remaining_filters;
 
   // ==============================================
-  // drv.validate();
   int o_3 = 0;
   if (drv.thread_count > 1) {
     LSA = new struct Load_Send_Acc(drv, padded_depth);
     SRA = new struct Store_Results_Acc(drv, o_3, filter_step);
   }
-  if (output_cols >= PE_COUNT) {
+  if (drv.oc >= PE_COUNT) {
     TOG(cerr << "Starting  MM2IM" << endl;);
     if (acc_filters > 0) LoadConfig(drv, padded_depth);
 
     for (; o_3 < acc_filters; o_3 += filter_step) {
-      // Send filter_step * rows_per_filter  rows of weights to accelerator
-      TOG(cerr << "Sending weights: " << o_3 * rows_per_filter << " to "
-               << (o_3 * rows_per_filter + filter_step * rows_per_filter)
+      // Send filter_step * cols_per_filter  rows of weights to accelerator
+      TOG(cerr << "Sending weights: " << o_3 * cols_per_filter << " to "
+               << (o_3 * cols_per_filter + filter_step * cols_per_filter)
                << endl;);
-      LoadWeight(drv, o_3 * rows_per_filter, filter_step * rows_per_filter,
+      LoadWeight(drv, o_3 * cols_per_filter, filter_step * cols_per_filter,
                  padded_depth, filter_step, o_3);
       TOG(cerr << "Starting Schedule" << endl;);
       StartSchedule(drv);
       int starting = 0;
 
-      // Dual-Threaded
+      // Dual-Thread \ed
       if (drv.thread_count > 1)
         MM2IM_Inner_Threaded(drv, o_3, padded_depth, filter_step);
       else {
@@ -276,46 +244,14 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
       }
     }
   }
-
-  // Handle remaining filters
-  // vector<vector<int>> &mm2im_map = *drv.mm2im_map;
-  // for (; o_3 < output_cols; o_3++) {
-  //   for (int o_1 = 0; o_1 < drv.oh; o_1++) {
-  //     for (int o_2 = 0; o_2 < drv.ow; o_2++) {
-  //       int o_dex = ((o_1 * drv.ow) + o_2) * output_cols + o_3;
-  //       int32_t sum = 0;
-  //       for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
-  //         int orow = mm2im_map[o_dex][i] % drv.rows;
-  //         int ocol = mm2im_map[o_dex][i] / drv.rows;
-  //         for (int d = 0; d < drv.depth; d++) {
-  //           int weight_index = orow * drv.depth + d;
-  //           int input_index = ocol * drv.depth + d;
-  //           int weight = drv.weights[weight_index];
-  //           int input = drv.inputs[input_index];
-  //           sum += weight * input;
-  //         }
-  //         int offset = drv.acc_wt_sum[orow] * drv.rhs_offset;
-  //         sum += offset;
-  //       }
-  //       int bias = drv.bias[o_3];
-  //       int crf_data = drv.crf[o_3];
-  //       int crx_data = drv.crx[o_3];
-  //       int qm_ret =
-  //           drv.ra + CPU_Quantised_Multiplier(sum + bias, crf_data,
-  //           crx_data);
-  //       if (qm_ret > MAX8) qm_ret = MAX8;
-  //       else if (qm_ret < MIN8) qm_ret = MIN8;
-  //       drv.output_data[o_dex] = qm_ret;
-  //     }
-  //   }
-  // }
+  // ==============================================
   SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
 };
 
 void Entry(acc_container &drv) {
   int rrows = roundUp(drv.rows, 4);
   int rcols = roundUp(drv.cols, 4);
-  int padded_depth = roundUp(drv.depth, 16);
+  int padded_depth = roundUp(drv.depth, UF);
   int output_stride = drv.cols;
   TileMM2IM(drv, padded_depth);
   drv.p_t.inp_data_sent = input_data_sent * 4;
@@ -329,3 +265,50 @@ void Entry(acc_container &drv) {
 } // namespace mm2im_driver
 
 #endif // MM2IM_DRIVER
+
+// Handle remaining filters
+// vector<vector<int>> &mm2im_map = *drv.mm2im_map;
+// for (; o_3 < drv.oc; o_3++) {
+//   for (int o_1 = 0; o_1 < drv.oh; o_1++) {
+//     for (int o_2 = 0; o_2 < drv.ow; o_2++) {
+//       int o_dex = ((o_1 * drv.ow) + o_2) * drv.oc + o_3;
+//       int32_t sum = 0;
+//       for (int i = 0; i < mm2im_map[o_dex].size(); i++) {
+//         int orow = mm2im_map[o_dex][i] % drv.rows;
+//         int ocol = mm2im_map[o_dex][i] / drv.rows;
+//         for (int d = 0; d < drv.depth; d++) {
+//           int weight_index = orow * drv.depth + d;
+//           int input_index = ocol * drv.depth + d;
+//           int weight = drv.weights[weight_index];
+//           int input = drv.inputs[input_index];
+//           sum += weight * input;
+//         }
+//         int offset = drv.acc_wt_sum[orow] * drv.rhs_offset;
+//         sum += offset;
+//       }
+//       int bias = drv.bias[o_3];
+//       int crf_data = drv.crf[o_3];
+//       int crx_data = drv.crx[o_3];
+//       int qm_ret =
+//           drv.ra + CPU_Quantised_Multiplier(sum + bias, crf_data,
+//           crx_data);
+//       if (qm_ret > MAX8) qm_ret = MAX8;
+//       else if (qm_ret < MIN8) qm_ret = MIN8;
+//       drv.output_data[o_dex] = qm_ret;
+//     }
+//   }
+// }
+
+// for (int c = 0; c < O_c; c += filter_step) {
+//   SendWeight(c, filter_step);
+//   int starting = 0;
+//   for (int h = 0; h < O_h; h++) {
+//     int rows_to_send = i_end_row[h] + 1 - starting;
+//     if (i_end_row[h] != starting - 1) {
+//       SendInput(starting, rows_to_send);
+//     }
+//     ComputeOut(h, c, filter_step);
+//     StoreOutTileRow(h, c, filter_step);
+//     starting = i_end_row[h] + 1;
+//   }
+// }

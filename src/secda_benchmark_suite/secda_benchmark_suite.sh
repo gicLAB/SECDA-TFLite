@@ -1,14 +1,23 @@
 #!/bin/bash
-# board_user=xilinx
-# board_hostname=jharis.ddns.net
-# board_dir=/home/xilinx/Workspace/secda_benchmark_suite/
 
 # Requires jq to be installed
 board_user=$(jq -r '.board_user' ../../config.json)
 board_hostname=$(jq -r '.board_hostname' ../../config.json)
 board_dir=$(jq -r '.board_dir' ../../config.json)
 
-# exit 0
+helpFunction() {
+  echo ""
+  echo "Usage: $0 -s -b -c -p -t -i -n name"
+  echo -e "\t-s Skip running experiment"
+  echo -e "\t-b Generate binaries"
+  echo -e "\t-c Skip inference difference checks"
+  echo -e "\t-p Power collection"
+  echo -e "\t-t Test run"
+  echo -e "\t-i Initialize the board"
+  echo -e "\t-n Name of the experiment"
+  exit 1 # Exit script after printing help
+}
+
 # Optional arguments
 # 1: skip_bench: Skip running benchmarks on the target board
 # 2: bin_gen: Generate binaries
@@ -19,37 +28,35 @@ bin_gen=0
 skip_inf_diff=0
 process_on_fpga=0
 collect_power=0
+test_run=0
+init=0
 name=""
 now=$(date +"%Y_%m_%d_%H_%M")
-if [ $# -eq 1 ]; then
-  skip_bench=$1
-fi
 
-if [ $# -eq 2 ]; then
-  skip_bench=$1
-  bin_gen=$2
-fi
-
-if [ $# -eq 3 ]; then
-  skip_bench=$1
-  bin_gen=$2
-  skip_inf_diff=$3
-fi
-
-if [ $# -eq 4 ]; then
-  skip_bench=$1
-  bin_gen=$2
-  skip_inf_diff=$3
-  collect_power=$4
-fi
-
-if [ $# -eq 5 ]; then
-  skip_bench=$1
-  bin_gen=$2
-  skip_inf_diff=$3
-  collect_power=$4
-  name=$5
-fi
+while getopts hsbcptin: flag; do
+  case $flag in
+  h)
+    helpFunction
+    exit
+    ;;
+  s) skip_bench=1 ;;
+  b) bin_gen=1 ;;
+  c) skip_inf_diff=1 ;;
+  p) collect_power=1 ;;
+  t) test_run=1 ;;
+  i) init=1 ;;
+  n) name=$OPTARG ;;
+  :)
+    echo "Missing argument for option -$OPTARG"
+    exit 1
+    ;;
+  \?)
+    helpFunction
+    exit 1
+    ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 if [ "$name" == "" ]; then
   name="run_${now}"
@@ -64,10 +71,11 @@ function ctrl_c() {
 
 trap ctrl_c INT
 
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
 echo "-- SECDA-TFLite Benchmark Suite --"
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
 echo "Configurations"
+echo "--------------"
 echo "Board User: ${board_user}"
 echo "Board Hostname: ${board_hostname}"
 echo "Board Dir: ${board_dir}"
@@ -75,36 +83,40 @@ echo "Skip Bench: ${skip_bench}"
 echo "Bin Gen: ${bin_gen}"
 echo "Skip Inf Diff: ${skip_inf_diff}"
 echo "Collect Power: ${collect_power}"
+echo "Test Run: ${test_run}"
 echo "Name: ${name}"
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
 
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
   # ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
   ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
   rsync -q -r -avz -e 'ssh -p 2202' ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
+  rsync -r -avz -e 'ssh -p 2202' ./model_gen/models  $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
 
-echo "--------------------------------"
-echo "Initializing SECDA-TFLite Benchmark Suite on Target Device"
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
+echo "Initializing SECDA-TFLite Benchmark Suite"
+echo "-----------------------------------------------------------"
 echo "Clearing cache"
 rm -rf ./tmp
-create_dir # fix
-echo "--------------------------------"
+if [ $init -eq 1 ]; then
+  create_dir
+fi
+echo "-----------------------------------------------------------"
 
 # Generate binaries and experiment configurations
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
 echo "Configuring Benchmark"
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
 python3 scripts/configure_benchmark.py $bin_gen
 
 if [ $bin_gen -eq 1 ]; then
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
   echo "Generating Binaries"
   source ./generated/gen_bins.sh
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
 fi
 
 source ./generated/configs.sh
@@ -112,52 +124,55 @@ length=${#hw_array[@]}
 source /home/jude/miniconda3/bin/activate tf # current the tf environment can#t be used for bazel build (glibc version issue)
 
 if [ $skip_bench -eq 0 ]; then
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
   echo "Transferring Experiment Configurations to Target Device"
   rsync -q -r -avz -e 'ssh -p 2202' ./generated/configs.sh $board_user@$board_hostname:$board_dir/
   rsync -q -r -avz -e 'ssh -p 2202' ./generated/run_collect.sh $board_user@$board_hostname:$board_dir/
-  ssh -o LogLevel=QUIET  -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
+  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
 
   if [ $collect_power -eq 1 ]; then
-    echo "--------------------------------"
+    echo "-----------------------------------------------------------"
     echo "Initializing Power Capture"
     python3 scripts/record_power.py $name &
     echo $! >/tmp/record_power.py.pid
-    echo "--------------------------------"
+    echo "-----------------------------------------------------------"
   fi
 
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
   echo "Running Experiments"
-  echo "--------------------------------"
-  ssh -o LogLevel=QUIET  -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power"
-  rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$board_dir/tmp ./
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
+  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
+  # if not test run, then collect results
+  if [ $test_run -eq 0 ]; then
+    echo "Transferring Results to Host"
+    rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$board_dir/tmp ./
+  fi
+  echo "-----------------------------------------------------------"
 
   # echo "Runs can be found in:" ./tmp/runs.csv
   if [ $collect_power -eq 1 ]; then
     if [[ -e /tmp/record_power.py.pid ]]; then
       kill $(cat /tmp/record_power.py.pid)
-      echo "--------------------------------"
+      echo "-----------------------------------------------------------"
       echo "Power Capture Done"
-      echo "--------------------------------"
+      echo "-----------------------------------------------------------"
       echo "Processing Power Data"
-      echo "--------------------------------"
+      echo "-----------------------------------------------------------"
 
       python3 scripts/process_power.py $name $length
       echo "Power Processing Done"
-      echo "--------------------------------"
+      echo "-----------------------------------------------------------"
     else
       echo $(cat /tmp/record_power.py.pid) "not found"
     fi
     echo "Simple csv:" ./files/${name}_clean.csv
-    echo "--------------------------------"
+    echo "-----------------------------------------------------------"
   fi
 fi
 
 # Post processing on host
-# if [ $process_on_fpga -eq 0 ] && [ $collect_power -eq 0 ]; then
-if [ $process_on_fpga -eq 0 ]; then
-  echo "--------------------------------"
+if [ $test_run -eq 0 ]; then
+  echo "-----------------------------------------------------------"
   echo "Post Processing"
   prev_failed=0
   prev_hw=""
@@ -183,8 +198,12 @@ if [ $process_on_fpga -eq 0 ]; then
     # Check verify correctness of accelerator
     valid=1
     if [ ${HW} != "CPU" ] && [ "${skip_inf_diff}" -eq 0 ]; then {
-      python3 scripts/check_valid.py tmp/${runname}_id.txt
-      if [ $? -ne 0 ]; then valid=0 && echo "Correctness Check Failed ${runname}"; fi
+      if [ ! -f tmp/${runname}_id.txt ]; then
+        valid=0 && echo "Correct Check File Missing for: ${runname}"
+      else
+        python3 scripts/check_valid.py tmp/${runname}_id.txt
+        if [ $? -ne 0 ]; then valid=0 && echo "Correctness Check Failed ${runname}"; fi
+      fi
     }; fi
     # echo "Processing run"
     python3 scripts/process_run.py ${MODEL} ${THREAD} ${NUM_RUN} ${HW} ${VERSION} ${DEL} ${DEL_VERSION} ${valid} ${name}
@@ -192,11 +211,11 @@ if [ $process_on_fpga -eq 0 ]; then
   done # HW
 
   python3 scripts/process_all_runs.py ${name}
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
   echo "Post Processing Done"
-  echo "--------------------------------"
+  echo "-----------------------------------------------------------"
 fi
 
-echo "--------------------------------"
+echo "-----------------------------------------------------------"
 echo "Exiting SECDA-TFLite Benchmark Suite"
-echo "--------------------------------"
+echo "-----------------------------------------------------------"

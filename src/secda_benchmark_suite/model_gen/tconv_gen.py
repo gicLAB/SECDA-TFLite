@@ -65,11 +65,11 @@ def build_tconv_model(params, mdir):
     os.system(f"rm -rf {mdir}tf")
     return file_s
 
-def generate_python_list(params, filename):
+def generate_python_list(params, filename,name):
     # create a json with list of all the models to be used in the benchmarking script
     f = open(filename, "w+")
     f.write("{\n")
-    f.write("{}\n".format('"tconv_models" : ['))
+    f.write("{}\n".format(f'"{name}" : ['))
     for param in params:
         c = "" if param == params[-1] else ","
         f.write(
@@ -82,7 +82,6 @@ def generate_python_list(params, filename):
 
 
 params = []
-mdir = "models/tconv/"
 fs = [16,32,64]
 ks = [3, 5, 7]
 inh = [7, 9, 11]
@@ -96,29 +95,35 @@ for s in strides:
                 for o in ic:
                     params.append([s, s, f, k, i, i, o, "same"])
 
-# params = []
-# dcgan_layer1 = [2,2,512,5,4,4,1024,"same"]
-# dcgan_layer2 = [2,2,256,5,8,8,512,"same"]
-# dcgan_layer3 = [2,2,128,5,16,16,256,"same"]
-# dcgan_layer4 = [2,2,3,5,32,32,128,"same"]
-# params.append(dcgan_layer1)
-# params.append(dcgan_layer2)
-# params.append(dcgan_layer3)
-# params.append(dcgan_layer4)
-                    
-#  [s, s, f, k, i, i, o, "same"]
-params = []
+# params = [sx, sy, oc, k, ih, iw, ic, "same"]
+dcgan_layer1 = [2,2,512,5,4,4,1024,"same"]
+dcgan_layer2 = [2,2,256,5,8,8,512,"same"]
+dcgan_layer3 = [2,2,128,5,16,16,256,"same"]
+dcgan_layer4 = [2,2,3,5,32,32,128,"same"]
+dcgan= [dcgan_layer1, dcgan_layer2, dcgan_layer3, dcgan_layer4]
+
+tf_dcgan_layer1 = [1,1,128,5,7,7,256,"same"]
+tf_dcgan_layer2 = [2,2,64,5,7,7,128,"same"]
+tf_dcgan_layer3 = [2,2,1,5,14,14,64,"same"]
+tf_dcgan = [tf_dcgan_layer1, tf_dcgan_layer2, tf_dcgan_layer3]
+
 fcn_layer1 = [2,2,21,4,1,1,21,"same"]
 fcn_layer2 = [2,2,21,4,4,4,21,"same"]
-# fcn_layer3 = [2,2,128,5,16,16,256,"same"]
+fcn_layer3 = [2,2,128,5,16,16,256,"same"]
+fcn = [fcn_layer1, fcn_layer2, fcn_layer3]
+                    
+#  [s, s, f, k, i, i, o, "same"]
+params = tf_dcgan
 
-params.append(fcn_layer1)
-params.append(fcn_layer2)
-# params.append(dcgan_layer3)
-# params.append(dcgan_layer4)
 
+
+mdir = "models/tconv/"
+name = "tconv_models"
 
 for param in params:
     build_tconv_model(param, mdir)
+generate_python_list(params, f"configs/{name}.json",name)
 
-generate_python_list(params, "configs/tconv_models.json")
+
+print(f"Generated {len(params)} models")
+print(f"Saved to ./configs/{name}.json")

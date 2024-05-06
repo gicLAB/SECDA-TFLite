@@ -65,7 +65,7 @@ public:
       acc = dparams.acc;
       DTOG(std::cout << "Initialised the DMA" << std::endl);
 #endif
-      DTOG(std::cout << "MM2IM Accelerator v4");
+      DTOG(std::cout << "MM2IM Accelerator v5");
 #ifdef ACC_NEON
       DTOG(std::cout << " with Neon");
 #endif
@@ -175,7 +175,7 @@ public:
       int padding_right = pr;
       int stride_height = stride_x;
       int stride_width = stride_y;
-      int rounded_depth = roundUp(in3, 16);
+      int rounded_depth = roundUp(in3, UF);
 
       TfLiteIntArray *oshape = TfLiteIntArrayCreate(output->dims->size);
       oshape->data[0] = 1;
@@ -505,7 +505,7 @@ public:
       // ========================================= //
       // Accelerator config
       struct mm2im_params *par = &mm2im_params[i];
-      int rounded_depth = roundUp(par->ic, 16);
+      int rounded_depth = roundUp(par->ic, UF);
       int8_t *acc_input = &acc_inputs[i][0];
       preload_inputs(input_data, par->depth, par->cols, acc_input);
 
@@ -563,7 +563,7 @@ public:
       drv.t.layer = dparams.layer;
       prf_end(1, p_t.p_ipack);
 
-#ifdef RUN_CPU_TCONV
+// #ifdef RUN_CPU_TCONV
       cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data, rhs_params,
                              input_data, dst_params, col2im_data, gemm_params,
                              cpu_backend_context);
@@ -601,7 +601,7 @@ public:
       saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
                         "_out_cpu.csv",
                     output_data, scratch_cols, scratch_rows);
-#endif
+// #endif
 
 // CPU implemented here does provide correct results
 #ifdef DELEGATE_VERBOSE
@@ -614,11 +614,11 @@ public:
       mm2im_driver::Entry(drv);
       p_t = drv.p_t;
 
-#ifdef SYSC
+// #ifdef SYSC
       saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
                         "_out_acc.csv",
                     output_data, scratch_cols, scratch_rows);
-#endif
+// #endif
       dparams.layer++;
       dparams.delegated_nodes--;
     }

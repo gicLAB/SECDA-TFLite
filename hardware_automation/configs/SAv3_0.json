@@ -2,6 +2,7 @@
   "acc_name": "SA",
   "acc_version": 3,
   "acc_sub_version": 0,
+  "version": "3_0",
   "acc_test": false,
   "acc_test_id": 0,
   "acc_test_desc": "",
@@ -11,6 +12,5 @@
   "top": "SA_INT8_V3_0",
   "board_script": "",
   "del" : "sa_delegate",
-  "del_version": "3",
-  "version": "3_0"
+  "del_version": "3"
 }

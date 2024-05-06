@@ -9,12 +9,12 @@
 #endif
 
 #include "accelerator/driver/gemm_driver.h"
-#include "util.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
+#include "util.h"
 
-#define DMA_BC 1
+#define DMA_BC 1 // threaded execution does not work with multiple blocks
 #define DELEGATE_VERSION 3
 
 static unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
@@ -503,9 +503,9 @@ public:
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_inp_acc.csv",
       //               gemm_input_data, gemm_input_cols, gemm_input_rows);
-      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-      //                   "_out_acc.csv",
-      //               output_data, gemm_input_cols, filter_rows);
+      saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
+                        "_out_acc.csv",
+                    output_data, gemm_input_cols, filter_rows);
       dparams.layer++;
       dparams.delegated_nodes--;
     }

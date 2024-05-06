@@ -64,11 +64,18 @@ struct DSR {
     rID = 0;
   };
 
-  void print() {
-    // cout << "dID: " << dID << " sID: " << sID << " cID: " << cID
-    //      << " rID: " << rID << endl;
-    // cout << dID << "," << sID << "," << cID << "," << rID << endl;
+  void print(){
+      // cout << "dID: " << dID << " sID: " << sID << " cID: " << cID
+      //      << " rID: " << rID << endl;
+      // cout << dID << "," << sID << "," << cID << "," << rID << endl;
   };
+
+  string str() {
+    return std::to_string(dID) + "," + std::to_string(sID) + "," +
+           std::to_string(cID) + "," + std::to_string(rID);
+  };
+
+  DSR() { reset(); };
 };
 
 struct dma_buffer {
@@ -114,11 +121,27 @@ int check_for_free_dbuf(dma_buffer_set &dfs) {
   return -1;
 }
 
+int wait_for_free_dbuf(dma_buffer_set &dfs) {
+  volatile int bufdex = check_for_free_dbuf(dfs);
+  while (bufdex == -1) {
+    bufdex = check_for_free_dbuf(dfs);
+  }
+  return bufdex;
+}
+
 int find_dbuf(dma_buffer_set &dfs, int ID) {
   for (int i = 0; i < dfs.count; i++) {
     if (dfs.dbuf_set[i].id == ID) return i;
   }
   return -1;
+}
+
+int wait_for_dbuf(dma_buffer_set &dfs, int ID) {
+  volatile int bufdex = find_dbuf(dfs, ID);
+  while (bufdex == -1) {
+    bufdex = find_dbuf(dfs, ID);
+  }
+  return bufdex;
 }
 
 int dbufs_in_use(dma_buffer_set &dfs) {

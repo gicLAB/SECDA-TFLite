@@ -2,6 +2,7 @@
   "acc_name": "MM2IM",
   "acc_version": 2,
   "acc_sub_version": 1,
+  "version": "2_1",
   "acc_test": false,
   "acc_test_id": 0,
   "acc_test_desc": "",
@@ -11,6 +12,5 @@
   "top": "MM2IMv2",
   "board_script": "",
   "del" : "mm2im_delegate",
-  "del_version": "1",
-  "version": "2_1"
+  "del_version": "1"
 }
