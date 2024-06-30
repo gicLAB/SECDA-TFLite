@@ -71,14 +71,23 @@ void ACCNAME::Worker1() {
       we[0][15] = sWs16.read();
       wait();
 
-      for (int i = 0; i < 10; i++) {
-#pragma HLS unroll
-        for (int j = 0; j < 16; j++) {
-#pragma HLS unroll
-          od[(i * 16) + j] += in[j][i] * we[j][i];
-        }
-      }
-      for (int i = 10; i < 16; i++) {
+      //       for (int i = 0; i < 10; i++) {
+      // #pragma HLS unroll
+      //         for (int j = 0; j < 16; j++) {
+      // #pragma HLS unroll
+      //           od[(i * 16) + j] += in[j][i] * we[j][i];
+      //         }
+      //       }
+      //       for (int i = 10; i < 16; i++) {
+      // #pragma HLS unroll
+      //         for (int j = 0; j < 16; j++) {
+      // #pragma HLS unroll
+      //           prod[(i * 16) + j] = mul_u8(in[j][(i)], we[j][i]);
+      //           od[(i * 16) + j] += prod[(i * 16) + j];
+      //         }
+      //       }
+
+      for (int i = 0; i < 16; i++) {
 #pragma HLS unroll
         for (int j = 0; j < 16; j++) {
 #pragma HLS unroll

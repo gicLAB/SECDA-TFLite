@@ -1,0 +1,17 @@
+{
+  "acc_name": "VMRPP_SH_APOT_250M",
+  "acc_version": 2,
+  "acc_sub_version": 0,
+  "version": "2_0",
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_src": "vm_shift_delegate_rpp/v2/accelerator",
+  "acc_link_folder": "vmrpp_sh_src_v2",
+  "hlx_tcl_script": "mdma_axilite_hlx_250.tcl",
+  "top": "VM_SHIFT_RPP_INT8_V2_0",
+  "board_script": "",
+  "del" : "vm_shift_delegate_rpp",
+  "del_version": "2",
+  "hls_clock" : "4"
+}

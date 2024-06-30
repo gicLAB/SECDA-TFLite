@@ -486,7 +486,7 @@ public:
       drv.use_sim = false;
       // drv.clear_traces();
 
-      prf_end(1, vm_t.ipack);
+      prf_end(1, vm_t.p_ipack);
       // Calls the gemm_driver to offload the CONV2D operation
       drv.t2 = vm_t;
       tflite_vm::Entry(drv, output_data);
@@ -503,16 +503,16 @@ public:
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_inp_acc.csv",
       //               gemm_input_data, gemm_input_cols, gemm_input_rows);
-      saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-                        "_out_acc.csv",
-                    output_data, gemm_input_cols, filter_rows);
+      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
+      //                   "_out_acc.csv",
+      //               output_data, gemm_input_cols, filter_rows);
       dparams.layer++;
       dparams.delegated_nodes--;
     }
 
     // for (int j = 0; j < temp_output_tensors.size(); j++)
     //   temp_output_tensors.at(j).free();
-    prf_end(0, vm_t.conv_total);
+    prf_end(0, vm_t.t_conv_total);
     return kTfLiteOk;
   }
 
@@ -609,10 +609,15 @@ TfLiteDelegate *TfLiteVMDelegateCreate(const VMDelegateOptions *options) {
   std::cout << "===========================" << std::endl;
   std::cout << "Created" << std::endl;
   std::cout << "===========================" << std::endl;
+  // std::unique_ptr<tflite::vm_test::VMDelegate> vm(
+  //     new tflite::vm_test::VMDelegate(
+  //         options ? *options : TfLiteVMDelegateOptionsDefault()));
+  // return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(vm));
   std::unique_ptr<tflite::vm_test::VMDelegate> vm(
       new tflite::vm_test::VMDelegate(
           options ? *options : TfLiteVMDelegateOptionsDefault()));
-  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(vm));
+  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
+      std::move(vm), kTfLiteDelegateFlagsAllowDynamicTensors);
 }
 
 // Destroys a delegate created with `TfLiteVMDelegateCreate` call.

@@ -74,6 +74,17 @@ cc_binary(
 )
 
 cc_binary(
+    name = "eval_model_accuracy_plus_vm_delegate",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model_accuracy:eval_model_lib",
+        ":vm_delegate_provider", 
+    ],
+)
+
+
+cc_binary(
     name = "label_image_plus_vm_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),

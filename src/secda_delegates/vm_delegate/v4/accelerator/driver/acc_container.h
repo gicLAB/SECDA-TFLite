@@ -30,22 +30,22 @@ using namespace std::chrono;
 #define TSCALE microseconds
 
 struct vm_times {
-  duration_ns load_inputs;
-  duration_ns load_weights;
-  duration_ns vm_acc;
-  duration_ns store;
-  duration_ns ipack;
-  duration_ns conv_total;
+  duration_ns p_load_inputs;
+  duration_ns p_load_weights;
+  duration_ns p_vm_acc;
+  duration_ns p_store;
+  duration_ns p_ipack;
+  duration_ns t_conv_total;
 
   void print() {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
-    prf_out(TSCALE, load_inputs);
-    prf_out(TSCALE, load_weights);
-    prf_out(TSCALE, store);
-    prf_out(TSCALE, vm_acc);
-    prf_out(TSCALE, ipack);
-    prf_out(TSCALE, conv_total);
+    prf_out(TSCALE, p_load_inputs);
+    prf_out(TSCALE, p_load_weights);
+    prf_out(TSCALE, p_store);
+    prf_out(TSCALE, p_vm_acc);
+    prf_out(TSCALE, p_ipack);
+    prf_out(TSCALE, t_conv_total);
     cout << "================================================" << endl;
 #endif
   }
@@ -53,12 +53,12 @@ struct vm_times {
   void save_prf() {
 #ifdef ACC_PROFILE
     std::ofstream file("prf.csv", std::ios::out);
-    prf_file_out(TSCALE, load_inputs, file);
-    prf_file_out(TSCALE, load_weights, file);
-    prf_file_out(TSCALE, store, file);
-    prf_file_out(TSCALE, vm_acc, file);
-    prf_file_out(TSCALE, ipack, file);
-    prf_file_out(TSCALE, conv_total, file);
+    prf_file_out(TSCALE, p_load_inputs, file);
+    prf_file_out(TSCALE, p_load_weights, file);
+    prf_file_out(TSCALE, p_store, file);
+    prf_file_out(TSCALE, p_vm_acc, file);
+    prf_file_out(TSCALE, p_ipack, file);
+    prf_file_out(TSCALE, t_conv_total, file);
     file.close();
 #endif
   }

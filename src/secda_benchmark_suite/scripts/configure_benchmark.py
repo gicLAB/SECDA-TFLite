@@ -49,13 +49,13 @@ all_models = [
 
 # manually supported conv models
 conv_models = [
-    "mobilenetv1",
+    # "mobilenetv1",
     "mobilenetv2",
     "resnet18v1",
-    "efficientnet_lite",
+    # "efficientnet_lite",
     "inceptionv1",
-    "inceptionv3",
-    "resnet50v2",
+    # "inceptionv3",
+    # "resnet50v2",
 ]
 
 # manually supported bert models
@@ -81,7 +81,13 @@ with open("model_gen/configs/dcgan_layers.json") as f:
 
 with open("model_gen/configs/tf_dcgan_layers.json") as f:
     tf_dcgan_layers = json.load(f)["tf_dcgan_layers"]
+    
+with open("model_gen/configs/conv_models.json") as f:
+    conv_models_pot_exp = json.load(f)["conv_models"]
 
+with open("model_gen/configs/mnk_broke.json") as f:
+    mnk_models = json.load(f)["mnk_broke"]
+    
 ####################################################
 ## HARDWARE
 ####################################################
@@ -108,7 +114,7 @@ bin_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/bins"
 models = tconv_models_synth
 hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
-num_run = 1000
+num_run = 10
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
 tconv_synth_exp = [
     models,
@@ -124,13 +130,14 @@ tconv_synth_exp = [
 
 # CONV Experiment
 models = conv_models
-models = ["mobilenetv1"]
-# models = ["inceptionv1"]
-# hardware = ["VMv3_0", "SAv3_0", "CPU"]
-hardware = ["VMv4_0"]
+# models = mnk_models
+# models = conv_models_pot_exp
+
+# models=["mobilenetv2", "resnet18v1"]
+hardware = ["CPU","VMRPPv2_0","VMRPP_SH_QKv2_0"]
 threads = [2]
-num_run = 1
-model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
+num_run = 100
+model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/"
 conv_exp = [
     models,
     hardware,
@@ -145,8 +152,8 @@ conv_exp = [
 
 # DCGAN Experiment
 models = ["dcgan_gen"]
-# hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
-hardware = ["MM2IMv2_51"]
+hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
+# hardware = ["MM2IMv2_51"]
 threads = [1]
 num_run = 10
 # model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
@@ -184,4 +191,4 @@ gan_exp = [
 ####################################################
 
 # Current experiment
-create_exp(sc, dc_gan_exp)
+create_exp(sc, tconv_synth_exp)

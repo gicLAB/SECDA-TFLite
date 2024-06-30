@@ -9,5 +9,7 @@
   "vivado_path": "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/",
   "hw_configs" : "hardware_automation/configs",
   "hlx_scripts" : "hardware_automation/hlx_scripts",
-  "hw_link_dir" : "hardware_automation/acc_srcs"
+  "hw_link_dir" : "hardware_automation/acc_srcs",
+  "conda_path" : "/home/jude/miniconda3/bin",
+  "secda_tools_path" : "/home/jude/Workspace/SECDA-TFLite_v1.2/src/secda_tflite"
 }

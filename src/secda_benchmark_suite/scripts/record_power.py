@@ -52,7 +52,12 @@ def main(raw_args=None):
 
     # signal.signal(signal.SIGINT, handler)
     # signal.signal(signal.SIGINT, signal_handler)
-    px, py, pxs, pys = (82, 298, 350, 80)
+    try:
+        with open("/home/jude/Workspace/SECDA-TFLite_v1.2/src/secda_benchmark_suite/power/files/coords.txt", "r") as f:
+            px, py, pxs, pys = [int(x) for x in f.read().split()]
+    except:
+        print("No coords.txt found")
+        px, py, pxs, pys = (82, 298, 350, 80)
 
 
     while True:
@@ -71,7 +76,8 @@ def main(raw_args=None):
 
         # Camera Capture
         ret, frame = cap.read()
-        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        # frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
 
         frame = frame[py : py + pys, px : px + pxs, :3]  # // adjust to focus on mWH
 

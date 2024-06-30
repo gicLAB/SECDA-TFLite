@@ -144,7 +144,7 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   drv.wgt_start = true;
 
   // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
-  prf_end(1, drv.t2.load_inputs);
+  prf_end(1, drv.t2.p_load_inputs);
 }
 
 void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
@@ -154,10 +154,14 @@ void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
   int free_buf = check_for_free_dbuf(drv.dfs[0]);
   Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
                    rrows_step, rdepth_step, rows_step, cols_step);
+  prf_start(1);
   drv.Start_Transfer();
   drv.Set_Results();
   Start_Compute(drv, rrows_step, rcols_step);
+
   drv.Recieve_Results();
+  prf_end(1, drv.t2.p_vm_acc);
+
   // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
   Store_Results(drv);
 }
@@ -180,7 +184,7 @@ void VM_Inner_Threaded(acc_container &drv, int r, int rrows_step,
 
 void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
               int rows, int rrows, int cols, int rcols, int8_t *results) {
-  prf_start(1);
+  // prf_start(1);
   drv.t.layer_weight_tile = 0;
   drv.t.layer_input_tile = 0;
   int acc_weight_buffer_size = WGT_BUF_LEN * 16;
@@ -191,6 +195,8 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   int max_rows = acc_input_buffer_size / rdepth;
   max_rows = max_rows - (max_rows % 4);
   int row_inc = std::min(std::min(rrows, max_rows), ISUMS_BUF_LEN);
+  assert(col_inc > 0 && "col_inc must be greater than 0");
+  assert(row_inc > 0 && "row_inc must be greater than 0");
   drv.dsr = new struct DSR();
 
   if (drv.thread_count > 1) {
@@ -207,7 +213,7 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
     // Load Inputs into the accelerator
     Load_Input_Data(drv, r, rrows_step, depth, rdepth);
 
-    if (drv.thread_count > 1) {
+    if (drv.thread_count > 3) {
       VM_Inner_Threaded(drv, r, rrows_step, rows_step);
     } else {
       for (int c = 0; c < rcols; c += col_inc) {
@@ -229,7 +235,7 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   }
   delete drv.dsr;
 
-  prf_end(1, drv.t2.vm_acc);
+  // prf_end(1, drv.t2.p_vm_acc);
 }
 
 void Entry(acc_container &drv, int8_t *dst) {

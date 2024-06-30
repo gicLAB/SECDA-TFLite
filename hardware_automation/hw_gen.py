@@ -57,6 +57,9 @@ class hardware_exp:
         self.hlx_script = (
             f"{sc['secda_tflite_path']}/{sc['hlx_scripts']}/{config['hlx_tcl_script']}"
         )
+        self.config = config
+
+        # accelerator stuff
         self.acc_name = config["acc_name"]
         self.acc_version = config["acc_version"]
         self.acc_sub_version = config["acc_sub_version"]
@@ -67,7 +70,14 @@ class hardware_exp:
             self.hw_link_dir + config["acc_link_folder"]
         )
         self.acc_part = "xc7z020clg400-1"
+        # hardware stuff
+        self.hls_clock = config["hls_clock"] if "hls_clock" in config else "5"
         self.top = config["top"]
+        self.axi_bitW = config["axi_bitW"] if "axi_bitW" in config else "32"
+        self.axi_burstS = config["axi_burstS"] if "axi_burstS" in config else "16"
+        self.fpga_hz = config["hlx_Mhz"] if "hlx_Mhz" in config else "200"
+
+        # misc
         self.pynq_dir = sc["board_dir"] + "/bitstreams"
         self.board_script = config["board_script"]
         self.bitstream = (
@@ -95,7 +105,7 @@ class hardware_exp:
                 s += "add_files " + "src/" + file + ' -cflags "-D__SYNTHESIS__"\n'
         s += 'open_solution "' + self.acc_tag + '"\n'
         s += "set_part " + self.acc_part + "\n"
-        s += "create_clock -period " + "5" + " -name default\n"
+        s += "create_clock -period " + self.hls_clock + " -name default\n"
         s += "config_export -format ip_catalog -rtl verilog -taxonomy /s -vendor xilinx\n"
         s += "csynth_design\n"
         s += "export_design -format ip_catalog\n"
@@ -104,8 +114,14 @@ class hardware_exp:
             f.write(s)
 
     def generate_hlx_tcl(self, output_dir):
+        hlx_dict = {
+            "top": self.top,
+            "axi_bitW": self.axi_bitW,
+            "axi_burstS": self.axi_burstS,
+            "fpga_hz": self.fpga_hz,
+        }
         with open((self.hlx_script)) as f:
-            tcl_script = str(mt(f.read()).substitute({"top": self.top}))
+            tcl_script = str(mt(f.read()).substitute(hlx_dict))
         with open(f"{output_dir}/hlx_script.tcl", "w") as f:
             f.write(tcl_script)
 
@@ -139,13 +155,7 @@ class hardware_exp:
         self.create_run_script(output_path)
 
 
-def main():
-    args = sys.argv[1:]
-    if len(args) != 1:
-        print("Usage: hw_gen.py <config_file>")
-        sys.exit(1)
-
-    hw_config_file = args[0]
+def process_hw_config(hw_config_file):
     if hw_config_file.endswith(".json") == False:
         hw_config_file += ".json"
 
@@ -178,6 +188,11 @@ def main():
             target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
             os.system(f"ln -sf {source} {target}")
 
+    target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
+    sysc_types_path = f"{sc['secda_tools_path']}/secda_integrator/sysc_types.h"
+    sysc_hw_utils_path = f"{sc['secda_tools_path']}/secda_integrator/secda_hw_utils.sc.h"
+    os.system(f"ln -sf {sysc_types_path} {target}")
+    os.system(f"ln -sf {sysc_hw_utils_path} {target}")
     acc_proj = hardware_exp(hw_config, sc)
     acc_proj.create_project(out_dir)
     # print out cli for running the script
@@ -187,6 +202,21 @@ def main():
     print(f"To run the project HLS and HLX, run the following commands:")
     print(f"cd {acc_proj_path}")
     print(f"{acc_proj_path}/run.sh")
+
+
+def main():
+    args = sys.argv[1:]
+    if len(args) != 1:
+        print("Usage: hw_gen.py <config_file>")
+        sys.exit(1)
+
+    hw_config_file = args[0]
+    if hw_config_file == "ALL":
+        for file in os.listdir("./configs/"):
+            if file.endswith(".json"):
+                process_hw_config(file)
+    else:
+        process_hw_config(hw_config_file)
 
 
 if __name__ == "__main__":

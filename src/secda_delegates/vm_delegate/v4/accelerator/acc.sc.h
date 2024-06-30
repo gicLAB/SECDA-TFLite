@@ -157,7 +157,6 @@ SC_MODULE(ACCNAME) {
   // std::vector<Metric *> profiling_vars = {shS, gmSA, gmSB, psSA, psSB};
   std::vector<Metric *> profiling_vars = {shS, gmSB, psSB};
 
-
   // std::vector<Metric *> profiling_vars = {
   //     cycles, load_inps,    load_wgts,  compute,     idle1,   idle2,   idle3,
   //     idle4,  post1,        post2,      post3,       post4,   gemm1,   gemm2,

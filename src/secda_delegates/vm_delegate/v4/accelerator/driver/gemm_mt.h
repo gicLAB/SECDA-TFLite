@@ -113,7 +113,7 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
   drv.dsr->dID++;
 
   // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
-  prf_end(1, drv.t2.load_weights);
+  prf_end(1, drv.t2.p_load_weights);
 }
 
 void Start_Compute(acc_container &drv, int inp_block, int wgt_block) {
@@ -237,7 +237,7 @@ void Store_Results(acc_container &drv) {
     }
     out0 += colsr;
   }
-  prf_end(1, drv.t2.store);
+  prf_end(1, drv.t2.p_store);
 }
 
 struct Load_Send_Acc : Task {

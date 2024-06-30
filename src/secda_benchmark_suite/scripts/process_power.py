@@ -120,9 +120,9 @@ def main(raw_args=None):
         power = frame[20:100, 920:-135, :]  # y , x // adjust to focus on mWH
         power = cv2.resize(power, (power.shape[1] * 4, power.shape[0] * 4))
         npower = clean_square_for_OCR(power)
-        # cv2.imshow('npower', npower)
-        # if cv2.waitKey(1) == ord('q'):
-        #     break
+        cv2.imshow('npower', npower)
+        if cv2.waitKey(1) == ord('q'):
+            break
 
         # Don't save run frames except for the start and end
         if not enter_frame and not exit_frame:

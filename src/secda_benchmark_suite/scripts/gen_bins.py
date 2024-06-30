@@ -29,12 +29,15 @@ def gen_bins(sc, exp):
     board_dir = sc["board_dir"]
     board_user = sc["board_user"]
     board_hostname = sc["board_hostname"]
+    board_port = sc["board_port"]
     path_to_tf = sc["secda_tflite_path"]+"/tensorflow"
     rdel_path = sc["path_to_dels"]
 
     delegates_needed = {}
     for hw in exp[1]:
-        hw_config_file = f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw}"
+        # hw_config_file = f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw}"
+        hw_config_file= find_hw_config(f"{sc['secda_tflite_path']}/{sc['hw_configs']}", hw)
+        # print(f"hw_config_file: {hw_config_file}")
         hw_config = load_config(hw_config_file)
         curr_delegate = hw_config["del"]
         curr_version = hw_config["del_version"]
@@ -65,8 +68,8 @@ def gen_bins(sc, exp):
                     bin_name = cpu_paths[tool][1]
 
                 script += f"{bb_pr}{del_path}:{bin_name} {bb_po} \n"
-                script += f"rsync -r -avz -e 'ssh -p 2202' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/bins/{name}\n"
-    script += f"ssh -t -p 2202 {board_user}@{board_hostname} 'cd {board_dir}/bins/ && chmod 775 ./*'\n"
+                script += f"rsync -r -avz -e 'ssh -p {board_port}' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/bins/{name}\n"
+    script += f"ssh -t -p {board_port} {board_user}@{board_hostname} 'cd {board_dir}/bins/ && chmod 775 ./*'\n"
     script += "popd\n"
     # create folder to output
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

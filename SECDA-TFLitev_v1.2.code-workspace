@@ -124,7 +124,10 @@
 			"target": "cpp",
 			"ios": "cpp",
 			"queue": "cpp",
-			"stack": "cpp"
-		}
+			"stack": "cpp",
+			"__nullptr": "cpp",
+			"__locale": "cpp"
+		},
+		"editor.inlineSuggest.enabled": true
 	}
 }

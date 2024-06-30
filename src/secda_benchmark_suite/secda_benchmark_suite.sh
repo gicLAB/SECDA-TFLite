@@ -4,6 +4,8 @@
 board_user=$(jq -r '.board_user' ../../config.json)
 board_hostname=$(jq -r '.board_hostname' ../../config.json)
 board_dir=$(jq -r '.board_dir' ../../config.json)
+board_port=$(jq -r '.board_port' ../../config.json)
+conda_path=$(jq -r '.conda_path' ../../config.json)
 
 helpFunction() {
   echo ""
@@ -89,18 +91,21 @@ echo "-----------------------------------------------------------"
 
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
-  # ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
-  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
-  rsync -q -r -avz -e 'ssh -p 2202' ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
-  rsync -r -avz -e 'ssh -p 2202' ./model_gen/models  $board_user@$board_hostname:$board_dir/
+  # ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
+  rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
+  rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models  $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
 
 echo "-----------------------------------------------------------"
 echo "Initializing SECDA-TFLite Benchmark Suite"
 echo "-----------------------------------------------------------"
+if [ $skip_bench -eq 0 ]; then
 echo "Clearing cache"
 rm -rf ./tmp
+fi
+
 if [ $init -eq 1 ]; then
   create_dir
 fi
@@ -121,14 +126,14 @@ fi
 
 source ./generated/configs.sh
 length=${#hw_array[@]}
-source /home/jude/miniconda3/bin/activate tf # current the tf environment can#t be used for bazel build (glibc version issue)
+source ${conda_path}/activate tf # current the tf environment can#t be used for bazel build (glibc version issue)
 
 if [ $skip_bench -eq 0 ]; then
   echo "-----------------------------------------------------------"
   echo "Transferring Experiment Configurations to Target Device"
-  rsync -q -r -avz -e 'ssh -p 2202' ./generated/configs.sh $board_user@$board_hostname:$board_dir/
-  rsync -q -r -avz -e 'ssh -p 2202' ./generated/run_collect.sh $board_user@$board_hostname:$board_dir/
-  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
+  rsync -q -r -avz -e 'ssh -p '$board_port ./generated/configs.sh $board_user@$board_hostname:$board_dir/
+  rsync -q -r -avz -e 'ssh -p '$board_port ./generated/run_collect.sh $board_user@$board_hostname:$board_dir/
+  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "cd $board_dir/ && chmod +x ./*.sh"
 
   if [ $collect_power -eq 1 ]; then
     echo "-----------------------------------------------------------"
@@ -141,11 +146,11 @@ if [ $skip_bench -eq 0 ]; then
   echo "-----------------------------------------------------------"
   echo "Running Experiments"
   echo "-----------------------------------------------------------"
-  ssh -o LogLevel=QUIET -t -p 2202 $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
+  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "cd $board_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
   # if not test run, then collect results
   if [ $test_run -eq 0 ]; then
     echo "Transferring Results to Host"
-    rsync -q -r -av -e 'ssh -p 2202' $board_user@$board_hostname:$board_dir/tmp ./
+    rsync -q -r -av -e 'ssh -p '$board_port $board_user@$board_hostname:$board_dir/tmp ./
   fi
   echo "-----------------------------------------------------------"
 

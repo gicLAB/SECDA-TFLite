@@ -1,0 +1,17 @@
+{
+  "acc_name": "SA",
+  "acc_version": 4,
+  "acc_sub_version": 2,
+  "version": "4_2",
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_src": "sa_delegate/v4/accelerator",
+  "acc_link_folder": "sa_src_v4",
+  "hlx_tcl_script": "mdma_axilite_hlx_250.tcl",
+  "top": "SA_INT8_V4_0",
+  "board_script": "",
+  "del" : "sa_delegate",
+  "del_version": "4",
+  "hls_clock" : "4"
+}

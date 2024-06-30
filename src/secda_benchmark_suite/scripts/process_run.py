@@ -65,6 +65,7 @@ def gather_run_info(run_dict, run_name):
     # open file called prf.csv and read it line by line
     if run_dict["valid"] == "1":
         acc_prf = {}
+        file_missing = False
         if run_dict["hardware"] != "CPU":
             # open file called prf.csv, handle if it does not exist
             try:
@@ -75,11 +76,17 @@ def gather_run_info(run_dict, run_name):
                     acc_prf[line[0]] = line[1]
             except:
                 print(f"tmp/{run_name}_prf.csv" + " does not exist")
-
-        run_dict = {**run_dict, **acc_prf}
-        run_dict = process_layer_details(
-            get_df_from_csv(f"tmp/{run_name}_layer.csv"), run_dict, run_name
-        )
+                file_missing = True
+                pass
+        if file_missing:
+            run_dict["total_latency"] = 0
+            run_dict["acc_layer"] = 0
+            run_dict["cpu_layers"] = 0
+        else:
+            run_dict = {**run_dict, **acc_prf}
+            run_dict = process_layer_details(
+                get_df_from_csv(f"tmp/{run_name}_layer.csv"), run_dict, run_name
+            )
     else:
         run_dict["total_latency"] = 0
         run_dict["acc_layer"] = 0

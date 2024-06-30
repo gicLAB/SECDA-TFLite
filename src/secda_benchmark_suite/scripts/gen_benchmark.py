@@ -1,6 +1,6 @@
 import sys
 sys.dont_write_bytecode = True
-
+import os   
 from benchmark_utils import *
 
 
@@ -38,8 +38,11 @@ def gen_bench_imp(
     version_list = []
     del_version_list = []
     delegate_list = []
+    out_dir = f"./{sc['out_dir']}"
     for hw in hardware:
-        hw_config_file = f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw}"
+        # hw_config_file = f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw}"
+        hw_config_file= find_hw_config(f"{sc['secda_tflite_path']}/{sc['hw_configs']}", hw)
+        # print(f"hw_config_file: {hw_config_file}")
         hw_config = load_config(hw_config_file)
         for model in models:
             for thread in threads:
@@ -51,8 +54,11 @@ def gen_bench_imp(
                 del_version_list.append(hw_config["del_version"])
                 delegate_list.append(hw_config["del"])
                 config_list.append(hw_config)
+    # fix this hard
+    # print(f"Creating {out_dir}")
+    os.makedirs(out_dir, exist_ok=True)
 
-    f = open("generated/configs.sh", "w+")
+    f = open(f"{out_dir}/configs.sh", "w+")
     # list of all the config properties
     declare_array(f, "hw", hw_list)
     declare_array(f, "model", model_list)
@@ -70,7 +76,8 @@ def gen_bench_imp(
         "bin_dir": bin_dir,
         "board_user": board_user,
     }
+
     with open("scripts/run_collect.tpl.sh") as f:
         script = str(mt(f.read()).substitute(r_dict))
-    with open("generated/run_collect.sh", "w+") as f:
+    with open(f"{out_dir}/run_collect.sh", "w+") as f:
         f.write(script)

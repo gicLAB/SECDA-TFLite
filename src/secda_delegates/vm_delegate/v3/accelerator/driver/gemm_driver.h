@@ -375,6 +375,8 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   int max_rows = acc_input_buffer_size / rdepth;
   max_rows = max_rows - (max_rows % 4);
   int row_inc = std::min(std::min(rrows, max_rows), ISUMS_BUF_LEN);
+  assert(col_inc > 0 && "col_inc must be greater than 0");
+  assert(row_inc > 0 && "row_inc must be greater than 0");
 
   Config_Acc(drv);
   for (int r = 0; r < rrows; r += row_inc) {
