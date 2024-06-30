@@ -34,13 +34,14 @@ unsigned int acc_regmap::readToControlReg(string reg_name) { return 0; }
 // ================================================================================
 
 template <int B>
-int streams_dma<B>::s_id = 0;
+int stream_dma<B>::s_id = 0;
 int sr_id = 0;
 
 template <int B>
-streams_dma<B>::streams_dma(unsigned int _dma_addr, unsigned int _input,
-                            unsigned int _input_size, unsigned int _output,
-                            unsigned int _output_size)
+stream_dma<B>::stream_dma(unsigned int _dma_addr, unsigned int _input,
+                          unsigned int _r_paddr, unsigned int _input_size,
+                          unsigned int _output, unsigned int _w_paddr,
+                          unsigned int _output_size)
     : id(sr_id++) {
   string name("SDMA" + to_string(id));
   dmad = new AXIS_ENGINE<B>(&name[0]);
@@ -49,11 +50,13 @@ streams_dma<B>::streams_dma(unsigned int _dma_addr, unsigned int _input,
   dmad->input_offset = 0;
   dmad->output_len = 0;
   dmad->output_offset = 0;
+  dmad->r_paddr = _r_paddr;
+  dmad->w_paddr = _w_paddr;
   dma_init(_dma_addr, _input, _input_size, _output, _output_size);
 }
 
 template <int B>
-streams_dma<B>::streams_dma() : id(sr_id++) {
+stream_dma<B>::stream_dma() : id(sr_id++) {
   string name("MSDMA" + to_string(id));
   dmad = new AXIS_ENGINE<B>(&name[0]);
   dmad->input_len = 0;
@@ -64,9 +67,9 @@ streams_dma<B>::streams_dma() : id(sr_id++) {
 };
 
 template <int B>
-void streams_dma<B>::dma_init(unsigned int _dma_addr, unsigned int _input,
-                              unsigned int _input_size, unsigned int _output,
-                              unsigned int _output_size) {
+void stream_dma<B>::dma_init(unsigned int _dma_addr, unsigned int _input,
+                             unsigned int _input_size, unsigned int _output,
+                             unsigned int _output_size) {
   input = (int *)malloc(_input_size * sizeof(int));
   output = (int *)malloc(_output_size * sizeof(int));
 
@@ -82,89 +85,125 @@ void streams_dma<B>::dma_init(unsigned int _dma_addr, unsigned int _input,
   output_size = _output_size;
   dmad->DMA_input_buffer = (int *)input;
   dmad->DMA_output_buffer = (int *)output;
+  dmad->r_paddr = _input;
+  dmad->w_paddr = _output;
 }
 
 template <int B>
-void streams_dma<B>::writeMappedReg(uint32_t offset, unsigned int val) {}
+void stream_dma<B>::writeMappedReg(uint32_t offset, unsigned int val) {}
 
 template <int B>
-unsigned int streams_dma<B>::readMappedReg(uint32_t offset) {
+unsigned int stream_dma<B>::readMappedReg(uint32_t offset) {
   return 0;
 }
 
 template <int B>
-void streams_dma<B>::dma_mm2s_sync() {}
-
+void stream_dma<B>::dma_mm2s_sync() {
+  sc_start();
+}
 template <int B>
-void streams_dma<B>::dma_s2mm_sync() {}
-
-template <int B>
-void streams_dma<B>::dma_change_start(int offset) {
-  dmad->input_offset = offset;
+void stream_dma<B>::dma_s2mm_sync() {
+  sc_start();
 }
 
 template <int B>
-void streams_dma<B>::dma_change_end(int offset) {
-  dmad->output_offset = offset;
+void stream_dma<B>::dma_change_start(int offset) {
+  dmad->input_offset = offset / 4;
 }
 
 template <int B>
-void streams_dma<B>::initDMA(unsigned int src, unsigned int dst) {}
+void stream_dma<B>::dma_change_end(int offset) {
+  dmad->output_offset = offset / 4;
+}
 
 template <int B>
-void streams_dma<B>::dma_free() {
+void stream_dma<B>::initDMA(unsigned int src, unsigned int dst) {}
+
+template <int B>
+void stream_dma<B>::dma_free() {
   free(input);
   free(output);
 }
 
 template <int B>
-int *streams_dma<B>::dma_get_inbuffer() {
+int *stream_dma<B>::dma_get_inbuffer() {
   return input;
 }
 
 template <int B>
-int *streams_dma<B>::dma_get_outbuffer() {
+int *stream_dma<B>::dma_get_outbuffer() {
   return output;
 }
 
 template <int B>
-void streams_dma<B>::dma_start_send(int length) {
-  dmad->input_len = length;
+void stream_dma<B>::dma_start_send(int length) {
+  dmad->input_len = length * (B / 32);
   dmad->send = true;
+  data_transfered += length * (B / 8);
 }
 
 template <int B>
-void streams_dma<B>::dma_wait_send() {
-  sc_start();
+void stream_dma<B>::dma_wait_send() {
+  prf_start(0);
+  dma_mm2s_sync();
+  prf_end(0, send_wait);
 }
 
 template <int B>
-int streams_dma<B>::dma_check_send() {
+int stream_dma<B>::dma_check_send() {
   return 0;
 }
 
 template <int B>
-void streams_dma<B>::dma_start_recv(int length) {
-  dmad->output_len = length;
+void stream_dma<B>::dma_start_recv(int length) {
+  dmad->output_len = length * (B / 32);
   dmad->recv = true;
 }
 
 template <int B>
-void streams_dma<B>::dma_wait_recv() {
-  sc_start();
+void stream_dma<B>::dma_wait_recv() {
+  prf_start(0);
+  dma_s2mm_sync();
+  prf_end(0, recv_wait);
+#ifdef ACC_PROFILE
+  data_transfered_recv += dmad->output_len * (B / 8);
+#endif
 }
 
 template <int B>
-int streams_dma<B>::dma_check_recv() {
+int stream_dma<B>::dma_check_recv() {
   return 0;
 }
 
+template <int B>
+void stream_dma<B>::print_times() {
+#ifdef ACC_PROFILE
+  cout << "================================================" << endl;
+  cout << "-----------"
+       << "DMA: " << id << "-----------" << endl;
+  cout << "Data Transfered: " << data_transfered << " bytes" << endl;
+  cout << "Data Transfered Recv: " << data_transfered_recv << " bytes" << endl;
+  prf_out(TSCALE, send_wait);
+  prf_out(TSCALE, recv_wait);
+  float sendtime = (float)prf_count(TSCALE, send_wait) / 1000000;
+  float data_transfered_recv_MB = (float)data_transfered_recv / 1000000;
+  cout << "Send speed: " << (data_transfered_recv_MB / sendtime) << " MB/s"
+       << endl;
+  float recvtime = (float)prf_count(TSCALE, recv_wait) / 1000000;
+  float data_transfered_MB = (float)data_transfered / 1000000;
+  cout << "Recv speed: " << (data_transfered_MB / recvtime) << " MB/s" << endl;
+  cout << "================================================" << endl;
+#endif
+}
+
 // =========================== Multi DMAs
-multi_dma::multi_dma(int _dma_count, unsigned int *_dma_addrs,
-                     unsigned int *_dma_addrs_in, unsigned int *_dma_addrs_out,
-                     unsigned int _buffer_size) {
+template <int B>
+multi_dma<B>::multi_dma(int _dma_count, unsigned int *_dma_addrs,
+                        unsigned int *_dma_addrs_in,
+                        unsigned int *_dma_addrs_out,
+                        unsigned int _buffer_size) {
   dma_count = _dma_count;
-  dmas = new streams_dma<32>[dma_count];
+  dmas = new stream_dma<B>[dma_count];
   dma_addrs = _dma_addrs;
   dma_addrs_in = _dma_addrs_in;
   dma_addrs_out = _dma_addrs_out;
@@ -175,31 +214,37 @@ multi_dma::multi_dma(int _dma_count, unsigned int *_dma_addrs,
                      dma_addrs_out[i], buffer_size * 2);
 }
 
-void multi_dma::multi_free_dmas() {
+template <int B>
+void multi_dma<B>::multi_free_dmas() {
   for (int i = 0; i < dma_count; i++) {
     dmas[i].dma_free();
   }
 }
 
-void multi_dma::multi_dma_change_start(int offset) {
+template <int B>
+void multi_dma<B>::multi_dma_change_start(int offset) {
   for (int i = 0; i < dma_count; i++) {
     dmas[i].dma_change_start(offset);
   }
 }
 
-void multi_dma::multi_dma_change_start_4(int offset) {}
+template <int B>
+void multi_dma<B>::multi_dma_change_start_4(int offset) {}
 
-void multi_dma::multi_dma_change_end(int offset) {
+template <int B>
+void multi_dma<B>::multi_dma_change_end(int offset) {
   for (int i = 0; i < dma_count; i++) {
     dmas[i].dma_change_end(offset);
   }
 }
 
-void multi_dma::multi_dma_start_send(int length) {
+template <int B>
+void multi_dma<B>::multi_dma_start_send(int length) {
   for (int i = 0; i < dma_count; i++) dmas[i].dma_start_send(length);
 }
 
-void multi_dma::multi_dma_wait_send() {
+template <int B>
+void multi_dma<B>::multi_dma_wait_send() {
   bool loop = true;
   while (loop) {
     loop = false;
@@ -212,18 +257,24 @@ void multi_dma::multi_dma_wait_send() {
   }
 }
 
-int multi_dma::multi_dma_check_send() { return 0; }
+template <int B>
+int multi_dma<B>::multi_dma_check_send() {
+  return 0;
+}
 
-void multi_dma::multi_dma_start_recv(int length) {
+template <int B>
+void multi_dma<B>::multi_dma_start_recv(int length) {
   for (int i = 0; i < dma_count; i++) dmas[i].dma_start_recv(length);
 }
 
-void multi_dma::multi_dma_start_recv() {
+template <int B>
+void multi_dma<B>::multi_dma_start_recv() {
   for (int i = 0; i < dma_count; i++)
     dmas[i].dma_start_recv(dmas[i].output_size);
 }
 
-void multi_dma::multi_dma_wait_recv() {
+template <int B>
+void multi_dma<B>::multi_dma_wait_recv() {
   bool loop = true;
   while (loop) {
     loop = false;
@@ -237,11 +288,35 @@ void multi_dma::multi_dma_wait_recv() {
   }
 }
 
-void multi_dma::multi_dma_wait_recv_4() {}
+template <int B>
+void multi_dma<B>::multi_dma_wait_recv_4() {}
 
-int multi_dma::multi_dma_check_recv() { return 0; }
+template <int B>
+int multi_dma<B>::multi_dma_check_recv() {
+  return 0;
+}
 
-template struct streams_dma<32>;
-template struct streams_dma<64>;
-template class AXIS_ENGINE<32>;
-template class AXIS_ENGINE<64>;
+template <int B>
+void multi_dma<B>::print_times() {
+  for (int i = 0; i < dma_count; i++) {
+    dmas[i].print_times();
+  }
+}
+
+template class stream_dma<32>;
+template class multi_dma<32>;
+
+template class stream_dma<64>;
+template class multi_dma<64>;
+
+template class stream_dma<128>;
+template class multi_dma<128>;
+
+template class stream_dma<256>;
+template class multi_dma<256>;
+
+template class stream_dma<512>;
+template class multi_dma<512>;
+
+template class stream_dma<1024>;
+template class multi_dma<1024>;

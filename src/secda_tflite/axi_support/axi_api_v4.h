@@ -1,5 +1,5 @@
-#ifndef AXI_API_V3_H
-#define AXI_API_V3_H
+#ifndef AXI_API_V4_H
+#define AXI_API_V4_H
 
 #ifdef SYSC
 #include "../secda_integrator/axi4s_engine_generic.sc.h"
@@ -64,6 +64,7 @@ T readMappedReg(int *acc, uint32_t offset) {
   return *((volatile T *)(reinterpret_cast<char *>(base_addr) + offset));
 }
 
+template <typename T>
 struct acc_regmap {
   int *acc_addr;
 
@@ -122,7 +123,8 @@ T *mm_alloc_r(unsigned int address, unsigned int buffer_size) {
 // ================================================================================
 // Stream DMA API
 // ================================================================================
-template <int B>
+// template <int B, template<int> typename T>
+template <int B, int T>
 struct stream_dma {
   unsigned int *dma_addr;
   int *input;
@@ -136,13 +138,16 @@ struct stream_dma {
   static int s_id;
   const int id;
 
-  int data_transfered = 0;
-  int data_transfered_recv = 0;
+  unsigned int data_transfered = 0;
+  unsigned int data_transfered_recv = 0;
+  unsigned int data_send_count = 0;
+  unsigned int data_recv_count = 0;
   duration_ns send_wait;
   duration_ns recv_wait;
+  chrono::high_resolution_clock::time_point send_start;
 
 #ifdef SYSC
-  AXIS_ENGINE<B> *dmad;
+  AXIS_ENGINE<B, AXI_TYPE> *dmad;
 #endif
 
   stream_dma(unsigned int _dma_addr, unsigned int _input,
@@ -164,6 +169,8 @@ struct stream_dma {
   void dma_free();
 
   void dma_change_start(int offset);
+
+  void dma_change_start(unsigned int addr, int offset);
 
   void dma_change_end(int offset);
 
@@ -194,14 +201,16 @@ struct stream_dma {
   void dma_s2mm_sync();
 };
 
-template <int B>
+template <int B, int T>
 struct multi_dma {
-  struct stream_dma<B> *dmas;
+  struct stream_dma<B, T> *dmas;
   unsigned int *dma_addrs;
   unsigned int *dma_addrs_in;
   unsigned int *dma_addrs_out;
   unsigned int buffer_size;
   int dma_count;
+
+  ~multi_dma();
 
   multi_dma(int _dma_count, unsigned int *_dma_addrs,
             unsigned int *_dma_addrs_in, unsigned int *_dma_addrs_out,
@@ -234,4 +243,10 @@ struct multi_dma {
   void print_times();
 };
 
-#endif // AXI_API_V3_H
+#ifdef SYSC
+#include "axi_api_sysc_v4.tpp"
+#else
+#include "axi_api_v4.tpp"
+#endif
+
+#endif // AXI_API_V4_H

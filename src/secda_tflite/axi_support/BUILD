@@ -90,3 +90,34 @@ cc_library(
         "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
     ],
 )
+
+cc_library(
+    name = "axi_supportv4",
+    srcs = [
+        "axi_api_v4.tpp",
+    ],
+    hdrs = [
+        "axi_api_v4.h"
+    ],
+    copts = common_copts,
+    deps = [
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
+    ],
+)
+
+cc_library(
+    name = "axi_suppor_syscv4",
+    srcs = [
+        "axi_api_sysc_v4.tpp",
+    ],
+    hdrs = [
+        "axi_api_v4.h"
+    ],
+    copts = common_copts,
+    deps = [
+        "@systemc//:systemc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/secda_profiler:profiler",
+    ],
+)
