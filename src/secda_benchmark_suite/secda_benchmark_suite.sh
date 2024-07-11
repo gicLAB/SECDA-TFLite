@@ -94,6 +94,7 @@ function create_dir() {
   # ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $board_dir && mkdir -p $board_dir/tmp && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
   ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $board_dir/bins && mkdir -p $board_dir/models"
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
+  rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/load_bitstream.py $board_user@$board_hostname:~/
   rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models  $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
