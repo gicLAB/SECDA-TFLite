@@ -1,0 +1,56 @@
+[
+    {
+        "apps": {
+            "apps1": "eval_model",
+            "apps2": "eval_model_accuracy",
+            "apps3": "imagenet_image_classification",
+            "apps4": "benchmark_model",
+            "apps5": "inference_diff"
+        }
+    },
+    {
+        "hardware": {
+            "hw1": "CPU",
+            "hw2": "VMRPPv2_0"
+        }
+    },
+    {
+        "em_apps_configuration": {
+            "models"  : ["/mnt/sata/model_n_data/imagenet/models/mobilenetv2",
+                        "/mnt/sata/model_n_data/imagenet/models/resnet18v1",
+                        "/mnt/sata/model_n_data/imagenet/models/resnet50v2"],
+            "img_name": "/mnt/sata/model_n_data/imagenet/otherImages/grace_hopper.bmp",
+            "threads" : ["1","2"],  
+            "runs"    : "100"
+        },
+        "ema_apps_configuration": {
+            "models"  : ["/mnt/sata/model_n_data/cifar10/models/mbV1DownloadedTrained_Cifer10",
+                        "/mnt/sata/model_n_data/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100"],
+            "threads" : ["1","2"],
+            "img_no"  : "10000",
+            "runs"    : "1"
+        },
+        "iic_apps_configuration": {
+            "models"  : ["/mnt/sata/model_n_data/imagenet/models/mobilenetv2",
+                        "/mnt/sata/model_n_data/imagenet/models/resnet18v1",
+                        "/mnt/sata/model_n_data/imagenet/models/resnet50v2"],
+            "threads" : ["1","2"],
+            "img_no"  : "10000",
+            "runs"    : "1"
+        },
+        "bm_apps_configuration": {
+            "models" : ["/mnt/sata/model_n_data/imagenet/models/mobilenetv2",
+                        "/mnt/sata/model_n_data/imagenet/models/resnet18v1",
+                        "/mnt/sata/model_n_data/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100"], 
+            "threads": ["1","2"],  
+            "runs"   : "100" 
+        },
+        "indiff_apps_configuration": {
+            "models" : ["/mnt/sata/model_n_data/imagenet/models/mobilenetv2",
+                        "/mnt/sata/model_n_data/imagenet/models/resnet18v1",
+                        "/mnt/sata/model_n_data/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100"], 
+            "threads": ["1","2"],  
+            "runs"   : "100"
+        }
+    }
+]
