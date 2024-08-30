@@ -85,8 +85,8 @@ with open("model_gen/configs/tf_dcgan_layers.json") as f:
 with open("model_gen/configs/conv_models.json") as f:
     conv_models_pot_exp = json.load(f)["conv_models"]
 
-with open("model_gen/configs/mnk_broke.json") as f:
-    mnk_models = json.load(f)["mnk_broke"]
+# with open("model_gen/configs/mnk_broke.json") as f:
+#     mnk_models = json.load(f)["mnk_broke"]
     
 ####################################################
 ## HARDWARE
@@ -129,14 +129,13 @@ tconv_synth_exp = [
 
 
 # CONV Experiment
-models = conv_models
-# models = mnk_models
-# models = conv_models_pot_exp
+# models = conv_models
 
-# models=["mobilenetv2", "resnet18v1"]
-hardware = ["CPU","VMRPPv2_0","VMRPP_SH_QKv2_0"]
+models=["mobilenetv2"]
+# hardware = ["CPU","VMRPPv2_0","VMRPP_SH_QKv2_0"]
+hardware = ["VMv3_0"]
 threads = [2]
-num_run = 100
+num_run = 10
 model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/"
 conv_exp = [
     models,
@@ -191,4 +190,4 @@ gan_exp = [
 ####################################################
 
 # Current experiment
-create_exp(sc, tconv_synth_exp)
+create_exp(sc, conv_exp)

@@ -131,13 +131,13 @@ int *stream_dma::dma_get_inbuffer() { return input; }
 int *stream_dma::dma_get_outbuffer() { return output; }
 
 void stream_dma::dma_start_send(int length) {
-  prf_dma_start(0);
+  prf_start(0);
 #ifdef DMA_PROFILE
   data_transfered += length * 4;
 #endif
   msync(input, input_size, MS_SYNC);
   writeMappedReg(MM2S_LENGTH, length * 4);
-  prf_dma_end(0, send_wait);
+  prf_end(0, send_wait);
 }
 
 void stream_dma::dma_wait_send() { dma_mm2s_sync(); }
@@ -153,13 +153,13 @@ void stream_dma::dma_start_recv(int length) {
 }
 
 void stream_dma::dma_wait_recv() {
-  prf_dma_start(0);
+  prf_start(0);
   dma_s2mm_sync();
   msync(output, output_size, MS_SYNC);
 #ifdef DMA_PROFILE
   data_transfered_recv += readMappedReg(S2MM_LENGTH);
 #endif
-  prf_dma_end(0, recv_wait);
+  prf_end(0, recv_wait);
 }
 
 int stream_dma::dma_check_recv() {

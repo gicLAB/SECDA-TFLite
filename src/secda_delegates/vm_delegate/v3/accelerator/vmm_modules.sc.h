@@ -10,7 +10,8 @@ sc_int<64> VMM_UNIT::mul_s64(int a, sc_int<64> b) {
   return c;
 }
 
-int VMM_UNIT::Quantised_Multiplier_ruy_reference(int x, int qm, sc_int<8> shift) {
+int VMM_UNIT::Quantised_Multiplier_ruy_reference(int x, int qm,
+                                                 sc_int<8> shift) {
   int nshift = shift;
   int total_shift = 31 - shift;
   sc_int<64> x_64 = x;

@@ -126,8 +126,10 @@
 			"queue": "cpp",
 			"stack": "cpp",
 			"__nullptr": "cpp",
-			"__locale": "cpp"
+			"__locale": "cpp",
+			"*.tpp": "cpp"
 		},
-		"editor.inlineSuggest.enabled": true
+		"editor.inlineSuggest.enabled": true,
+		"java.compile.nullAnalysis.mode": "disabled"
 	}
 }

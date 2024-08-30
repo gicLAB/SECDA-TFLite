@@ -12,5 +12,9 @@
   "top": "VM_INT8_V3_0",
   "board_script": "",
   "del" : "vm_delegate",
-  "del_version": "3"
+  "del_version": "3",
+  "hls_clock" : "4",
+  "hlx_Mhz": "250",
+  "axi_bitW": "32",
+  "axi_burstS": "32"
 }

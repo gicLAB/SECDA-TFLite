@@ -96,6 +96,7 @@ function create_dir() {
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/check_valid.py $board_user@$board_hostname:$board_dir/
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/load_bitstream.py $board_user@$board_hostname:~/
   rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models  $board_user@$board_hostname:$board_dir/
+  rsync -r -avz -e 'ssh -p '${board_port} ./bitstreams  $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
 
