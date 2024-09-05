@@ -35,6 +35,15 @@ scripts/hardwareFilesGeneration
 __pycache__
 /src/secda_benchmark_suite/power/files
 /src/secda_benchmark_suite/files
+/src/secda_apps_evaluation_suite/generated
+/src/secda_apps_evaluation_suite/tmp
+/src/secda_benchmark_suite_old/
+
+
+
+/data/
+/bitstreams/
+
 
 
 ## rpp add

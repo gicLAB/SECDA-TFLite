@@ -78,7 +78,6 @@ std::vector<uint8_t> read_bmp(const std::string& input_bmp_name, int* width,
   int begin, end;
 
   std::ifstream file(input_bmp_name, std::ios::in | std::ios::binary);
-  
   if (!file) {
     LOG(FATAL) << "input file " << input_bmp_name << " not found";
     exit(-1);

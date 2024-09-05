@@ -3,7 +3,7 @@
   "board_user": "xilinx",
   "board_hostname": "jharis.ddns.net",
   "board_port": "2202",
-  "board_dir": "/home/xilinx/Workspace/secda_benchmark_suite",
+  "board_dir": "/home/xilinx/Workspace/secda_tflite",
   "secda_tflite_path": "/home/jude/Workspace/SECDA-TFLite_v1.2",
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "vivado_path": "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/",
@@ -11,5 +11,7 @@
   "hlx_scripts" : "hardware_automation/hlx_scripts",
   "hw_link_dir" : "hardware_automation/acc_srcs",
   "conda_path" : "/home/jude/miniconda3/bin",
-  "secda_tools_path" : "/home/jude/Workspace/SECDA-TFLite_v1.2/src/secda_tflite"
+  "secda_tools_path" : "/home/jude/Workspace/SECDA-TFLite_v1.2/src/secda_tflite",
+  "data_dir" : "/home/jude/Workspace/SECDA-TFLite_v1.2/data",
+  "bitstream_dir": "/home/jude/Workspace/SECDA-TFLite_v1.2/bitstreams"
 }

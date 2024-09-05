@@ -191,9 +191,17 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
   
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
+
+  // change the pixel rgb to bgr
+  for (int i = 0; i < image_width * image_height; i++) {
+    uint8_t temp = in[i * 3];
+    in[i * 3] = in[i * 3 + 2];
+    in[i * 3 + 2] = temp;
+  }
+
   //save in a csv file
   // std::ofstream input_tensor_stg1;
-  // input_tensor_stg1.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/input_tensor_stg1.csv");
+  // input_tensor_stg1.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_raw_secda.csv");
   // for (const auto& value : in) {
   //     input_tensor_stg1 << static_cast<int>(value) << std::endl;
   // }
@@ -270,14 +278,13 @@ void processOutput(tflite::Interpreter *interpreter, int output, float threshold
     if (loop_count == 0 && ground_truth_label == labels[index]) {
       top_1_count++;
     }
-    // if (loop_count == 0)
-    // {
-    //   static int ccd = 0;
-    //   // LOG(INFO) << "ground_truth_label: " << ground_truth_label << " ccd: " << ccd;
-    //   LOG(INFO) << "No: " << ccd << " ground_truth_label: " << ground_truth_label //
-    //   << " Pred "<< confidence << ": " << index << " " << labels[index];
-    //   ccd++;
-    // }
+    if (loop_count == 0)
+    {
+      static int ccd = 0;
+      LOG(INFO) << "No: " << ccd << " ground_truth_label: " << ground_truth_label //
+      << " Pred "<< confidence << ": " << index << " " << labels[index];
+      ccd++;
+    }
     // if (loop_count==0)
     //   LOG(INFO) << confidence << ": " << index << " " << labels[index];
     // outputFile << labels[index] << " ";
@@ -445,8 +452,8 @@ void RunInference(Settings *settings,
   int wanted_width = dims->data[2];
   int wanted_channels = dims->data[3];
   settings->input_type = interpreter->tensor(input)->type;
-  int image_width = 32;
-  int image_height = 32;
+  int image_width = 224;
+  int image_height = 224;
   int image_channels = 3;
   // int image_width = 28;
   // int image_height = 28;
@@ -503,6 +510,15 @@ void RunInference(Settings *settings,
     interpreter->SetProfiler(profiler.get());
     if (settings->profiling)
       profiler->StartProfiling();
+
+    // const float* preproc_out = interpreter->typed_tensor<float>(0);
+    // // save output tensor in a csv file
+    // std::ofstream input_tensor_stg4;
+    // input_tensor_stg4.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_normalized_preProcOut_secda.csv");
+    // for (int i = 0; i < (32*32*3); i++) {
+    //   input_tensor_stg4 << std::fixed << std::setprecision(6) << preproc_out[i] << std::endl;
+    // }
+    // input_tensor_stg4.close();
 
     for (int i = 0; i < settings->loop_count; i++) {
       if (interpreter->Invoke() != kTfLiteOk) {

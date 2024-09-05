@@ -97,18 +97,26 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
   // float inp_std[3] = {0.2616f, 0.2435f, 0.2470f};
 
 
-  float inp_mean[3] = {0.44653124f, 0.48215827f, 0.49139968f};
-  float inp_std[3] = {0.26158768f, 0.24348505f, 0.24703233f};
+  // float inp_mean[3] = {0.44653124f, 0.48215827f, 0.49139968f};
+  // float inp_std[3] = {0.26158768f, 0.24348505f, 0.24703233f};
+
+  float inp_mean[3] = {0.49139968f, 0.48215827f, 0.44653124f};
+  float inp_std[3] = {0.24703233f, 0.24348505f, 0.26158768f};
 
   // save output tensor in a csv file
   // std::ofstream output_file;
-  // output_file.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/output_tensor3.csv");
+  // output_file.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_raw2_secda.csv");
   // for (int i = 0; i < output_number_of_pixels; i++) {
   //   // output_file << std::fixed << std::setprecision(6) << output[i] << std::endl;
   //   output_file << output[i] << std::endl;
   // }
   // output_file.close();
   
+  // save output tensor in a csv file
+  // std::ofstream output_file1;
+  // std::ofstream output_file2;
+  // output_file1.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_normalized_step1_secda.csv");
+  // output_file2.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_normalized_step2_secda.csv");
 
   for (int i = 0; i < output_number_of_pixels; i+=3) {
     switch (s->input_type) {
@@ -123,10 +131,18 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
         out[i+1] = (output[i+1]) / 255.0f;
         out[i+2] = (output[i+2]) / 255.0f;
 
+        // output_file1 << out[i] << std::endl;
+        // output_file1 << out[i+1] << std::endl;
+        // output_file1 << out[i+2] << std::endl;
+
         out[i] = (out[i] - inp_mean[0]) / inp_std[0];
         out[i+1] = (out[i+1] - inp_mean[1]) / inp_std[1];
         out[i+2] = (out[i+2] - inp_mean[2]) / inp_std[2];
         
+        // output_file2 << out[i] << std::endl;
+        // output_file2 << out[i+1] << std::endl;
+        // output_file2 << out[i+2] << std::endl;
+
         // previous normilization
         // out[i] = (output[i] - s->input_mean) / s->input_std;
         
@@ -141,6 +157,8 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
         break;
     }
   }
+  // output_file1.close();
+  // output_file2.close();
 }
 
 }  // namespace eval_model

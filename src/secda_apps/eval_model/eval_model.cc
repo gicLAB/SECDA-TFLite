@@ -54,7 +54,7 @@ public:
   // recognized arg values are parsed correctly.
   bool InitFromCmdlineArgs(int *argc, const char **argv) {
     std::vector<tflite::Flag> flags;
-    delegate_list_util_.AppendCmdlineFlags(&flags);
+    delegate_list_util_.AppendCmdlineFlags(flags);
 
     const bool parse_result = Flags::Parse(argc, argv, flags);
     if (!parse_result) {
@@ -171,11 +171,11 @@ void PrintProfilingInfo(const profiling::ProfileEvent *e,
   //      5.352, Node   5, OpCode   4, DEPTHWISE_CONV_2D
 
   LOG(INFO) << std::fixed << std::setw(10) << std::setprecision(3)
-            << (e->end_timestamp_us - e->begin_timestamp_us) / 1000.0
-            << ", Subgraph " << std::setw(3) << std::setprecision(3)
-            << subgraph_index << ", Node " << std::setw(3)
-            << std::setprecision(3) << op_index << ", OpCode " << std::setw(3)
-            << std::setprecision(3) << registration.builtin_code << ", "
+            << (e->elapsed_time) / 1000.0 << ", Subgraph " << std::setw(3)
+            << std::setprecision(3) << subgraph_index << ", Node "
+            << std::setw(3) << std::setprecision(3) << op_index << ", OpCode "
+            << std::setw(3) << std::setprecision(3) << registration.builtin_code
+            << ", "
             << EnumNameBuiltinOperator(
                    static_cast<BuiltinOperator>(registration.builtin_code));
 }
@@ -188,6 +188,14 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
   int wanted_channels = interpreter->tensor(input)->dims->data[3];
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
+
+  //save in a csv file
+  // std::ofstream input_tensor_stg1;
+  // input_tensor_stg1.open("/home/rppv15/workspace/Quantization/data/cifar10/input_tensor_stg1_SECDA.csv");
+  // for (const auto& value : in) {
+  //     input_tensor_stg1 << static_cast<int>(value) << std::endl;
+  // }
+  // input_tensor_stg1.close();
 
   switch (settings->input_type) {
   case kTfLiteFloat32:
@@ -212,8 +220,8 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
   }
 }
 
-void processOutput(tflite::Interpreter *interpreter, int output,
-                   float threshold, int number_of_results, Settings *settings) {
+void processOutput(tflite::Interpreter *interpreter, int output, float threshold,
+                   int number_of_results, Settings *settings) {
   std::vector<std::pair<float, int>> top_results;
   TfLiteIntArray *output_dims = interpreter->tensor(output)->dims;
   auto output_size = output_dims->data[output_dims->size - 1];
@@ -399,7 +407,7 @@ void RunInference(Settings *settings,
                  image_channels);
 
   //  Manual Inputs v2
-  Load_Data_NPY(interpreter, settings->input_npy_name);
+  // Load_Data_NPY(interpreter, settings->input_npy_name);
 
   // Manual Start
   // std::cout << "Press Enter to Go";
@@ -413,6 +421,16 @@ void RunInference(Settings *settings,
 
   struct timeval start_time, stop_time;
   gettimeofday(&start_time, nullptr);
+
+  const float* input_rpp = interpreter->typed_tensor<float>(0);
+  // save output tensor in a csv file
+  // std::ofstream input_tensor_stg4;
+  // input_tensor_stg4.open("/home/rppv15/workspace/Quantization/data/cifar10/input_tensor_stg4_SECDA.csv");
+  // for (int i = 0; i < (32*32*3); i++) {
+  //   input_tensor_stg4 << std::fixed << std::setprecision(6) << input_rpp[i] << std::endl;
+  // }
+  // input_tensor_stg4.close();
+
   for (int i = 0; i < settings->loop_count; i++) {
     if (interpreter->Invoke() != kTfLiteOk) {
       LOG(ERROR) << "Failed to invoke tflite!";
@@ -441,7 +459,7 @@ void RunInference(Settings *settings,
     }
   }
 
-  const float threshold = 0.001f;
+  const float threshold = 0.000001f;
   std::vector<std::pair<float, int>> top_results;
   int output = interpreter->outputs()[0];
   processOutput(interpreter.get(), output, threshold,

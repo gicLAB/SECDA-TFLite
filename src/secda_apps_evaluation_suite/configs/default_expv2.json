@@ -4,43 +4,55 @@
     },
     "hardware": [
         "CPU",
-        "VMv4_0"
+        "VMRPPv2_0"
     ],
     "apps": {
         "eval_model": {
             "tflite_model": [
                 "$(d)/imagenet/models/mobilenetv2",
-                "$(d)/imagenet/models/resnet18v1"
+                "$(d)/imagenet/models/resnet18v1",
+                "$(d)/imagenet/models/resnet50v2"
             ],
             "image": "$(d)/imagenet/data/grace_hopper.bmp",
             "threads": [
                 "1",
                 "2"
             ],
-            "count": "1",
-            "labels": "$(d)/imagenet/data/labels.txt"
+            "count": "1"
+        },
+        "eval_model_accuracy": {
+            "tflite_model": [
+                "$(d)/cifar10/models/mbV1DownloadedTrained_Cifer10",
+                "$(d)/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100"
+            ],
+            "threads": [
+                "1",
+                "2"
+            ],
+            "no_of_images": "10000",
+            "count": "1"
         },
         "benchmark_model": {
             "graph": [
                 "$(d)/imagenet/models/mobilenetv2",
-                "$(d)/imagenet/models/resnet18v1"
+                "$(d)/imagenet/models/resnet18v1",
+                "$(d)/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100"
             ],
-            "num_threads": [
+            "threads": [
                 "1",
                 "2"
             ],
-            "num_runs": "1",
-            "max_secs": "600"
+            "runs": "100"
         },
         "inference_diff": {
             "model_file": [
                 "$(d)/imagenet/models/resnet18v1"
             ],
-            "num_interpreter_threads": [
+            "threads": [
                 "1",
                 "2"
             ],
-            "num_runs": "1"
+            "runs": "100"
         }
     }
 }

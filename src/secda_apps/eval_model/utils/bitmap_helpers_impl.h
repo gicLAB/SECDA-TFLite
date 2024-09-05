@@ -18,6 +18,9 @@ limitations under the License.
 
 #include "tensorflow/lite/examples/secda_apps/eval_model/eval_model.h"
 
+#include<fstream>
+#include<iomanip>
+
 #include "tensorflow/lite/builtin_op_data.h"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
@@ -82,10 +85,46 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
   auto output = interpreter->typed_tensor<float>(2);
   auto output_number_of_pixels = wanted_height * wanted_width * wanted_channels;
 
-  for (int i = 0; i < output_number_of_pixels; i++) {
+  // original
+  // float inp_mean[3] = {0.4914f, 0.4822f, 0.4465f};
+  // float inp_std[3] = {0.2023f, 0.1994f, 0.2010f};
+  // reversed
+  // float inp_mean[3] = {0.4465f, 0.4822f, 0.4914f};
+  // float inp_std[3] = {0.2010f, 0.1994f, 0.2023f};
+
+  // float inp_mean[3] = {0.4465f, 0.4822f, 0.4914f};
+  // float inp_std[3] = {0.2616f, 0.2435f, 0.2470f};
+  
+  float inp_mean[3] = {0.44653124f, 0.48215827f, 0.49139968f};
+  float inp_std[3] = {0.26158768f, 0.24348505f, 0.24703233f};
+
+
+  // save output tensor in a csv file
+  // std::ofstream input_tensor_stg2;
+  // input_tensor_stg2.open("/home/rppv15/workspace/Quantization/data/cifar10/input_tensor_stg2_SECDA.csv");
+  // for (int i = 0; i < output_number_of_pixels; i++) {
+  //   input_tensor_stg2 << output[i] << std::endl;
+  // }
+  // input_tensor_stg2.close();
+
+  for (int i = 0; i < output_number_of_pixels; i+=3) {
     switch (s->input_type) {
       case kTfLiteFloat32:
-        out[i] = (output[i] - s->input_mean) / s->input_std;
+        //MNIST Norm//
+        out[i] = (output[i]) / 255.0f;
+        out[i+1] = (output[i+1]) / 255.0f;
+        out[i+2] = (output[i+2]) / 255.0f;
+        
+        //CIFAR 10 Norm//
+        // out[i] = (output[i]) / 255.0f;
+        // out[i+1] = (output[i+1]) / 255.0f;
+        // out[i+2] = (output[i+2]) / 255.0f;
+
+        // out[i] = (out[i] - inp_mean[0]) / inp_std[0];
+        // out[i+1] = (out[i+1] - inp_mean[1]) / inp_std[1];
+        // out[i+2] = (out[i+2] - inp_mean[2]) / inp_std[2];
+        
+        // out[i] = (output[i] - s->input_mean) / s->input_std;
         break;
       case kTfLiteInt8:
         out[i] = static_cast<int8_t>(output[i] - 128);
@@ -97,6 +136,14 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
         break;
     }
   }
+
+  // save output tensor in a csv file
+  // std::ofstream input_tensor_stg3;
+  // input_tensor_stg3.open("/home/rppv15/workspace/Quantization/data/cifar10/input_tensor_stg3_SECDA.csv");
+  // for (int i = 0; i < output_number_of_pixels; i++) {
+  //   input_tensor_stg3 << std::fixed << std::setprecision(6) << out[i] << std::endl;
+  // }
+  // input_tensor_stg3.close();
 }
 
 }  // namespace eval_model

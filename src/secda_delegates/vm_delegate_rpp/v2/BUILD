@@ -64,6 +64,16 @@ cc_library(
 )
 
 cc_binary(
+    name = "eval_model_accuracy_plus_vm_delegate_rpp",
+    copts = tflite_copts(),
+    linkopts = task_linkopts(),
+    deps = [
+        "//tensorflow/lite/examples/secda_apps/eval_model_accuracy:eval_model_lib",
+        ":vm_delegate_rpp_provider", 
+    ],
+)
+
+cc_binary(
     name = "eval_model_plus_vm_delegate_rpp",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
