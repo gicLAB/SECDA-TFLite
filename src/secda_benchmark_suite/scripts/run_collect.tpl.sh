@@ -82,6 +82,14 @@ function ctrl_c() {
 
 trap ctrl_c INT
 
+bitstream_dir=£{board_dir}/bitstreams
+scripts_dir=£{board_dir}/scripts
+board_user=£{board_user}
+
+bench_dir=£{board_dir}/benchmark_suite
+model_dir=£{bench_dir}/models
+bin_dir=£{bench_dir}/bins
+
 for ((i = 0; i < length; i++)); do
   index=$((i + 1))
   HW=${hw_array[$i]}
@@ -100,8 +108,8 @@ for ((i = 0; i < length; i++)); do
   #if prev_hw was different then load base bitstream and sleep 1 second
   if [ ${prev_failed} -eq 1 ] || [ "${prev_hw_version}" != "${HW}_${VERSION}" ]; then
     echo "Loading bitstream ${HW}_${VERSION}.bit"
-    echo sudo python3 /home/£{board_user}/load_bitstream.py £{bitstream_dir}/${HW}_${VERSION}.bit -q >>commands.txt
-    sudo python3 /home/£{board_user}/load_bitstream.py £{bitstream_dir}/${HW}_${VERSION}.bit -q
+    echo sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q >>commands.txt
+    sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q
     if [ $? -ne 0 ]; then prev_failed=1 && echo "Load bitstream failed ${bitstream_dir}/${HW}_${VERSION}.bit" && continue; fi
   fi
 
@@ -123,10 +131,10 @@ for ((i = 0; i < length; i++)); do
   if [ ${HW} == "CPU" ]; then usedel=""; fi
 
   if [ "${test_run}" -eq 1 ]; then
-    sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=${NUM_RUN} --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}
+    sudo timeout --foreground 60 ${bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=${NUM_RUN} --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}
     if [ $? -ne 0 ]; then
       echo "id failed"
-      echo sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=${NUM_RUN} --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}
+      echo sudo timeout --foreground 60 ${bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=${NUM_RUN} --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}
       prev_failed=1
       continue
     fi
@@ -138,17 +146,17 @@ for ((i = 0; i < length; i++)); do
   if [ ${HW} != "CPU" ] && [ "${skip_inf_diff}" -eq 0 ]; then {
     # Running inference diff binary
     echo "Running inference diff"
-    echo sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel} >>commands.txt
-    sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel} >tmp/${runname}_id.txt 2>&1
+    echo sudo timeout --foreground 60 ${bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=${model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel} >>commands.txt
+    sudo timeout --foreground 60 ${bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=${model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel} >tmp/${runname}_id.txt 2>&1
     if [ $? -ne 0 ]; then
       echo "id failed"
-      echo sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}
+      echo sudo timeout --foreground 60 ${bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=${model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}
       prev_failed=1
       continue
     fi
     # # Check verify correctness of accelerator
-    python3 check_valid.py tmp/${runname}_id.txt
-    if [ $? -ne 0 ]; then valid=0 && echo "Correctness check failed" && echo sudo python3 /home/£{board_user}/load_bitstream.py £{bitstream_dir}/${HW}_${VERSION}.bit -q && echo sudo timeout --foreground 60 £{bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=£{model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}; fi
+    python3 ${scripts_dir}/check_valid.py tmp/${runname}_id.txt
+    if [ $? -ne 0 ]; then valid=0 && echo "Correctness check failed" && echo sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q && echo sudo timeout --foreground 60 ${bin_dir}/id_${DEL}_${DEL_VERSION} --num_runs=1 --model_file=${model_dir}/${MODEL}.tflite --num_interpreter_threads=${THREAD} ${usedel}; fi
   }; fi
 
   if [ ${test_run} -eq 1 ]; then valid=0; fi
@@ -157,26 +165,26 @@ for ((i = 0; i < length; i++)); do
   if [ ${valid} -eq 1 ]; then
     if [ ${collect_power} -eq 1 ]; then
       # Run benchmark with power collection
-      echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" --collect_power=true ${usedel} >>commands.txt
-      sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} 2>/dev/null | tee tmp/${runname}_bm.txt
+      echo sudo ${bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=${model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" --collect_power=true ${usedel} >>commands.txt
+      sudo ${bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=${model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} 2>/dev/null | tee tmp/${runname}_bm.txt
       rtime=$(cat runtime.txt)
       echo "${MODEL},${HW},${VERSION},${DEL},${DEL_VERSION},${THREAD},${NUM_RUN},${rtime}" >>runs.csv
       if [ $? -ne 0 ]; then
         echo "bm failed"
-        echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true ${usedel}
+        echo sudo ${bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=${model_dir}/${MODEL}.tflite --num_threads=${THREAD} --collect_power=true ${usedel}
         prev_failed=1
         continue
       fi
     else
       # Run benchmark without power collection
       echo "Running benchmark"
-      echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} >>commands.txt
-      sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} >tmp/${runname}_bm.txt 2>&1
+      echo sudo ${bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=${model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} >>commands.txt
+      sudo ${bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=${model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel} >tmp/${runname}_bm.txt 2>&1
       rtime=$(cat runtime.txt)
       echo "${MODEL},${HW},${VERSION},${DEL},${DEL_VERSION},${THREAD},${NUM_RUN},${rtime}" >>runs.csv
       if [ $? -ne 0 ]; then
         echo "bm failed"
-        echo sudo £{bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=£{model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel}
+        echo sudo ${bin_dir}/bm_${DEL}_${DEL_VERSION} --max_secs=600 --num_runs=${NUM_RUN} --graph=${model_dir}/${MODEL}.tflite --num_threads=${THREAD} --enable_op_profiling=true --profiling_output_csv_file="layer.csv" ${usedel}
         prev_failed=1
         continue
       fi

@@ -63,11 +63,11 @@ bert_models = ["albert_int8", "mobilebert_quant"]
 
 # manually supported gan models
 gan_models = [
-    # "dcgan_gen",
+    "dcgan_gen",
     # "new_cycle_gan_f",
     # "new_cycle_gan_g",
-    "pix2pix_g",
-    "magenta_gen",
+    # "pix2pix_g",
+    # "magenta_gen",
 ]
 
 add_models = ["add_simple"]
@@ -107,15 +107,15 @@ all_supported_hardware = [
 ####################################################
 ## EXPERIMENT CONFIGS
 ####################################################
-bitstream_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/bitstreams"
-bin_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/bins"
+bitstream_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bitstreams"
+bin_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bins"
 
 # TCONV Synth Experiment
 models = tconv_models_synth
 hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
 num_run = 10
-model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
+model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
 tconv_synth_exp = [
     models,
     hardware,
@@ -130,13 +130,12 @@ tconv_synth_exp = [
 
 # CONV Experiment
 # models = conv_models
-
 models=["mobilenetv2"]
 # hardware = ["CPU","VMRPPv2_0","VMRPP_SH_QKv2_0"]
-hardware = ["VMv3_0"]
+hardware = ["VMv3_0","CPU"]
 threads = [2]
 num_run = 10
-model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/"
+model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/"
 conv_exp = [
     models,
     hardware,
@@ -155,8 +154,8 @@ hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
 # hardware = ["MM2IMv2_51"]
 threads = [1]
 num_run = 10
-# model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/tconv"
-model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models"
+# model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
+model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models"
 dc_gan_exp = [
     models,
     hardware,
@@ -173,7 +172,7 @@ models = gan_models
 hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
 num_run = 1
-model_dir = f"/home/{board_user}/Workspace/secda_benchmark_suite/models/gans"
+model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/gans"
 gan_exp = [
     models,
     hardware,
@@ -190,4 +189,4 @@ gan_exp = [
 ####################################################
 
 # Current experiment
-create_exp(sc, conv_exp)
+create_exp(sc, gan_exp)

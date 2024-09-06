@@ -6,7 +6,7 @@ board_hostname=$(jq -r '.board_hostname' ../../config.json)
 board_dir=$(jq -r '.board_dir' ../../config.json)
 board_port=$(jq -r '.board_port' ../../config.json)
 conda_path=$(jq -r '.conda_path' ../../config.json)
-bench_dir=${board_dir}/apps_eval_suite
+bench_dir=${board_dir}/benchmark_suite
 
 helpFunction() {
   echo ""
@@ -81,7 +81,7 @@ echo "Configurations"
 echo "--------------"
 echo "Board User: ${board_user}"
 echo "Board Hostname: ${board_hostname}"
-echo "Board Dir: ${board_dir}"
+echo "Board Benchmark Dir: ${bench_dir}"
 echo "Skip Bench: ${skip_bench}"
 echo "Bin Gen: ${bin_gen}"
 echo "Skip Inf Diff: ${skip_inf_diff}"
@@ -92,9 +92,7 @@ echo "-----------------------------------------------------------"
 
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
-  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $bench_dir/bins && mkdir -p $bench_dir/models"
-  rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/check_valid.py $board_user@$board_hostname:$bench_dir/
-  rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/load_bitstream.py $board_user@$board_hostname:~/
+  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $bench_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $bench_dir/bins && mkdir -p $bench_dir/models"
   rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models  $board_user@$board_hostname:$bench_dir/
 
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/fpga_scripts/ $board_user@$board_hostname:$board_dir/scripts/
@@ -211,7 +209,7 @@ if [ $test_run -eq 0 ]; then
       if [ ! -f tmp/${runname}_id.txt ]; then
         valid=0 && echo "Correct Check File Missing for: ${runname}"
       else
-        python3 scripts/check_valid.py tmp/${runname}_id.txt
+        python3 scripts/fpga_scripts/check_valid.py tmp/${runname}_id.txt
         if [ $? -ne 0 ]; then valid=0 && echo "Correctness Check Failed ${runname}"; fi
       fi
     }; fi

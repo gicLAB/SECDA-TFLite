@@ -69,7 +69,7 @@ def gen_bins(sc, exp):
 
                 script += f"{bb_pr}{del_path}:{bin_name} {bb_po} \n"
                 script += f"rsync -r -avz -e 'ssh -p {board_port}' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/secda_benchmark_suite/bins/{name}\n"
-    script += f"ssh -t -p {board_port} {board_user}@{board_hostname} 'cd {board_dir}/secda_benchmark_suite/bins/ && chmod 775 ./*'\n"
+    script += f"ssh -t -p {board_port} {board_user}@{board_hostname} 'cd {board_dir}/secda_tflite/benchmark_suite/bins/ && chmod 775 ./*'\n"
     script += "popd\n"
     # create folder to output
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

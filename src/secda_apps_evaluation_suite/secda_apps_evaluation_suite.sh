@@ -82,7 +82,7 @@ echo "-----------------------------------------------------------"
 
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
-  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $board_dir  && mkdir -p $board_dir/scripts && mkdir -p $board_dir/bitstreams && mkdir -p $eval_dir/bins"
+  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $eval_dir  && mkdir -p $board_dir/scripts && mkdir -p $board_dir/bitstreams && mkdir -p $eval_dir/bins"
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/fpga_scripts/ $board_user@$board_hostname:$board_dir/scripts/
   rsync -r -avz -e 'ssh -p '${board_port} ${data_dir}  $board_user@$board_hostname:$board_dir/
   rsync -r -avz -e 'ssh -p '${board_port} ${bitstream_dir}  $board_user@$board_hostname:$board_dir/
