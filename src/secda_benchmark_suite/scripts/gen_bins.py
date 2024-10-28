@@ -23,6 +23,8 @@ cpu_paths = {
 bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
 # bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --cxxopt='-march=armv7-a' --cxxopt='-mfpu=neon' --cxxopt='-funsafe-math-optimizations' --cxxopt='-ftree-vectorize' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
 bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+# bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK'"
+
 
 def gen_bins(sc, exp):
     output_path = f"{sc['out_dir']}/gen_bins.sh"
@@ -68,8 +70,8 @@ def gen_bins(sc, exp):
                     bin_name = cpu_paths[tool][1]
 
                 script += f"{bb_pr}{del_path}:{bin_name} {bb_po} \n"
-                script += f"rsync -r -avz -e 'ssh -p {board_port}' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/secda_benchmark_suite/bins/{name}\n"
-    script += f"ssh -t -p {board_port} {board_user}@{board_hostname} 'cd {board_dir}/secda_tflite/benchmark_suite/bins/ && chmod 775 ./*'\n"
+                script += f"rsync -r -avz -e 'ssh -p {board_port}' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/benchmark_suite/bins/{name}\n"
+    script += f"ssh -t -p {board_port} {board_user}@{board_hostname} 'cd {board_dir}/benchmark_suite/bins/ && chmod 775 ./*'\n"
     script += "popd\n"
     # create folder to output
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

@@ -1,0 +1,13 @@
+#include "acc.sc.h"
+#include "acc_config.sc.h"
+#include "counter.sc.h"
+#include "data_in.sc.h"
+#include "in.sc.h"
+#include "out.sc.h"
+#include "scheduler.sc.h"
+#include "write_sync.sc.h"
+
+#include "vm_gemm.sc.h"
+#include "vmm_control.sc.h"
+#include "vmm_modules.sc.h"
+#include "vmm_unit.sc.h"

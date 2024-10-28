@@ -68,6 +68,7 @@ gan_models = [
     # "new_cycle_gan_g",
     # "pix2pix_g",
     # "magenta_gen",
+    # "esrgan"
 ]
 
 add_models = ["add_simple"]
@@ -114,7 +115,7 @@ bin_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bins"
 models = tconv_models_synth
 hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
-num_run = 10
+num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
 tconv_synth_exp = [
     models,
@@ -169,7 +170,7 @@ dc_gan_exp = [
 
 # GAN Experiment
 models = gan_models
-hardware = ["MM2IMv2_4", "CPU"]
+hardware = ["MM2IMv2_3", "CPU"]
 threads = [1, 2]
 num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/gans"
@@ -185,8 +186,34 @@ gan_exp = [
 ]
 
 
+
+
+
+# Test Experiment
+# models=["conv_1_1_96_1_112_112_16"]
+# models=["mobilenetv2"]
+
+models=["conv_1_1_16_3_7_7_128"]
+
+
+# hardware = ["VMRPP_GEMM2_200Mv4_1"]
+hardware = ["VMRPP_GEMM2_250Mv4_1"]
+threads = [1]
+num_run = 1
+model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/"
+test_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_user,
+]
+
 ####################################################
 ####################################################
 
 # Current experiment
-create_exp(sc, gan_exp)
+create_exp(sc, test_exp)

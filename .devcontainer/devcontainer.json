@@ -1,0 +1,16 @@
+{ 
+  "name": "secda-tflite",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cmake-tools"
+      ]
+    }
+  }
+
+
+}

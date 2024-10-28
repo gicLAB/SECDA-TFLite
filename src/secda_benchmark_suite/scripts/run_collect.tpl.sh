@@ -87,8 +87,8 @@ scripts_dir=£{board_dir}/scripts
 board_user=£{board_user}
 
 bench_dir=£{board_dir}/benchmark_suite
-model_dir=£{bench_dir}/models
-bin_dir=£{bench_dir}/bins
+model_dir=${bench_dir}/models
+bin_dir=${bench_dir}/bins
 
 for ((i = 0; i < length; i++)); do
   index=$((i + 1))

@@ -1,0 +1,170 @@
+# ==============================================================================
+FROM ubuntu:22.04 as builder
+
+# Development Tools
+RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo
+
+# Compilers
+RUN apt update && apt install -y clang-14 lld-14 clang-format-14 && \
+  ln -s /usr/bin/clang-14 /usr/bin/clang && \
+  ln -s /usr/bin/clang++-14 /usr/bin/clang++  && \
+  ln -s //usr/bin/clang-format-14 /usr/bin/clang-format
+
+RUN apt update && apt install -y crossbuild-essential-armhf libz-dev
+RUN apt update && apt install -y crossbuild-essential-arm64
+RUN apt update &&  apt-get install gdb -y
+RUN apt install software-properties-common -y
+RUN apt update && apt install -y python3.10 python3-pip python3-venv python3-dev
+
+# Install Bazel
+RUN apt install apt-transport-https curl gnupg -y && \
+curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg && \
+mv bazel-archive-keyring.gpg /usr/share/keyrings && \
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+
+RUN apt update && apt install bazel-3.7.2 -y && \
+    ln -s /usr/bin/bazel-3.7.2 /usr/bin/bazel
+
+
+# Install CMake
+WORKDIR /tmp
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2-Linux-x86_64.sh && \
+    chmod +x cmake-3.18.2-Linux-x86_64.sh && \
+    ./cmake-3.18.2-Linux-x86_64.sh --skip-license --prefix=/usr/local
+
+RUN wget https://github.com/ninja-build/ninja/releases/download/v1.10.1/ninja-linux.zip && \
+    unzip ninja-linux.zip && \
+    mv ninja /usr/local/bin/ninja && \
+    ln -s /usr/local/bin/ninja /usr/sbin/ninja
+
+# Install SystemC
+RUN mkdir -p /tmp/systemc /opt/systemc/systemc-2.3.3 /tmp/systemc/systemc-2.3.3/build
+WORKDIR /tmp/systemc
+RUN wget https://accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz && \
+    tar -xvf systemc-2.3.3.tar.gz
+WORKDIR /tmp/systemc/systemc-2.3.3/build
+RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
+    make -j$(nproc) && \
+    make install
+
+
+RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
+    echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
+    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
+
+ENV SYSTEMC_HOME=/opt/systemc/systemc-2.3.3
+ENV CXX=/usr/bin/clang++ 
+ENV CC=/usr/bin/clang 
+
+# ENV PATH="/root/miniconda3/bin:${PATH}"
+# ARG PATH="/root/miniconda3/bin:${PATH}"
+
+# # Install Conda
+# RUN apt-get update && \
+#     apt-get install -y wget && \
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/*
+
+# RUN arch=$(uname -m) && \
+#     if [ "$arch" = "x86_64" ]; then \
+#     MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
+#     elif [ "$arch" = "aarch64" ]; then \
+#     MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
+#     else \
+#     echo "Unsupported architecture: $arch"; \
+#     exit 1; \
+#     fi && \
+#     wget $MINICONDA_URL -O miniconda.sh && \
+#     mkdir -p /root/.conda && \
+#     bash miniconda.sh -b -p /root/miniconda3 && \
+#     rm -f miniconda.sh
+
+# RUN conda --version    
+# RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
+
+# RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+# RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
+# RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
+
+# # Install Code Server and C++ extensions
+# RUN curl -fsSL https://code-server.dev/install.sh | sh
+# RUN code-server --install-extension ms-vscode.cpptools \
+#                 --install-extension ms-vscode.cpptools-extension-pack
+
+RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
+# Select clang compiler and set SystemC home
+RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
+    echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
+    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
+
+# Print welcome message
+WORKDIR /working_dir
+RUN echo "cd /working_dir" >> ~/.bashrc && \
+    echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+    echo "echo ' '" >> ~/.bashrc && \
+    echo "echo 'NOTE:'" >> ~/.bashrc && \
+    echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
+    echo "echo ' '" >> ~/.bashrc 
+
+
+
+# ============================================================================
+FROM builder AS dev-user
+# Add dev user with matching UID of the user who build the image
+ARG USER_ID
+ARG GROUP_ID
+# RUN useradd -m --uid $USER_ID developer && \
+#     echo "developer:devpasswd" | chpasswd && \
+#     usermod -aG dialout developer && \
+#     usermod -aG sudo developer
+
+# USER developer
+WORKDIR /working_dir
+
+# RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+# RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
+# RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
+# RUN /bin/bash -c '/home/developer/miniconda3/bin/conda install numpy -y'
+
+
+ENV PATH="/root/miniconda3/bin:${PATH}"
+ARG PATH="/root/miniconda3/bin:${PATH}"
+
+# Install Conda
+RUN apt-get update && \
+    apt-get install -y wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN arch=$(uname -m) && \
+    if [ "$arch" = "x86_64" ]; then \
+    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
+    elif [ "$arch" = "aarch64" ]; then \
+    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
+    else \
+    echo "Unsupported architecture: $arch"; \
+    exit 1; \
+    fi && \
+    wget $MINICONDA_URL -O miniconda.sh && \
+    mkdir -p /root/.conda && \
+    bash miniconda.sh -b -p /root/miniconda3 && \
+    rm -f miniconda.sh
+
+RUN conda --version    
+RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
+
+
+RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> .bashrc
+
+# Select clang compiler and set SystemC home
+RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
+    echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
+    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
+
+# Print welcome message
+WORKDIR /home/developer
+RUN echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+    echo "echo ' '" >> ~/.bashrc && \
+    echo "echo 'NOTE:'" >> ~/.bashrc && \
+    echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
+    echo "echo ' '" >> ~/.bashrc 
