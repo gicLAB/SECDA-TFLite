@@ -2,7 +2,7 @@
 FROM ubuntu:22.04 as builder
 
 # Development Tools
-RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo
+RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo jq
 
 # Compilers
 RUN apt update && apt install -y clang-14 lld-14 clang-format-14 && \
@@ -22,8 +22,8 @@ curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-arch
 mv bazel-archive-keyring.gpg /usr/share/keyrings && \
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
 
-RUN apt update && apt install bazel-3.7.2 -y && \
-    ln -s /usr/bin/bazel-3.7.2 /usr/bin/bazel
+RUN apt update && apt install bazel-6.1.0 -y && \
+    ln -sf /usr/bin/bazel-6.1.0 /usr/bin/bazel6
 
 
 # Install CMake
@@ -128,7 +128,6 @@ WORKDIR /working_dir
 
 
 ENV PATH="/root/miniconda3/bin:${PATH}"
-ARG PATH="/root/miniconda3/bin:${PATH}"
 
 # Install Conda
 RUN apt-get update && \
@@ -152,6 +151,10 @@ RUN arch=$(uname -m) && \
 
 RUN conda --version    
 RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
+# RUN /bin/bash -c '/root/miniconda3/bin/conda config --set auto_activate_base false'
+# RUN /bin/bash -c '/root/miniconda3/bin/conda create -n secda-tflite python -y'
+# RUN /bin/bash -c '/root/miniconda3/bin/conda activate secda-tflite'
+# RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
 
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> .bashrc
