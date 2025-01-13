@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sys/stat.h>
 
 #ifdef ACC_PROFILE
 #define prf_start(N) auto start##N = chrono::high_resolution_clock::now();

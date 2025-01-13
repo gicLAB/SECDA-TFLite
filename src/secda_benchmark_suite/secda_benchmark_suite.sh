@@ -94,10 +94,11 @@ echo "-----------------------------------------------------------"
 function create_dir() {
   ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $bench_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $bench_dir/bins && mkdir -p $bench_dir/models"
   rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models  $board_user@$board_hostname:$bench_dir/
+  rsync -r -avz -e 'ssh -p '${board_port} ./bitstreams  $board_user@$board_hostname:$board_dir/
 
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/fpga_scripts/ $board_user@$board_hostname:$board_dir/scripts/
-  rsync -r -avz -e 'ssh -p '${board_port} ${data_dir}  $board_user@$board_hostname:$board_dir/
-  rsync -r -avz -e 'ssh -p '${board_port} ${bitstream_dir}  $board_user@$board_hostname:$board_dir/
+  # rsync -r -avz -e 'ssh -p '${board_port} ${data_dir}  $board_user@$board_hostname:$board_dir/
+  # rsync -r -avz -e 'ssh -p '${board_port} ${bitstream_dir}  $board_user@$board_hostname:$board_dir/
   echo "Initialization Done"
 }
 
@@ -153,7 +154,8 @@ if [ $skip_bench -eq 0 ]; then
   # if not test run, then collect results
   if [ $test_run -eq 0 ]; then
     echo "Transferring Results to Host"
-    rsync -q -r -av -e 'ssh -p '$board_port $board_user@$board_hostname:$bench_dir/tmp ./
+    rsync --mkpath -q -r -av -e 'ssh -p '$board_port $board_user@$board_hostname:$bench_dir/tmp ./
+    rsync --mkpath -q -r -av -e 'ssh -p '$board_port $board_user@$board_hostname:$bench_dir/tmp ./tmp/${name}/
   fi
   echo "-----------------------------------------------------------"
 

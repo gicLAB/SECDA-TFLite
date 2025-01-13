@@ -193,11 +193,11 @@ gan_exp = [
 # models=["conv_1_1_96_1_112_112_16"]
 # models=["mobilenetv2"]
 
-models=["conv_1_1_16_3_7_7_128"]
+models=["mobilenetv1"]
 
 
 # hardware = ["VMRPP_GEMM2_200Mv4_1"]
-hardware = ["VMRPP_GEMM2_250Mv4_1"]
+hardware = ["VMv3_0"]
 threads = [1]
 num_run = 1
 model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/"

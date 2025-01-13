@@ -179,6 +179,7 @@ void Profile::saveCSVRecords(string filename) {
 #ifdef SYSC
 
   if (records.size() == 0) return;
+  mkdir(".data", 0777);
   ofstream per_sim_file;
   per_sim_file.open(filename + ".csv");
 

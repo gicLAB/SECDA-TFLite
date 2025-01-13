@@ -83,6 +83,8 @@ if [ $run_hlx == 1 ]; then
   cp ./&{acc_tag}_hlx/utilization_report_impl_ip.txt ./generated_files/
   cp ./&{acc_tag}_hlx/timing_report_impl_full.txt ./generated_files/
   cp ./&{acc_tag}_hlx/timing_report_impl_ip.txt ./generated_files/
+  cp ./generated_files/&{acc_tag}.hwh ../../../src/secda_benchmark_suite/bitstreams/
+  cp ./generated_files/&{acc_tag}.bit ../../../src/secda_benchmark_suite/bitstreams/
   # cp ./generated_files/&{acc_tag}.bit ./generated_files/&{bitstream}.bit
   # cp ./generated_files/&{acc_tag}.hwh ./generated_files/&{bitstream}.hwh
   # create the directory on the board
