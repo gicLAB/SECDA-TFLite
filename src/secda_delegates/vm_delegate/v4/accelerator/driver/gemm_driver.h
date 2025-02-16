@@ -26,6 +26,7 @@ tflite_vm::Load_Send_Acc *LSA;
 tflite_vm::Store_Results_Acc *SRA;
 
 void Config_Acc(acc_container &drv) {
+  TOG(std::cout << "Config_Acc" << std::endl);
   drv.mdma->multi_dma_change_start_4(0);
   int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
   int inl0 = 0;
@@ -39,6 +40,7 @@ void Config_Acc(acc_container &drv) {
 // Previously called Load_inp_Data
 void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
                      int depth, int rdepth) {
+  TOG(std::cout << "Load_Input_Data" << std::endl);
   prf_start(1);
   int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
   int *in1 = drv.mdma->dmas[1].dma_get_inbuffer();
@@ -151,6 +153,7 @@ void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
                                int output_stride, int c, int rcols_step, int r,
                                int rrows_step, int rdepth_step, int rows_step,
                                int cols_step) {
+  TOG(std::cout << "Load_Weight_Compute_Store" << std::endl);
   int free_buf = check_for_free_dbuf(drv.dfs[0]);
   Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
                    rrows_step, rdepth_step, rows_step, cols_step);
@@ -263,10 +266,10 @@ void Entry(acc_container &drv, int8_t *dst) {
 
   TileGEMM(drv, output_stride, depth, rdepth, rows, rrows, cols, rcols, dst);
   SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
-#ifdef DELEGATE_DEBUG
+// #ifdef DELEGATE_DEBUG
   mkdir("aData", 0777);
   ofstream myfile;
-  myfile.open("aData/out_vm_" + std::to_string(drv.t.layer) + "_1.csv");
+  myfile.open("aData/conv/" + std::to_string(drv.t.layer) + "_out_vm.csv");
   int8_t *res_pointer = dst;
   int index = 0;
   for (int r = 0; r < rows; r++) {
@@ -277,7 +280,7 @@ void Entry(acc_container &drv, int8_t *dst) {
     }
   }
   myfile.close();
-#endif
+// #endif
 }
 
 } // namespace tflite_vm

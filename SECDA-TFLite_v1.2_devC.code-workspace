@@ -7,5 +7,9 @@
 			"path": "tensorflow"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"*.tpp": "cpp"
+		}
+	}
 }

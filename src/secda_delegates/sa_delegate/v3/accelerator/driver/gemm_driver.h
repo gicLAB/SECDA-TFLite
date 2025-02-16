@@ -23,6 +23,8 @@ void Config_Acc(acc_container &drv) {
   in0[inl0++] = drv.ra;
   drv.mdma->dmas[0].dma_start_send(inl0);
   drv.mdma->dmas[0].dma_wait_send();
+  // drv.mdma->dmas[0].dma_start_send(inl0);
+  // drv.mdma->dmas[0].dma_wait_send();
 }
 
 void Load_Input_Data(acc_container &drv, int start_row, int rows_step,

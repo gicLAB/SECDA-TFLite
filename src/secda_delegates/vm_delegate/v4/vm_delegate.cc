@@ -75,7 +75,11 @@ public:
 #else
       dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
       acc = dparams.acc;
-      std::cout << "Initialised the DMA" << std::endl;
+#ifdef KRIA
+      std::cout << "Initialised the Kria DMA" << std::endl;
+#else
+      std::cout << "Initialised the Z1 DMA" << std::endl;
+#endif
 #endif
 
       std::cout << "Vector MAC (v4)";

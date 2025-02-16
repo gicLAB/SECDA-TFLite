@@ -1,27 +1,70 @@
 import sys
+
 sys.dont_write_bytecode = True
 import json
 from gen_benchmark import gen_bench
 from gen_bins import gen_bins
 from benchmark_utils import *
 
+import argparse
+
 
 # parse arguments if any
-arglen = len(sys.argv)
-if arglen > 1:
-    gen_bin = sys.argv[1]
+# arglen = len(sys.argv)
+# if arglen > 1:
+#     gen_config = sys.argv[1]
+# if arglen > 2:
+#     gen_config = sys.argv[1]
+#     gen_bin = sys.argv[2]
 
-sc = load_config("../../config.json")
-board_user = sc["board_user"]
+
+## argument parsing using argparse
+parser = argparse.ArgumentParser()
+# add integer arguments with short and long names
+parser.add_argument("-c", "--gen_config", type=int, help="Generate config", default=0)
+parser.add_argument("-b", "--gen_bin", type=int, help="Generate bin", default=0)
+parser.add_argument("-e", "--gen_bench", type=int, help="Generate benchmark", default=0)
+
+
+args = parser.parse_args()
+f_gen_config = args.gen_config
+f_gen_bin = args.gen_bin
+f_gen_bench = args.gen_bench
 
 
 def create_exp(sc, exp):
-    print("Creating experiment")
-    print("Generating benchmark")
-    gen_bench(sc, exp)
-    if gen_bin:
-        print("Generating bins")
-        gen_bins(sc, exp)
+    board_config_keys = [
+        "board",
+        "board_user",
+        "board_hostname",
+        "board_port",
+        "board_dir",
+    ]
+    exp_dict = dict(zip(board_config_keys, exp[7]))
+    exp[7] = exp_dict
+    if f_gen_config:
+        print("Loading Board Config")
+        with open(f"{sc['out_dir']}/board_config.json", "w") as f:
+            json.dump(exp_dict, f)
+
+    if f_gen_bench:
+        print("Creating Experiment")
+        print("Generating benchmark")
+        gen_bench(sc, exp)
+
+    if f_gen_bin:
+        print("Generating Binaries")
+        gen_bins(sc, exp, exp_dict)
+
+
+def get_board_config(sc, board):
+    board_user = sc["boards"][board]["board_user"]
+    board_hostname = sc["boards"][board]["board_hostname"]
+    board_port = sc["boards"][board]["board_port"]
+    board_dir = sc["boards"][board]["board_dir"]
+    bitstream_dir = f"{board_dir}/benchmark_suite/bitstreams"
+    bin_dir = f"{board_dir}/benchmark_suite/bins"
+    return board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir
 
 
 ####################################################
@@ -82,13 +125,13 @@ with open("model_gen/configs/dcgan_layers.json") as f:
 
 with open("model_gen/configs/tf_dcgan_layers.json") as f:
     tf_dcgan_layers = json.load(f)["tf_dcgan_layers"]
-    
+
 with open("model_gen/configs/conv_models.json") as f:
     conv_models_pot_exp = json.load(f)["conv_models"]
 
 # with open("model_gen/configs/mnk_broke.json") as f:
 #     mnk_models = json.load(f)["mnk_broke"]
-    
+
 ####################################################
 ## HARDWARE
 ####################################################
@@ -108,15 +151,23 @@ all_supported_hardware = [
 ####################################################
 ## EXPERIMENT CONFIGS
 ####################################################
-bitstream_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bitstreams"
-bin_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bins"
+sc = load_config("../../config.json")
+# board_user = sc["board_user"]
+# bitstream_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bitstreams"
+# bin_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/bins"
 
 # TCONV Synth Experiment
 models = tconv_models_synth
 hardware = ["MM2IMv2_4", "CPU"]
 threads = [1, 2]
 num_run = 1
-model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
+board = "Z1"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
+
+model_dir = f"{board_dir}/benchmark_suite/models/tconv"
 tconv_synth_exp = [
     models,
     hardware,
@@ -125,18 +176,24 @@ tconv_synth_exp = [
     model_dir,
     bitstream_dir,
     bin_dir,
-    board_user,
+    board_config,
 ]
 
 
 # CONV Experiment
 # models = conv_models
-models=["mobilenetv2"]
+models = ["mobilenetv2"]
 # hardware = ["CPU","VMRPPv2_0","VMRPP_SH_QKv2_0"]
-hardware = ["VMv3_0","CPU"]
+hardware = ["VMv3_0", "CPU"]
 threads = [2]
 num_run = 10
-model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/"
+board = "Z1"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
+
+model_dir = f"{board_dir}/benchmark_suite/models/"
 conv_exp = [
     models,
     hardware,
@@ -145,7 +202,7 @@ conv_exp = [
     model_dir,
     bitstream_dir,
     bin_dir,
-    board_user,
+    board_config,
 ]
 
 
@@ -155,8 +212,13 @@ hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
 # hardware = ["MM2IMv2_51"]
 threads = [1]
 num_run = 10
+board = "Z1"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
 # model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
-model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models"
+model_dir = f"{board_dir}/benchmark_suite/models/"
 dc_gan_exp = [
     models,
     hardware,
@@ -165,7 +227,7 @@ dc_gan_exp = [
     model_dir,
     bitstream_dir,
     bin_dir,
-    board_user,
+    board_config,
 ]
 
 # GAN Experiment
@@ -173,7 +235,12 @@ models = gan_models
 hardware = ["MM2IMv2_3", "CPU"]
 threads = [1, 2]
 num_run = 1
-model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/gans"
+board = "Z1"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
+model_dir = f"{board_dir}/benchmark_suite/models/gans"
 gan_exp = [
     models,
     hardware,
@@ -182,25 +249,33 @@ gan_exp = [
     model_dir,
     bitstream_dir,
     bin_dir,
-    board_user,
+    board_config,
 ]
 
 
-
-
-
 # Test Experiment
-# models=["conv_1_1_96_1_112_112_16"]
-# models=["mobilenetv2"]
 
-models=["mobilenetv1"]
+## Hardware Config
+hardware = ["VMv4_0_KRIA", "CPU_KRIA"]
+board = "KRIA"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
+
+# hardware = ["VMv4_0", "CPU"]
+# board = "Z1"
+# board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+#     get_board_config(sc, board)
+# )
+# board_config = [board, board_user, board_hostname, board_port, board_dir]
 
 
-# hardware = ["VMRPP_GEMM2_200Mv4_1"]
-hardware = ["VMv3_0"]
+## Inference Parameters
+models = ["mobilenetv1"]
 threads = [1]
 num_run = 1
-model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/"
+model_dir = f"{board_dir}/benchmark_suite/models/"
 test_exp = [
     models,
     hardware,
@@ -209,11 +284,12 @@ test_exp = [
     model_dir,
     bitstream_dir,
     bin_dir,
-    board_user,
+    board_config,
 ]
 
 ####################################################
 ####################################################
 
 # Current experiment
+
 create_exp(sc, test_exp)

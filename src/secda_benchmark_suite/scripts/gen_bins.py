@@ -1,4 +1,5 @@
 import sys
+
 sys.dont_write_bytecode = True
 
 import os
@@ -20,31 +21,50 @@ cpu_paths = {
     "eval_model": ["tensorflow/lite/examples/secda_apps/eval_model", "eval_model"],
 }
 
-# elinux_aarch64
-bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
+
 # bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --cxxopt='-march=armv7-a' --cxxopt='-mfpu=neon' --cxxopt='-funsafe-math-optimizations' --cxxopt='-ftree-vectorize' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
-bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
 # bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK'"
 
+# elinux_armhf
+bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
+bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
 
-def gen_bins(sc, exp):
+# elinux_aarch64
+# bb_pr = "bazel6 build --config=elinux_aarch64 -c opt //"
+# bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON' --copt='-DKRIA'"
+
+
+def gen_bins(sc, exp, board_config):
     output_path = f"{sc['out_dir']}/gen_bins.sh"
-    board_dir = sc["board_dir"]
-    board_user = sc["board_user"]
-    board_hostname = sc["board_hostname"]
-    board_port = sc["board_port"]
-    path_to_tf = sc["secda_tflite_path"]+"/tensorflow"
+    board = board_config["board"]
+    board_user = board_config["board_user"]
+    board_hostname = board_config["board_hostname"]
+    board_port = board_config["board_port"]
+    board_dir = board_config["board_dir"]
+    path_to_tf = sc["secda_tflite_path"] + "/tensorflow"
     rdel_path = sc["path_to_dels"]
+    cpu_type = "aarch64-opt" if board == "KRIA" else "armhf-opt"
+
+    ## JDOC: This part generate the binaries for the different boards
+    bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
+    bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+    if board == "Z1":
+        bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
+        bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
+    elif board == "KRIA":
+        bb_pr = "bazel6 build --config=elinux_aarch64 -c opt //"
+        bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON' --copt='-DKRIA'"
+        # bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DKRIA'"
+
 
     delegates_needed = {}
     for hw in exp[1]:
-        # hw_config_file = f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw}"
-        hw_config_file= find_hw_config(f"{sc['secda_tflite_path']}/{sc['hw_configs']}", hw)
-        # print(f"hw_config_file: {hw_config_file}")
+        hw_config_file = find_hw_config(
+            f"{sc['secda_tflite_path']}/{sc['hw_configs']}", hw
+        )
         hw_config = load_config(hw_config_file)
         curr_delegate = hw_config["del"]
         curr_version = hw_config["del_version"]
-        # if curr_delegate and version is not a key and value in delegates_needed
         if curr_delegate not in delegates_needed:
             delegates_needed[curr_delegate] = [curr_version]
         else:
@@ -61,8 +81,8 @@ def gen_bins(sc, exp):
                 # check if path exists
                 if not os.path.exists(sc["secda_tflite_path"] + "/" + del_path):
                     del_path = f"{rdel_path}/{delegate}"
-                del_path = del_path[del_path.index("/")+1:]
-                
+                del_path = del_path[del_path.index("/") + 1 :]
+
                 name = f"{sn}_{delegate}_{ver}"
                 bin_name = f"{tool}_plus_{delegate}"
 
@@ -71,7 +91,10 @@ def gen_bins(sc, exp):
                     bin_name = cpu_paths[tool][1]
 
                 script += f"{bb_pr}{del_path}:{bin_name} {bb_po} \n"
-                script += f"rsync -r -avz -e 'ssh -p {board_port}' {path_to_tf}/bazel-out/armhf-opt/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/benchmark_suite/bins/{name}\n"
+                
+
+                script += f"rsync -r -avz -e 'ssh -p {board_port}' {path_to_tf}/bazel-out/{cpu_type}/bin/{del_path}/{bin_name} {board_user}@{board_hostname}:{board_dir}/benchmark_suite/bins/{name}\n" 
+
     script += f"ssh -t -p {board_port} {board_user}@{board_hostname} 'cd {board_dir}/benchmark_suite/bins/ && chmod 775 ./*'\n"
     script += "popd\n"
     # create folder to output
@@ -79,5 +102,3 @@ def gen_bins(sc, exp):
     with open(output_path, "w") as f:
         f.write(script)
     os.system(f"chmod +x {output_path}")
-        
-                

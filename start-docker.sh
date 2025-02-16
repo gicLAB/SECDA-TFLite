@@ -8,7 +8,8 @@ set -e
 #     -v ${PWD}:/working_dir -w /working_dir \
 #     $DEV_IMAGE_NAME \
 #     /bin/bash
-# docker run -it -d --name secda-tflite-dev -v ${PWD}:/working_dir -w /working_dir $DEV_IMAGE_NAME 
+
 
 DEV_IMAGE_NAME="secda_tflite/secda_tflite:latest-dev"
-docker exec -it secda-tflite-dev /bin/bash -c "cd /working_dir/tensorflow/ && { echo "/root/miniconda3/bin/python"; echo ""; echo ""; echo ""; echo ""; echo ""; } | ./configure "
+docker run -it -d --name secda-tflite-dev2 -v ${PWD}:/working_dir -w /working_dir $DEV_IMAGE_NAME
+# docker exec -it secda-tflite-dev2 /bin/bash -c "cd /working_dir/tensorflow/ && { echo "/root/miniconda3/bin/python"; echo ""; echo ""; echo ""; echo ""; echo ""; } | ./configure "

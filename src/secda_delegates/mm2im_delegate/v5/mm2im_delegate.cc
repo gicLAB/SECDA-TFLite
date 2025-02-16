@@ -545,7 +545,8 @@ public:
       drv.loaded_inputs = acc_loaded_inps;
       drv.weights = &swapped_weights[i][0];
       drv.inputs = input_data;
-      int fake_bias[output_depth] = {};
+      // int fake_bias[output_depth] = {};
+      int* fake_bias = new int[output_depth];
       if (has_bias) drv.bias = biases[i];
       else drv.bias = fake_bias;
       drv.crf = &crf[i][0];

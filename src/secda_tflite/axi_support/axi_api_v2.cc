@@ -64,6 +64,7 @@ void stream_dma::dma_init(unsigned int _dma_addr, unsigned int _input,
   dma_addr = mm_alloc_rw<unsigned int>(_dma_addr, PAGE_SIZE);
   input = mm_alloc_rw<int>(_input, _input_size);
   output = mm_alloc_r<int>(_output, _output_size);
+
   input_size = _input_size;
   output_size = _output_size;
   input_addr = _input;

@@ -18,7 +18,7 @@ ACC_DTYPE<32> ACCNAME::Clamp_Combine(int i1, int i2, int i3, int i4, int qa_max,
   return d;
 }
 
-void ACCNAME::send_parameters_ADD_PE(int length, sc_fifo_in<DATA> *din) {
+void ACCNAME::send_parameters_ADD_PE(int length, sc_fifo_in<ADATA> *din) {
   int lshift = (1 << din->read().data);
   int in1_off = din->read().data;
   int in1_sv = din->read().data;
@@ -62,7 +62,7 @@ void ACCNAME::Compute() {
 #pragma HLS resource core = AXI4LiteS metadata = "-bus_bundle slv0" variable = \
     computeSS
 
-  DATA d;
+  ADATA d;
   int f_out[4];
   computeS.write(0);
   computeSS.write(0);

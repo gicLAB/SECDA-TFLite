@@ -108,8 +108,8 @@ for ((i = 0; i < length; i++)); do
   #if prev_hw was different then load base bitstream and sleep 1 second
   if [ ${prev_failed} -eq 1 ] || [ "${prev_hw_version}" != "${HW}_${VERSION}" ]; then
     echo "Loading bitstream ${HW}_${VERSION}.bit"
-    echo sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q >>commands.txt
-    sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q
+    echo sudo -i python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q >>commands.txt
+    sudo -i python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q
     if [ $? -ne 0 ]; then prev_failed=1 && echo "Load bitstream failed ${bitstream_dir}/${HW}_${VERSION}.bit" && continue; fi
   fi
 

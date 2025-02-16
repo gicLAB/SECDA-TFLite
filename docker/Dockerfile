@@ -1,5 +1,5 @@
 # ==============================================================================
-FROM ubuntu:22.04 as builder
+FROM ubuntu:22.04 AS builder
 
 # Development Tools
 RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo
@@ -64,8 +64,8 @@ RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
 
 # Install Code Server and C++ extensions
 RUN curl -fsSL https://code-server.dev/install.sh | sh
-RUN code-server --install-extension ms-vscode.cpptools \
-                --install-extension ms-vscode.cpptools-extension-pack
+# RUN code-server --install-extension ms-vscode.cpptools \
+#                 --install-extension ms-vscode.cpptools-extension-pack
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
 # Select clang compiler and set SystemC home

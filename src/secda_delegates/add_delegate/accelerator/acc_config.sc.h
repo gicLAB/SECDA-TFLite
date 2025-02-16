@@ -21,8 +21,11 @@
 // Data types
 #define ACC_DTYPE sc_int
 #define ACC_C_DTYPE int
-#define STOPPER -1
+#define AXI_DWIDTH 32
+#define AXI_TYPE sc_uint
 
+// ACC Specific Constants
+#define STOPPER -1
 // Buffer sizes
 #define IN_BUF_LEN 4096
 #define WE_BUF_LEN 8192
@@ -39,6 +42,8 @@
 
 #define ADD_PE_COUNT 2
 
+#define s_mdma multi_dma<AXI_DWIDTH, 0>
+
 //==============================================================================
 // SystemC Specfic SIM/HW Configurations
 //==============================================================================
@@ -46,9 +51,9 @@
 #include <systemc.h>
 
 #ifndef __SYNTHESIS__
-#include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/sysc_types.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
+#include "secda_tools/axi_support/v5/axi_api_v5.h"
+#include "secda_tools/secda_integrator/sysc_types.h"
+#include "secda_tools/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
 
 #ifdef VERBOSE_ACC
@@ -57,20 +62,22 @@
 #define ALOG(x)
 #endif
 
-#else // __SYNTHESIS__
+typedef _BDATA<AXI_DWIDTH, AXI_TYPE> ADATA;
 
+#else // __SYNTHESIS__
+#include "sysc_types.h"
 #define ALOG(x)
 
-
-#define DWAIT(x)
-typedef struct _DATA {
-  sc_uint<32> data;
+struct _NDATA {
+  AXI_TYPE<AXI_DWIDTH> data;
   bool tlast;
-  inline friend ostream &operator<<(ostream &os, const _DATA &v) {
+  inline friend ostream &operator<<(ostream &os, const _NDATA &v) {
     cout << "data&colon; " << v.data << " tlast: " << v.tlast;
     return os;
   }
-} DATA;
+};
+
+typedef _NDATA ADATA;
 #endif
 
 //==============================================================================

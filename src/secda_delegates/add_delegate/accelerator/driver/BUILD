@@ -11,7 +11,6 @@ package(
 
 common_copts = ["-Wall"] + tflite_copts()
 
-
 cc_library(
     name = "toyadd_driver_sysc",
     srcs = [
@@ -21,9 +20,7 @@ cc_library(
         ],
     copts = common_copts,
     deps = [
-        "@systemc//:systemc",
         "//tensorflow/lite/delegates/utils/secda_delegates/add_delegate/accelerator:add_accelerator",
-        "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
     ],
 )
 
@@ -35,7 +32,6 @@ cc_library(
         ],
     copts = common_copts,
     deps = [
-        "//tensorflow/lite/delegates/utils/secda_delegates/add_delegate/accelerator:add_accelerator_config",
-        "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite",
+        "//tensorflow/lite/delegates/utils/secda_delegates/add_delegate/accelerator:add_accelerator_config"
     ],
 )

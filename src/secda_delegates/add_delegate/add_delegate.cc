@@ -4,12 +4,9 @@
 #include <utility>
 
 #ifdef SYSC
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-
+#include "secda_tools/secda_profiler/profiler.h"
 #include "accelerator/driver/toyadd_driver.h"
 #include "add_delegate.h"
 #include "util.h"
@@ -28,11 +25,11 @@ static struct Profile profile;
 struct MultiThreadContext mt_context;
 
 #ifdef SYSC
-static struct multi_dma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, 563840);
+static struct s_mdma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, 563840);
 ACCNAME *acc;
 struct sysC_sigs *scs;
 #else
-struct multi_dma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
+struct s_mdma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
 int *acc;
 #endif
 
@@ -274,8 +271,7 @@ private:
 // This holds the Delegate capabilities.
 class AddDelegate : public SimpleDelegateInterface {
 public:
-  explicit AddDelegate(const AddDelegateOptions &options)
-      : options_(options) {}
+  explicit AddDelegate(const AddDelegateOptions &options) : options_(options) {}
 
   bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
                                  const TfLiteNode *node,

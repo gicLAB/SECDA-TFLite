@@ -95,8 +95,11 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       int ret_accum1 =
           Quantised_Multiplier_ruy_reference(accum1, pcrf[j], pex[j]);
 #else
-      int ret_accum1 = Quantised_Multiplier_gemmlowp(accum1, pcrf[j], pls[j],
-                                                     prs[j], msks[j], sms[j]);
+      // int ret_accum1 = Quantised_Multiplier_gemmlowp(accum1, pcrf[j], pls[j],
+      //                                                prs[j], msks[j],
+      //                                                sms[j]);
+      int ret_accum1 =
+          Quantised_Multiplier_ruy_reference(accum1, pcrf[j], pex[j]);
 #endif
       sc_int<32> f1_a1 = ret_accum1 + ra;
       int res = f1_a1;

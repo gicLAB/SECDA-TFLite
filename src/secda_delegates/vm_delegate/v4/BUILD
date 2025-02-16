@@ -14,6 +14,12 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "linux_aarch64",
+    values = {"cpu": "aarch64"},
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "vm_delegate",
     srcs = [
@@ -31,6 +37,7 @@ cc_library(
         "//tensorflow/lite/kernels/internal:types"
     ] + select({
         ":linux_armhf": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/accelerator/driver:driver"],
+        ":linux_aarch64": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/accelerator/driver:driver"],
         "//conditions:default": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/accelerator/driver:driver_sysc"],
     }),
 )

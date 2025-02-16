@@ -124,7 +124,9 @@ We highly recommend using this container to immediately start developing acceler
 
 **Requirements**
 * Docker
-* VSCode (soft requirement)
+* VSCode
+* jq
+* gdb
 
 **Instructions**
 * First pull the docker image: 

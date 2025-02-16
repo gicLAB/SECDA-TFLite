@@ -35,14 +35,44 @@ def print_bitmap(num):
 
 
 def load_config(config_file):
-    with open(config_file) as f:
-        config = json.load(f)
-    return config
+    try:
+        with open(config_file) as f:
+            config = json.load(f)
+        return config
+    except FileNotFoundError:
+        print(f"Error: The file {config_file} was not found.")
+        sys.exit(1)
+    except json.JSONDecodeError:
+        print(f"Error: The file {config_file} is not a valid JSON file.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        sys.exit(1)
+
+
+def find_hw_config(dir, hw):
+    # check if the file.json exists in the directory
+    for file in os.listdir(dir):
+        if file.endswith(".json"):
+            if file == hw + ".json":
+                return dir + "/" + file
+    # check subdirectories
+    for subdir in os.listdir(dir):
+        if os.path.isdir(dir + "/" + subdir):
+            for file in os.listdir(dir + "/" + subdir):
+                if file.endswith(".json"):
+                    if file == hw + ".json":
+                        return dir + "/" + subdir + "/" + file
+    return
 
 
 class mt(Template):
     delimiter = "&"
     idpattern = r"[a-z][_a-z0-9]*"
+
+
+def dict_default(dict, para, default):
+    return dict[para] if para in dict else default
 
 
 class hardware_exp:
@@ -52,12 +82,13 @@ class hardware_exp:
         sc,
     ):
         self.sc = sc
-        self.hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
-        self.vp = sc["vivado_path"]
-        self.hlx_script = (
-            f"{sc['secda_tflite_path']}/{sc['hlx_scripts']}/{config['hlx_tcl_script']}"
-        )
         self.config = config
+        self.board = dict_default(config, "board", "Z1")
+        self.bconfig = sc["boards"][self.board]
+        # self.board = config["board"]
+        self.hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
+        self.vp = self.bconfig["vivado_path"]
+        self.vp_hls = self.bconfig["hls_path"]
 
         # accelerator stuff
         self.acc_name = config["acc_name"]
@@ -69,16 +100,24 @@ class hardware_exp:
         self.acc_link_folder = os.path.abspath(
             self.hw_link_dir + config["acc_link_folder"]
         )
-        self.acc_part = "xc7z020clg400-1"
+
         # hardware stuff
-        self.hls_clock = config["hls_clock"] if "hls_clock" in config else "5"
+        self.fpga_part = self.bconfig["fpga_part"]
         self.top = config["top"]
-        self.axi_bitW = config["axi_bitW"] if "axi_bitW" in config else "32"
-        self.axi_burstS = config["axi_burstS"] if "axi_burstS" in config else "16"
-        self.fpga_hz = config["hlx_Mhz"] if "hlx_Mhz" in config else "200"
+        # self.hls_clock = config["hls_clock"] if "hls_clock" in config else "5"
+        # self.axi_bitW = config["axi_bitW"] if "axi_bitW" in config else "32"
+        # self.axi_burstS = config["axi_burstS"] if "axi_burstS" in config else "16"
+        # self.fpga_hz = config["hlx_Mhz"] if "hlx_Mhz" in config else "200"
+        self.hls_clock = dict_default(config, "hls_clock", "5")
+        self.axi_bitW = dict_default(config, "axi_bitW", "32")
+        self.axi_burstS = dict_default(config, "axi_burstS", "16")
+        self.fpga_hz = dict_default(config, "hlx_Mhz", "200")
+        self.hlx_script = (
+            f"{sc['secda_tflite_path']}/{sc['hlx_scripts']}/{config['hlx_tcl_script']}"
+        )
 
         # misc
-        self.pynq_dir = sc["board_dir"] + "/bitstreams"
+        self.board_dir = self.bconfig["board_dir"] + "/bitstreams"
         self.board_script = config["board_script"]
         self.bitstream = (
             config["acc_name"]
@@ -104,7 +143,7 @@ class hardware_exp:
             if file.endswith(".cc") or file.endswith(".h"):
                 s += "add_files " + "src/" + file + ' -cflags "-D__SYNTHESIS__"\n'
         s += 'open_solution "' + self.acc_tag + '"\n'
-        s += "set_part " + self.acc_part + "\n"
+        s += "set_part " + self.fpga_part + "\n"
         s += "create_clock -period " + self.hls_clock + " -name default\n"
         s += "config_export -format ip_catalog -rtl verilog -taxonomy /s -vendor xilinx\n"
         s += "csynth_design\n"
@@ -131,12 +170,15 @@ class hardware_exp:
             "acc_link_folder": self.acc_link_folder,
             "acc_tag": self.acc_tag,
             "vp": self.vp,
+            "vp_hls": self.vp_hls,
             "bitstream": self.bitstream,
-            "pynq_dir": self.pynq_dir,
-            "board_user": self.sc["board_user"],
-            "board_hostname": self.sc["board_hostname"],
-            "board_port": self.sc["board_port"],
+            "board": self.board,
+            "board_dir": self.board_dir,
+            "board_user": self.bconfig["board_user"],
+            "board_hostname": self.bconfig["board_hostname"],
+            "board_port": self.bconfig["board_port"],
             "board_script": self.board_script,
+            "hlx_version": self.bconfig["hlx_version"],
         }
         with open(hw_gen_tpl) as f:
             run_script = str(mt(f.read()).substitute(run_dict))
@@ -159,26 +201,26 @@ def process_hw_config(hw_config_file):
     if hw_config_file.endswith(".json") == False:
         hw_config_file += ".json"
 
+    # Loads the system configuration for SECDA-TFLite
     sc = load_config("../config.json")
 
+    # Loads the hardware configuration
     if not os.path.exists(hw_config_file):
-        hw_config_file = (
-            f"{sc['secda_tflite_path']}/{sc['hw_configs']}/{hw_config_file}"
+        hw_config_file = find_hw_config(
+            f"{sc['secda_tflite_path']}/{sc['hw_configs']}",
+            hw_config_file.replace(".json", ""),
         )
-
     hw_config = load_config(hw_config_file)
+
+    # Creates the necessary directories
     out_dir = sc["out_dir"]
     hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
-
-    # create acc_link_folder if it does not exist
     if not os.path.exists(hw_link_dir + hw_config["acc_link_folder"]):
         os.makedirs(hw_link_dir + hw_config["acc_link_folder"])
-
-    # if output directory does not exist create it
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    # then force symlink all the files in the acc_src to the acc_link_folder
+    # Symlinks the accelerator source files to the hardware link directory
     acc_src_dir = (
         f"{sc['secda_tflite_path']}/{sc['path_to_dels']}/{hw_config['acc_src']}/"
     )
@@ -187,16 +229,21 @@ def process_hw_config(hw_config_file):
             source = os.path.abspath(acc_src_dir + file)
             target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
             os.system(f"ln -sf {source} {target}")
-
     target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
     sysc_types_path = f"{sc['secda_tools_path']}/secda_integrator/sysc_types.h"
-    sysc_hw_utils_path = f"{sc['secda_tools_path']}/secda_integrator/secda_hw_utils.sc.h"
+    sysc_hw_utils_path = (
+        f"{sc['secda_tools_path']}/secda_integrator/secda_hw_utils.sc.h"
+    )
     os.system(f"ln -sf {sysc_types_path} {target}")
     os.system(f"ln -sf {sysc_hw_utils_path} {target}")
+
+
+
+    ## Creates the hw_exp project
     acc_proj = hardware_exp(hw_config, sc)
     acc_proj.create_project(out_dir)
-    # print out cli for running the script
-    # absolute path to the project
+
+    # Prints commands to run the script for the user
     acc_proj_path = os.path.abspath(out_dir + "/" + acc_proj.acc_tag)
     print(f"The project has been created in {acc_proj_path}")
     print(f"To run the project HLS and HLX, run the following commands:")

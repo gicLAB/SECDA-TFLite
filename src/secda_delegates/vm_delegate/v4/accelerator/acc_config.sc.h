@@ -5,6 +5,47 @@
 // Name of the accelerator
 #define ACCNAME VM_INT8_V4_0
 
+#ifdef KRIA
+// KRIA
+// Pre-Defined Address for Accelerator
+#define acc_address 0x00A0000000
+#define dma_addr0 0x00A0010000
+#define dma_addr1 0x00A0020000
+#define dma_addr2 0x00A0030000
+#define dma_addr3 0x00A0040000
+
+#define DMA_BL 4194304
+#define DMA_RANGE_START 0x0000000037400000
+#define DMA_RANGE_END 0x00000000773FFFFF
+#define DMA_RANGE_OFFSET 0xC00000       // 1.5MB
+#define DMA_RANGE_SIZE 0x0000000040000000 // 1GB
+#define DMA_IN_BUF_SIZE 0x20000000        // 32MB
+#define DMA_OUT_BUF_SIZE 0x20000000       // 32MB
+
+// #define dma_in0 DMA_RANGE_START + DMA_RANGE_OFFSET
+// #define dma_in1 dma_in0 + DMA_IN_BUF_SIZE
+// #define dma_in2 dma_in1 + DMA_IN_BUF_SIZE
+// #define dma_in3 dma_in2 + DMA_IN_BUF_SIZE
+
+// #define dma_out0 dma_in3 + DMA_IN_BUF_SIZE
+// #define dma_out1 dma_out0 + DMA_OUT_BUF_SIZE
+// #define dma_out2 dma_out1 + DMA_OUT_BUF_SIZE
+// #define dma_out3 dma_out2 + DMA_OUT_BUF_SIZE
+
+
+#define dma_in0 0x38000000
+#define dma_in1 0x3A000000
+#define dma_in2 0x3C000000
+#define dma_in3 0x3E000000
+
+#define dma_out0 0x39000000
+#define dma_out1 0x3B000000
+#define dma_out2 0x3D000000
+#define dma_out3 0x40000000
+
+#else
+// Z1
+
 // Pre-Defined Address for Accelerator
 #define acc_address 0x43C00000
 #define dma_addr0 0x40400000
@@ -19,7 +60,12 @@
 #define dma_out1 0x18800000
 #define dma_out2 0x1a800000
 #define dma_out3 0x1c800000
+
 #define DMA_BL 4194304
+#define DMA_RANGE_START 0x18000000
+#define DMA_RANGE_END 0x1fffffff
+#define DMA_RANGE_SIZE 0x8000000
+#endif
 
 // Accelerator Parameters
 // #define VMM_COUNT 1
@@ -213,8 +259,6 @@ typedef struct byteToUF {
     a4[idx] = data.range(127, 96);
   }
 } bUF;
-
-
 
 struct VMM_vars {
 #ifndef __SYNTHESIS__

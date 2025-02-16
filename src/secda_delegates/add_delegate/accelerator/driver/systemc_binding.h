@@ -1,7 +1,9 @@
 #ifndef SYSTEMC_BINDING
 #define SYSTEMC_BINDING
 
-#include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
+#include "secda_tools/axi_support/v5/axi_api_v5.h"
+#include "secda_tools/secda_integrator/sysc_types.h"
+#include "secda_tools/secda_integrator/systemc_integrate.h"
 
 // This file is specfic to AddAcc SystemC definition
 // This contains all the correct port/signal bindings to instantiate the AddAcc
@@ -10,8 +12,8 @@ struct sysC_sigs {
   sc_clock clk_fast;
   sc_signal<bool> sig_reset;
   sc_signal<int> sig_computeSS;
-  sc_fifo<DATA> dout1;
-  sc_fifo<DATA> din1;
+  sc_fifo<ADATA> dout1;
+  sc_fifo<ADATA> din1;
 
   int id;
   sysC_sigs(int _id) : dout1("dout1_fifo", 563840), din1("din1_fifo", 554800) {
@@ -20,7 +22,7 @@ struct sysC_sigs {
   }
 };
 
-void sysC_binder(ACCNAME *acc, multi_dma *mdma, sysC_sigs *scs) {
+void sysC_binder(ACCNAME *acc, s_mdma *mdma, sysC_sigs *scs) {
   acc->clock(scs->clk_fast);
   acc->reset(scs->sig_reset);
   acc->dout1(scs->dout1);

@@ -15,26 +15,32 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+# config_setting(
+#     name = "linux_aarch64",
+#     values = {"cpu": "aarch64"},
+#     visibility = ["//visibility:public"],
+# )
+
 common_copts = ["-Wall"] + tflite_copts()
 
 cc_library(
     name = "accelerator_config",
     srcs = [
         "acc_config.sc.h",
-        ],
+    ],
     copts = common_copts,
     deps = select({
         ":linux_armhf": [],
-        "//conditions:default": ["@systemc//:systemc"],
+        # ":linux_aarch64": [],
+        "//conditions:default": ["@systemc"],
     }),
 )
-
 
 cc_library(
     name = "accelerator",
     srcs = [
         "acc.sc.cc",
-        ],
+    ],
     hdrs = [
         # "acc_config.sc.h",
         "acc.sc.h",
@@ -55,4 +61,3 @@ cc_library(
         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
     ],
 )
-

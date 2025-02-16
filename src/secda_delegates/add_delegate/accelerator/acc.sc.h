@@ -9,8 +9,8 @@ SC_MODULE(ACCNAME) {
   sc_in<bool> clock;
   sc_in<bool> reset;
 
-  sc_fifo_in<DATA> din1;
-  sc_fifo_out<DATA> dout1;
+  sc_fifo_in<ADATA> din1;
+  sc_fifo_out<ADATA> dout1;
 
   // GEMM 1 Inputs
   int lshift;
@@ -46,7 +46,7 @@ SC_MODULE(ACCNAME) {
   // Functions
   ACC_DTYPE<32> Clamp_Combine(int, int, int, int, int, int);
 
-  void send_parameters_ADD_PE(int, sc_fifo_in<DATA> *);
+  void send_parameters_ADD_PE(int, sc_fifo_in<ADATA> *);
 
   // HW Threads
   void Compute();

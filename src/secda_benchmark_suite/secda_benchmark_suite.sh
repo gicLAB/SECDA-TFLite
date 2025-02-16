@@ -1,12 +1,8 @@
 #!/bin/bash
 
 # Requires jq to be installed
-board_user=$(jq -r '.board_user' ../../config.json)
-board_hostname=$(jq -r '.board_hostname' ../../config.json)
-board_dir=$(jq -r '.board_dir' ../../config.json)
-board_port=$(jq -r '.board_port' ../../config.json)
+
 conda_path=$(jq -r '.conda_path' ../../config.json)
-bench_dir=${board_dir}/benchmark_suite
 
 helpFunction() {
   echo ""
@@ -74,11 +70,23 @@ function ctrl_c() {
 
 trap ctrl_c INT
 
+# load experiment configurations and then board configurations
+python3 scripts/configure_benchmark.py -c 1
+
+## have the python script return the board configs
+board=$(jq -r '.board' ./generated/board_config.json)
+board_user=$(jq -r '.board_user' ./generated/board_config.json)
+board_hostname=$(jq -r '.board_hostname' ./generated/board_config.json)
+board_port=$(jq -r '.board_port' ./generated/board_config.json)
+board_dir=$(jq -r '.board_dir' ./generated/board_config.json)
+bench_dir=${board_dir}/benchmark_suite
+
 echo "-----------------------------------------------------------"
 echo "-- SECDA-TFLite Benchmark Suite --"
 echo "-----------------------------------------------------------"
 echo "Configurations"
 echo "--------------"
+echo "Board: ${board}"
 echo "Board User: ${board_user}"
 echo "Board Hostname: ${board_hostname}"
 echo "Board Benchmark Dir: ${bench_dir}"
@@ -93,12 +101,11 @@ echo "-----------------------------------------------------------"
 # define function to which create secda_benchmark_suite directory on the board at board_dir
 function create_dir() {
   ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $bench_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $bench_dir/bins && mkdir -p $bench_dir/models"
-  rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models  $board_user@$board_hostname:$bench_dir/
-  rsync -r -avz -e 'ssh -p '${board_port} ./bitstreams  $board_user@$board_hostname:$board_dir/
-
+  rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models $board_user@$board_hostname:$bench_dir/
+  rsync -r -avz -e 'ssh -p '${board_port} ./bitstreams/${board}/ $board_user@$board_hostname:$board_dir/bitstreams/
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/fpga_scripts/ $board_user@$board_hostname:$board_dir/scripts/
   # rsync -r -avz -e 'ssh -p '${board_port} ${data_dir}  $board_user@$board_hostname:$board_dir/
-  # rsync -r -avz -e 'ssh -p '${board_port} ${bitstream_dir}  $board_user@$board_hostname:$board_dir/
+
   echo "Initialization Done"
 }
 
@@ -106,8 +113,8 @@ echo "-----------------------------------------------------------"
 echo "Initializing SECDA-TFLite Benchmark Suite"
 echo "-----------------------------------------------------------"
 if [ $skip_bench -eq 0 ]; then
-echo "Clearing cache"
-rm -rf ./tmp
+  echo "Clearing cache"
+  rm -rf ./tmp
 fi
 
 if [ $init -eq 1 ]; then
@@ -119,7 +126,7 @@ echo "-----------------------------------------------------------"
 echo "-----------------------------------------------------------"
 echo "Configuring Benchmark"
 echo "-----------------------------------------------------------"
-python3 scripts/configure_benchmark.py $bin_gen
+python3 scripts/configure_benchmark.py -e 1 -b $bin_gen
 
 if [ $bin_gen -eq 1 ]; then
   echo "-----------------------------------------------------------"
@@ -150,7 +157,13 @@ if [ $skip_bench -eq 0 ]; then
   echo "-----------------------------------------------------------"
   echo "Running Experiments"
   echo "-----------------------------------------------------------"
-  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "cd $bench_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
+  # ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "source /etc/profile.d/pynq_venv.sh && cd $bench_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
+  # ssh -t -p $board_port $board_user@$board_hostname "source /etc/profile.d/pynq_venv.sh && cd $bench_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
+  ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "((ls /etc/profile.d/pynq_venv.sh >> /dev/null 2>&1 && source /etc/profile.d/pynq_venv.sh) || echo "") && cd $bench_dir/ && ./run_collect.sh $process_on_fpga $skip_inf_diff $collect_power $test_run"
+
+
+
+
   # if not test run, then collect results
   if [ $test_run -eq 0 ]; then
     echo "Transferring Results to Host"

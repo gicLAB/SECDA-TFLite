@@ -7,9 +7,10 @@
 #include <mutex>
 
 #define TOG(X)
+// #define TOG(X) X
 
 // #define TOG2(X) threadsafe_cout(X)
-#define TOG2(X) 
+#define TOG2(X)
 
 #define STR(X) std::to_string(X)
 #define HEX(X) std::hex << X << std::dec
@@ -27,6 +28,7 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
                       int output_stride, int c, int rcols_step, int r,
                       int rrows_step, int rdepth_step, int rows_step,
                       int cols_step) {
+  TOG2("Load_Weight_Data" << endl);
   prf_start(1);
   int offset = drv.dfs[0].dbuf_set[free_buf].offset;
   int *in0 = drv.mdma->dmas[0].dma_get_inbuffer() + (offset / 4);
@@ -117,6 +119,7 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
 }
 
 void Start_Compute(acc_container &drv, int inp_block, int wgt_block) {
+  TOG2("Start_Compute" << endl);
   drv.mdma->multi_dma_change_start_4(0);
   int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
   int inl0 = 0;

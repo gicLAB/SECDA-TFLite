@@ -16,5 +16,6 @@
   "hls_clock" : "4",
   "hlx_Mhz": "250",
   "axi_bitW": "32",
-  "axi_burstS": "32"
+  "axi_burstS": "32",
+  "board": "Z1"
 }

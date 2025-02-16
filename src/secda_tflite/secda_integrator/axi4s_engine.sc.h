@@ -8,8 +8,8 @@ SC_MODULE(AXIS_ENGINE) {
   sc_in<bool> reset;
   sc_fifo_in<DATA> dout1;
   sc_fifo_out<DATA> din1;
-  bool send;
-  bool recv;
+  bool send = false;
+  bool recv = false;
   int id;
 
   int r_paddr = 0;
@@ -65,8 +65,8 @@ SC_MODULE(AXIS_ENGINE) {
     reset_signal_is(reset, true);
   }
 
-  int* DMA_input_buffer;
-  int* DMA_output_buffer;
+  int *DMA_input_buffer;
+  int *DMA_output_buffer;
 
   int input_len;
   int input_offset;

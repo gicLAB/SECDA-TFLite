@@ -27,7 +27,7 @@ def gen_bench_imp(
     model_dir,
     bitstream_dir,
     bin_dir,
-    board_user,
+    board_config,
 ):
     ## Generate configs.sh
     config_list = []
@@ -74,8 +74,8 @@ def gen_bench_imp(
         "model_dir": model_dir,
         "bitstream_dir": bitstream_dir,
         "bin_dir": bin_dir,
-        "board_user": board_user,
-        "board_dir": sc["board_dir"],
+        "board_user": board_config["board_user"],
+        "board_dir": board_config["board_dir"],
     }
 
     with open("scripts/run_collect.tpl.sh") as f:

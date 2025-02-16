@@ -25,8 +25,10 @@ cc_library(
     copts = common_copts,
     deps = select({
         ":linux_armhf": [],
-        "//conditions:default": ["@systemc//:systemc"],
-    }),
+        "//conditions:default": [],
+    }) + [
+        "//third_party:secdav5"
+    ],
 )
 
 cc_library(
@@ -42,6 +44,5 @@ cc_library(
     copts = common_copts,
     deps = [
         ":add_accelerator_config",
-        "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
     ],
 )
