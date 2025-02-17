@@ -138,10 +138,6 @@ void create_2d_biases(int sn, int N_dim, int sm, int M_dim, int32_t *new_bias,
       int yt = (in_sum[sn + n] * lhs_offset) + offdepth;
       int xt = bias[sm + m] + (wt_sum[sm + m] * rhs_offset);
       new_bias[m * N_dim + n] = yt + xt;
-      if ((m == 0 && n == 6) || (m == 6 && n == 0)) {
-        int k = new_bias[m * N_dim + n];
-        int b = 0;
-      }
     }
   }
 }

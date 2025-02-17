@@ -4,7 +4,8 @@
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 
 // This file is specfic to FC-GEMM SystemC definition
-// This contains all the correct port/signal bindings to instantiate the FC-GEMM accelerator
+// This contains all the correct port/signal bindings to instantiate the FC-GEMM
+// accelerator
 struct sysC_sigs {
   sc_clock clk_fast;
   sc_signal<bool> sig_reset;
@@ -35,17 +36,15 @@ struct sysC_sigs {
   int id;
 
   sysC_sigs(int _id)
-      : insn_mem("insn_port", 0, 81920),
-        inp_mem("input_port", 0, 409600),
-        wgt_mem("weight_port", 0, 409600),
-        bias_mem("bias_port", 0, 409600),
+      : insn_mem("insn_port", 0, 81920), inp_mem("input_port", 0, 409600),
+        wgt_mem("weight_port", 0, 409600), bias_mem("bias_port", 0, 409600),
         out_mem("out_port", 0, 409600) {
     sc_clock clk_fast("ClkFast", 1, SC_NS);
     id = _id;
   }
 };
 
-void systemC_binder(ACCNAME* acc, sysC_sigs* scs) {
+void systemC_binder(ACCNAME *acc, sysC_sigs *scs) {
   acc->clock(scs->clk_fast);
   acc->reset(scs->sig_reset);
 
