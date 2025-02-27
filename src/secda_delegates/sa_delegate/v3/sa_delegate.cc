@@ -5,8 +5,8 @@
 
 #include "sa_delegate.h"
 #include "accelerator/driver/gemm_driver.h"
-#include "util.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
+#include "util.h"
 #include <utility>
 
 #ifdef SYSC
@@ -17,6 +17,7 @@
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 
 #define DMA_BC 1
+#define DELEGATE_NAME "SA"
 #define DELEGATE_VERSION 3
 
 unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
@@ -459,9 +460,9 @@ public:
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_inp_acc.csv",
       //               gemm_input_data, gemm_input_cols, gemm_input_rows);
-      // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-      //                   "_out_acc.csv",
-      //               output_data, gemm_input_cols, filter_rows);
+      saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
+                        "_out_acc.csv",
+                    output_data, gemm_input_cols, filter_rows);
 
       dparams.layer++;
       dparams.delegated_nodes--;
@@ -495,8 +496,7 @@ private:
 // This holds the Delegate capabilities.
 class SADelegate : public SimpleDelegateInterface {
 public:
-  explicit SADelegate(const SADelegateOptions &options)
-      : options_(options) {}
+  explicit SADelegate(const SADelegateOptions &options) : options_(options) {}
 
   bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
                                  const TfLiteNode *node,
@@ -555,20 +555,27 @@ SADelegateOptions TfLiteSADelegateOptionsDefault() {
 // Creates a new delegate instance that need to be destroyed with
 // `TfLiteSADelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate *
-TfLiteSADelegateCreate(const SADelegateOptions *options) {
+TfLiteDelegate *TfLiteSADelegateCreate(const SADelegateOptions *options) {
   std::unique_ptr<tflite::sa_test::SADelegate> sa(
       new tflite::sa_test::SADelegate(
           options ? *options : TfLiteSADelegateOptionsDefault()));
-  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
-      std::move(sa));
+  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(sa));
 }
 
 // Destroys a delegate created with `TfLiteSADelegateCreate` call.
 void TfLiteSADelegateDelete(TfLiteDelegate *delegate) {
   // Saves profilier records once all delegated nodes are executed
-  // SYSC_ON(profile.saveProfile(acc->profiling_vars));
-  SYSC_ON(profile.saveCSVRecords(".data/SAv3"));
+  SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  std::string date =
+      std::to_string(1900 + ltm->tm_year) + "-" +
+      std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +
+      "-" + std::to_string(ltm->tm_hour) + "-" + std::to_string(ltm->tm_min) +
+      "-" + std::to_string(ltm->tm_sec);
+  SYSC_ON(profile.saveCSVRecords(".data/" + std::string(DELEGATE_NAME) + "_" +
+                                 std::to_string(DELEGATE_VERSION) + "_" +
+                                 date));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();

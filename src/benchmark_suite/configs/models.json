@@ -1,0 +1,128 @@
+{
+  "models": [
+    {
+      "name": "mobilenetv1",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "conv2d",
+        "depthwise_conv2d"
+      ]
+    },
+    {
+      "name": "resnet18v1",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "conv2d",
+        "fully_connected"
+      ]
+    },
+    {
+      "name": "albert_int8",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "fully_connected"
+      ]
+    },
+    {
+      "name": "efficientnet_lite",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "conv2d"
+      ]
+    },
+    {
+      "name": "inceptionv1",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "conv2d"
+      ]
+    },
+    {
+      "name": "inceptionv3",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "conv2d"
+      ]
+    },
+    {
+      "name": "mobilebert_quant",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "fully_connected"
+      ]
+    },
+    {
+      "name": "mobilenetv2",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "conv2d",
+        "depthwise_conv2d"
+      ]
+    },
+    {
+      "name": "resnet50v2",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "conv2d",
+        "fully_connected"
+      ]
+    },
+    {
+      "name": "dcgan_gen",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "transpose_conv2d"
+      ]
+    },
+    {
+      "name": "new_cycle_gan_f",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "transpose_conv2d"
+      ]
+    },
+    {
+      "name": "new_cycle_gan_g",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "transpose_conv2d"
+      ]
+    },
+    {
+      "name": "pix2pix_g",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "transpose_conv2d"
+      ]
+    },
+    {
+      "name": "magenta_gen",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "transpose_conv2d"
+      ]
+    },
+    {
+      "name": "add_simple",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "add"
+      ]
+    }
+  ]
+}

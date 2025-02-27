@@ -103,8 +103,8 @@ if [ $run_hlx == 1 ]; then
   # cp ./&{acc_tag}_hlx/utilization_report_impl_ip.txt ./generated_files/
   cp ./&{acc_tag}_hlx/timing_report_impl_full.txt ./generated_files/
   # cp ./&{acc_tag}_hlx/timing_report_impl_ip.txt ./generated_files/
-  cp ./generated_files/&{acc_tag}.hwh ../../../src/secda_benchmark_suite/bitstreams/&{board}/
-  cp ./generated_files/&{acc_tag}.bit ../../../src/secda_benchmark_suite/bitstreams/&{board}/
+  cp ./generated_files/&{acc_tag}.hwh ../../../src/benchmark_suite/bitstreams/&{board}/
+  cp ./generated_files/&{acc_tag}.bit ../../../src/benchmark_suite/bitstreams/&{board}/
 
   # create the directory on the board
   ssh -q -t -p &{board_port} &{board_user}@&{board_hostname} "mkdir -p &{board_dir}"

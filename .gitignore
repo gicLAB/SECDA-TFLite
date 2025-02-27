@@ -39,6 +39,15 @@ __pycache__
 /src/secda_apps_evaluation_suite/tmp
 /src/secda_benchmark_suite_old/
 
+/src/benchmark_suite/results
+/src/benchmark_suite/generated
+/src/benchmark_suite/model_gen/models
+/src/benchmark_suite/model_gen/saved_models
+/src/benchmark_suite/scripts/__pycache__
+/src/benchmark_suite/scripts/tmp
+/src/benchmark_suite/tmp
+/src/benchmark_suite/logs
+
 
 
 /data/

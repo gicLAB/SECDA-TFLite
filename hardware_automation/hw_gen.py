@@ -141,7 +141,7 @@ class hardware_exp:
         s += "set_top " + self.top + "\n"
         for file in os.listdir(self.acc_link_folder):
             if file.endswith(".cc") or file.endswith(".h"):
-                s += "add_files " + "src/" + file + ' -cflags "-D__SYNTHESIS__"\n'
+                s += "add_files " + "src/" + file + f' -cflags "-D__SYNTHESIS__, -D{self.board}"\n'
         s += 'open_solution "' + self.acc_tag + '"\n'
         s += "set_part " + self.fpga_part + "\n"
         s += "create_clock -period " + self.hls_clock + " -name default\n"

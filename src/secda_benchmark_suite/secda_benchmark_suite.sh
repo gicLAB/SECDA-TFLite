@@ -102,7 +102,7 @@ echo "-----------------------------------------------------------"
 function create_dir() {
   ssh -o LogLevel=QUIET -t -p $board_port $board_user@$board_hostname "mkdir -p $bench_dir  && mkdir -p $board_dir/bitstreams && mkdir -p $bench_dir/bins && mkdir -p $bench_dir/models"
   rsync -r -avz -e 'ssh -p '${board_port} ./model_gen/models $board_user@$board_hostname:$bench_dir/
-  rsync -r -avz -e 'ssh -p '${board_port} ./bitstreams/${board}/ $board_user@$board_hostname:$board_dir/bitstreams/
+  rsync -r -avz -e 'ssh -p '${board_port} ../benchmark_suite/bitstreams/${board}/ $board_user@$board_hostname:$board_dir/bitstreams/
   rsync -q -r -avz -e 'ssh -p '${board_port} ./scripts/fpga_scripts/ $board_user@$board_hostname:$board_dir/scripts/
   # rsync -r -avz -e 'ssh -p '${board_port} ${data_dir}  $board_user@$board_hostname:$board_dir/
 

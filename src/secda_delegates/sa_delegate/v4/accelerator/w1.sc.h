@@ -1,4 +1,5 @@
 
+
 #if defined(QKERAS)
 
 // 8x4 bit non - uniform multiplication - QKeras or
@@ -92,7 +93,6 @@ sc_int<PROD_DATA_WIDTH> ACCNAME::mul_s8(sc_int<4> wgt, sc_int<8> inp) {
 
 #endif
 
-
 void ACCNAME::Worker1() {
   ACC_DTYPE<8> in[16][16];
   ACC_DTYPE<8> we[16][16];
@@ -166,21 +166,33 @@ void ACCNAME::Worker1() {
       we[0][15] = sWs16.read();
       wait();
 
-//       for (int i = 0; i < 10; i++) {
-// #pragma HLS unroll
-//         for (int j = 0; j < 16; j++) {
-// #pragma HLS unroll
-//           od[(i * 16) + j] += in[j][i] * we[j][i];
-//         }
-//       }
+      //       for (int i = 0; i < 10; i++) {
+      // #pragma HLS unroll
+      //         for (int j = 0; j < 16; j++) {
+      // #pragma HLS unroll
+      //           od[(i * 16) + j] += in[j][i] * we[j][i];
+      //         }
+      //       }
+      //       for (int i = 10; i < 16; i++) {
+      // #pragma HLS unroll
+      //         for (int j = 0; j < 16; j++) {
+      // #pragma HLS unroll
+      //           prod[(i * 16) + j] = mul_u8(in[j][(i)], we[j][i]);
+      //           od[(i * 16) + j] += prod[(i * 16) + j];
+      //         }
+      //       }
+
       for (int i = 0; i < 16; i++) {
 #pragma HLS unroll
         for (int j = 0; j < 16; j++) {
 #pragma HLS unroll
           prod[(i * 16) + j] = mul_s8(in[j][(i)], we[j][i]);
-          if(in[j][(i)].range(3,3)) od[(i * 16) + j] -= prod[(i * 16) + j];
+#if defined(NORM)
+          od[(i * 16) + j] += prod[(i * 16) + j];
+#else
+          if (in[j][(i)].range(3, 3)) od[(i * 16) + j] -= prod[(i * 16) + j];
           else od[(i * 16) + j] += prod[(i * 16) + j];
-          // od[(i * 16) + j] += prod[(i * 16) + j];
+#endif
         }
       }
       DWAIT(3);

@@ -309,7 +309,7 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
   //     }
   //   }
   // }
-  SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
+  // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
 };
 
 void Entry(acc_container &drv) {

@@ -19,6 +19,8 @@
 #include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 
+#define DELEGATE_NAME "MM2IM"
+#define DELEGATE_VERSION 2
 // Some variables needs to be defined across multiple instances of the delegate
 unsigned int dma_addrs[1] = {dma_addr0};
 unsigned int dma_addrs_in[1] = {dma_in0};
@@ -737,6 +739,16 @@ TfLiteDelegate *TfLiteMM2IMDelegateCreate(const MM2IMDelegateOptions *options) {
 // Destroys a delegate created with `TfLiteMM2IMDelegateCreate` call.
 void TfLiteMM2IMDelegateDelete(TfLiteDelegate *delegate) {
   SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  std::string date =
+      std::to_string(1900 + ltm->tm_year) + "-" +
+      std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +
+      "-" + std::to_string(ltm->tm_hour) + "-" + std::to_string(ltm->tm_min) +
+      "-" + std::to_string(ltm->tm_sec);
+  SYSC_ON(profile.saveCSVRecords(".data/" + std::string(DELEGATE_NAME) + "_" +
+                                 std::to_string(DELEGATE_VERSION) + "_" +
+                                 date));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();

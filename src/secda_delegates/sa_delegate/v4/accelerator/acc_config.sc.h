@@ -39,12 +39,14 @@
 #define SUMS_BUF_LEN 1024
 
 
+#define PROD_DATA_WIDTH_NORM 32
 #define PROD_DATA_WIDTH_MSQ 12
 #define PROD_DATA_WIDTH_APOT 14
 #define PROD_DATA_WIDTH_QKERAS 15
 #define PROD_DATA_WIDTH_8x4 12
 
-#define QKERAS
+#define NORM
+// #define QKERAS
 // #define MSQ
 // #define APOT
 

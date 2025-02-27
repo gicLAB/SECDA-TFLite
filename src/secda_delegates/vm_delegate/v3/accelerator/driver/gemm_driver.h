@@ -428,7 +428,7 @@ void Entry(acc_container &drv, int8_t *dst) {
 #endif
 
   TileGEMM(drv, output_stride, depth, rdepth, rows, rrows, cols, rcols, dst);
-  SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
+  // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
 #ifdef DELEGATE_DEBUG
   mkdir("aData", 0777);
   ofstream myfile;

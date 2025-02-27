@@ -17,6 +17,8 @@
 #include "tensorflow/lite/kernels/internal/quantization_util.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 
+#define DELEGATE_NAME "FCGEMM"
+#define DELEGATE_VERSION 1
 // Some variables needs to be defined across multiple instances of the delegate
 struct FCGEMM_times fc_t;
 struct del_params dparams;
@@ -451,7 +453,17 @@ TfLiteFCGEMMDelegateCreate(const FCGEMMDelegateOptions *options) {
 
 // Destroys a delegate created with `TfLiteFCGEMMDelegateCreate` call.
 void TfLiteFCGEMMDelegateDelete(TfLiteDelegate *delegate) {
-  // SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  std::string date =
+      std::to_string(1900 + ltm->tm_year) + "-" +
+      std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +
+      "-" + std::to_string(ltm->tm_hour) + "-" + std::to_string(ltm->tm_min) +
+      "-" + std::to_string(ltm->tm_sec);
+  SYSC_ON(profile.saveCSVRecords(".data/" + std::string(DELEGATE_NAME) + "_" +
+                                 std::to_string(DELEGATE_VERSION) + "_" +
+                                 date));
   fc_t.print();
   fc_t.save_prf();
   std::cout << "===========================" << std::endl;

@@ -143,14 +143,13 @@ SC_MODULE(ACCNAME) {
   };
 #endif
 
-
   // Functions
   sc_int<64> mul_s64(int, sc_int<64>);
 
-  int Quantised_Multiplier_v2(int, int, sc_int<64>, sc_int<32>, sc_int<32>,
-                              sc_int<32>);
+  int Quantised_Multiplier_gemmlowp(int, int, sc_int<64>, sc_int<32>,
+                                    sc_int<32>, sc_int<32>);
 
-  int Quantised_Multiplier(int, int, sc_int<8>);
+  int Quantised_Multiplier_ruy_reference(int, int, sc_int<8>);
 
   // HW Threads
 

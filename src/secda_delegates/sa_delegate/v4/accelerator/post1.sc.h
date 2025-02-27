@@ -5,9 +5,9 @@ sc_int<64> ACCNAME::mul_s64(int a, sc_int<64> b) {
   return c;
 }
 
-int ACCNAME::Quantised_Multiplier_v2(int x, int qm, sc_int<64> pl,
-                                      sc_int<32> pr, sc_int<32> msk,
-                                      sc_int<32> sm) {
+int ACCNAME::Quantised_Multiplier_gemmlowp(int x, int qm, sc_int<64> pl,
+                                           sc_int<32> pr, sc_int<32> msk,
+                                           sc_int<32> sm) {
   sc_int<64> val = mul_s64(x, pl);
   if (val > MAX) val = MAX; // ALU MIN
   if (val < MIN) val = MIN; // ALU MAX
@@ -26,7 +26,8 @@ int ACCNAME::Quantised_Multiplier_v2(int x, int qm, sc_int<64> pl,
   return result_32;
 }
 
-int ACCNAME::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
+int ACCNAME::Quantised_Multiplier_ruy_reference(int x, int qm,
+                                                sc_int<8> shift) {
   int nshift = shift;
   int total_shift = 31 - shift;
   sc_int<64> x_64 = x;
@@ -42,7 +43,6 @@ int ACCNAME::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
   sc_int<32> result_32 = result;
   return result_32;
 }
-
 
 void ACCNAME::Post1() {
   ACC_DTYPE<32> pcrf[16];
@@ -85,8 +85,7 @@ void ACCNAME::Post1() {
   }
   wait();
   while (true) {
-    while (!write1.read())
-      wait();
+    while (!write1.read()) wait();
 
     for (int i = 0; i < 4; i++) {
 #pragma HLS pipeline II = 1
@@ -179,11 +178,37 @@ void ACCNAME::Post1() {
         sc_int<64> rf3 = pcrf[mi3];
         sc_int<64> rf4 = pcrf[mi4];
 
-        int ret_accum1 = Quantised_Multiplier(aa1, pcrf[mi1], pex[mi1]);
-        int ret_accum2 = Quantised_Multiplier(aa2, pcrf[mi2], pex[mi2]);
-        int ret_accum3 = Quantised_Multiplier(aa3, pcrf[mi3], pex[mi3]);
-        int ret_accum4 = Quantised_Multiplier(aa4, pcrf[mi4], pex[mi4]);
+#ifndef __SYNTHESIS__
+        int ret_accum1 = Quantised_Multiplier_gemmlowp(
+            aa1, pcrf[mi1], pls[mi1], prs[mi1], msks[mi1], sms[mi1]);
+        int ret_accum2 = Quantised_Multiplier_gemmlowp(
+            aa2, pcrf[mi2], pls[mi2], prs[mi2], msks[mi2], sms[mi2]);
+        int ret_accum3 = Quantised_Multiplier_gemmlowp(
+            aa3, pcrf[mi3], pls[mi3], prs[mi3], msks[mi3], sms[mi3]);
+        int ret_accum4 = Quantised_Multiplier_gemmlowp(
+            aa4, pcrf[mi4], pls[mi4], prs[mi4], msks[mi4], sms[mi4]);
+#else
+#ifndef KRIA
+        int ret_accum1 =
+            Quantised_Multiplier_ruy_reference(aa1, pcrf[mi1], pex[mi1]);
+        int ret_accum2 =
+            Quantised_Multiplier_ruy_reference(aa2, pcrf[mi2], pex[mi2]);
+        int ret_accum3 =
+            Quantised_Multiplier_ruy_reference(aa3, pcrf[mi3], pex[mi3]);
+        int ret_accum4 =
+            Quantised_Multiplier_ruy_reference(aa4, pcrf[mi4], pex[mi4]);
 
+#else
+        int ret_accum1 = Quantised_Multiplier_gemmlowp(
+            aa1, pcrf[mi1], pls[mi1], prs[mi1], msks[mi1], sms[mi1]);
+        int ret_accum2 = Quantised_Multiplier_gemmlowp(
+            aa2, pcrf[mi2], pls[mi2], prs[mi2], msks[mi2], sms[mi2]);
+        int ret_accum3 = Quantised_Multiplier_gemmlowp(
+            aa3, pcrf[mi3], pls[mi3], prs[mi3], msks[mi3], sms[mi3]);
+        int ret_accum4 = Quantised_Multiplier_gemmlowp(
+            aa4, pcrf[mi4], pls[mi4], prs[mi4], msks[mi4], sms[mi4]);
+#endif
+#endif
 
         sc_int<32> f1_a1 = ret_accum1 + ra;
         sc_int<32> f1_a2 = ret_accum2 + ra;
@@ -207,7 +232,6 @@ void ACCNAME::Post1() {
         pram[(i * 16) + j + 1] = f1_a2.range(7, 0);
         pram[(i * 16) + j + 2] = f1_a3.range(7, 0);
         pram[(i * 16) + j + 3] = f1_a4.range(7, 0);
-
 
         // // before 64
         // sc_int<32> a1 = (aa1)*loff1;

@@ -15,6 +15,7 @@
 #include "util.h"
 
 #define DMA_BC 1
+#define DELEGATE_NAME "VM"
 #define DELEGATE_VERSION 3
 
 static unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
@@ -621,7 +622,7 @@ TfLiteDelegate *TfLiteVMDelegateCreate(const VMDelegateOptions *options) {
 // Destroys a delegate created with `TfLiteVMDelegateCreate` call.
 void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
   // Saves profilier records once all delegated nodes are executed
-  // SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  SYSC_ON(profile.saveProfile(acc->profiling_vars));
   time_t now = time(0);
   tm *ltm = localtime(&now);
   std::string date =
@@ -629,7 +630,9 @@ void TfLiteVMDelegateDelete(TfLiteDelegate *delegate) {
       std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +
       "-" + std::to_string(ltm->tm_hour) + "-" + std::to_string(ltm->tm_min) +
       "-" + std::to_string(ltm->tm_sec);
-  SYSC_ON(profile.saveCSVRecords(".data/vm_profs/vm_" + date));
+  SYSC_ON(profile.saveCSVRecords(".data/" + std::string(DELEGATE_NAME) + "_" +
+                                 std::to_string(DELEGATE_VERSION) + "_" +
+                                 date));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();

@@ -256,19 +256,19 @@ gan_exp = [
 # Test Experiment
 
 ## Hardware Config
-hardware = ["VMv4_0_KRIA", "CPU_KRIA"]
-board = "KRIA"
-board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
-    get_board_config(sc, board)
-)
-board_config = [board, board_user, board_hostname, board_port, board_dir]
-
-# hardware = ["VMv4_0", "CPU"]
-# board = "Z1"
+# hardware = ["VMv4_0_KRIA", "CPU_KRIA"]
+# board = "KRIA"
 # board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
 #     get_board_config(sc, board)
 # )
 # board_config = [board, board_user, board_hostname, board_port, board_dir]
+
+hardware = ["VMv4_0"]
+board = "Z1"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
 
 
 ## Inference Parameters

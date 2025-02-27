@@ -127,9 +127,13 @@
 			"stack": "cpp",
 			"__nullptr": "cpp",
 			"__locale": "cpp",
-			"*.tpp": "cpp"
+			"*.tpp": "cpp",
+			"__mutex_base": "cpp",
+			"nnls": "cpp"
 		},
 		"editor.inlineSuggest.enabled": true,
-		"java.compile.nullAnalysis.mode": "disabled"
+		"java.compile.nullAnalysis.mode": "disabled",
+		"editor.minimap.autohide": false,
+		"editor.minimap.enabled": false
 	}
 }

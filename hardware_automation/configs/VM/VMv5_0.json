@@ -1,0 +1,21 @@
+{
+  "acc_name": "VM",
+  "acc_version": 5,
+  "acc_sub_version": 0,
+  "version": "5_0",
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_src": "vm_delegate/v5/accelerator",
+  "acc_link_folder": "vm_src_v5",
+  "hlx_tcl_script": "mdma_axilite_hlx_reconfig_4_x180_hwc.tcl",
+  "top": "VM_INT8_V5_0",
+  "board_script": "",
+  "del" : "vm_delegate",
+  "del_version": "5",
+  "hls_clock" : "5",
+  "hlx_Mhz": "200",
+  "axi_bitW": "32",
+  "axi_burstS": "32",
+  "board": "Z1"
+}

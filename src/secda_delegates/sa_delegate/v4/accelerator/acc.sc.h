@@ -143,14 +143,13 @@ SC_MODULE(ACCNAME) {
   };
 #endif
 
-
   // Functions
   sc_int<64> mul_s64(int, sc_int<64>);
 
-  int Quantised_Multiplier_v2(int, int, sc_int<64>, sc_int<32>, sc_int<32>,
-                              sc_int<32>);
+  int Quantised_Multiplier_gemmlowp(int, int, sc_int<64>, sc_int<32>,
+                                    sc_int<32>, sc_int<32>);
 
-  int Quantised_Multiplier(int, int, sc_int<8>);
+  int Quantised_Multiplier_ruy_reference(int, int, sc_int<8>);
 
   // HW Threads
 
@@ -182,11 +181,8 @@ SC_MODULE(ACCNAME) {
 
 #endif
 
-  // ACC_DTYPE<32> mul_u8(ACC_DTYPE<8>, ACC_DTYPE<8>);
+  ACC_DTYPE<32> mul_s8(ACC_DTYPE<8>, ACC_DTYPE<8>);
   sc_int<PROD_DATA_WIDTH> mul_s8(sc_int<4>, sc_int<8>);
-
-
-
 
   SC_HAS_PROCESS(ACCNAME);
 

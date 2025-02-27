@@ -308,7 +308,7 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
       }
     }
   }
-  SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
+  // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
   prf_end(1, drv.p_t.driver_total);
 };
 
