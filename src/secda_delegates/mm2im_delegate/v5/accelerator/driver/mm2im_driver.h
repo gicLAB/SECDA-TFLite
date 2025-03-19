@@ -4,8 +4,6 @@
 #include "acc_container.h"
 #include "mm2im_mt.h"
 #include "mm2im_util.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/multi_threading.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
 #include <assert.h>
 #include <cstring>
 #include <iostream>
@@ -77,7 +75,6 @@ void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
     inl0 += padded_depth_4;
     in0[inl0++] = drv.acc_wt_sum[starting_row + i] * drv.rhs_offset;
   }
-  prf_end(0, drv.p_t.p_load_wgt);
   // Send Bias
   // for (int i = 0; i < filter_step; i++) {
   //   in0[inl0++] = drv.bias[starting_filter + i];
@@ -100,6 +97,7 @@ void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
   data_transfered += inl0;
   weight_data_sent += inl0;
   wgt_load_calls++;
+  prf_end(0, drv.p_t.p_load_wgt);
 }
 
 void StartSchedule(acc_container &drv) {

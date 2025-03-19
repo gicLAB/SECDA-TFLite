@@ -4,9 +4,9 @@ void ACCNAME::Output_Handler() {
   outS.write(0);
   int data[PE_COUNT];
   bool tlast = false;
-  DATA d;
+  ADATA d;
   DATA_PACKED datap;
-  DATA last = {5000, 1};
+  ADATA last = {5000, 1};
   d.tlast = 0;
   wait();
   while (1) {
@@ -16,7 +16,7 @@ void ACCNAME::Output_Handler() {
 
     for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
-      DATA d = vars.get(i);
+      ADATA d = vars.get(i);
       data[i] = d.data;
       tlast = tlast || d.tlast;
     }

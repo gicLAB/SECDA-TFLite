@@ -8,6 +8,10 @@
   "hlx_scripts": "hardware_automation/hlx_scripts",
   "hw_link_dir": "hardware_automation/acc_srcs",
   "data_dir": "/home/jude/Workspace/SECDA-TFLite_v1.2/data",
+  "models_dirs": [
+    "/home/jude/Workspace/SECDA-TFLite_v1.2/src/benchmark_suite/model_gen/models",
+    "/home/jude/Workspace/SECDA-TFLite_v1.2/tensorflow/models"
+  ],
   "out_dir": "./generated",
   "boards": {
     "Z1": {

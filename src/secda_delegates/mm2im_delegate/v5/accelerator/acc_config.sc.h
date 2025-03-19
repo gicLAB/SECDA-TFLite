@@ -2,33 +2,30 @@
 #ifndef ACC_CONFIG_H
 #define ACC_CONFIG_H
 
-#define ACCNAME MM2IMv2
-#define ACC_DTYPE sc_int
-#define ACC_C_DTYPE int
+#define ACCNAME MM2IMv5
 
-#define MAX 2147483647
-#define MIN -2147483648
-#define POS 1073741824
-#define NEG -1073741823
-#define DIVMAX 2147483648
-#define MAX8 127
-#define MIN8 -128
-
-#define acc_address 0x43C00000
-#define dma_addr0 0x40400000
-#define dma_addr1 0x40410000
-#define dma_addr2 0x40420000
-#define dma_addr3 0x40430000
-#define dma_in0 0x16000000
-#define dma_in1 0x18000000
-#define dma_in2 0x1a000000
-#define dma_in3 0x1c000000
-#define dma_out0 0x16800000
-#define dma_out1 0x18800000
-#define dma_out2 0x1a800000
-#define dma_out3 0x1c800000
+#ifdef KRIA
+// KRIA
+// Pre-Defined Address for Accelerator
+#define acc_address 0x00A0000000
+#define dma_addr0 0x00A0010000
+#define dma_in0 0x38000000
+#define dma_out0 0x39000000
 #define DMA_BL 4194304
 
+#else
+// Z1
+// Pre-Defined Address for Accelerator
+#define acc_address 0x43C00000
+#define dma_addr0 0x40400000
+// #define dma_in0 0x18000000
+// #define dma_out0 0x18800000
+#define dma_in0 0x16000000
+#define dma_out0 0x16800000
+#define DMA_BL 4194304
+#endif
+
+// Accelerator Parameters
 
 // HERE //TCONV SYNTH v2_1/v2_4  Works
 // #define PE_COUNT 8
@@ -105,76 +102,75 @@ static const int UF = 16;
 
 // // TO HERE
 
-#if defined(SYSC) || defined(__SYNTHESIS__)
 
+// Data types
+#define ACC_DTYPE sc_int
+#define ACC_C_DTYPE int
+#define AXI_DWIDTH 32
+#define AXI_DWIDTH_4 (32 / 4)
+
+#define AXI_TYPE sc_uint
+
+
+// DMA Parameters
+#define s_mdma multi_dma<AXI_DWIDTH, 0>
+
+//==============================================================================
+// SystemC Specfic SIM/HW Configurations
+//==============================================================================
+#if defined(SYSC) || defined(__SYNTHESIS__)
 #include <systemc.h>
+
 #ifndef __SYNTHESIS__
-#include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/sysc_types.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
-// typedef sc_int<8>  acc_dt;
-#define acc_dt sc_int<8>
+#include "secda_tools/axi_support/v5/axi_api_v5.h"
+#include "secda_tools/secda_integrator/sysc_types.h"
+#include "secda_tools/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
+
 #ifdef VERBOSE_ACC
 #define ALOG(x) std::cout << x << std::endl
 #else
 #define ALOG(x)
 #endif
+
+typedef _BDATA<AXI_DWIDTH, AXI_TYPE> ADATA;
+// typedef sc_int<8>  acc_dt;
+#define acc_dt sc_int<8>
 #else
 
-typedef struct _DATA {
-  sc_uint<32> data;
+#include "sysc_types.h"
+#define ALOG(x)
+
+struct _NDATA {
+  AXI_TYPE<AXI_DWIDTH> data;
   bool tlast;
-  inline friend ostream &operator<<(ostream &os, const _DATA &v) {
+  inline friend ostream &operator<<(ostream &os, const _NDATA &v) {
     cout << "data&colon; " << v.data << " tlast: " << v.tlast;
     return os;
   }
-} DATA;
-
-template <typename T, unsigned int W>
-struct sbram {
-  T data[W];
-  int idx;
-#ifndef __SYNTHESIS__
-  int size;
-  int access_count;
-#endif
-  sbram() {
-#ifndef __SYNTHESIS__
-    size = W;
-    access_count = 0;
-#endif
+  void pack(ACC_DTYPE<AXI_DWIDTH_4> a1, ACC_DTYPE<AXI_DWIDTH_4> a2,
+            ACC_DTYPE<AXI_DWIDTH_4> a3, ACC_DTYPE<AXI_DWIDTH_4> a4) {
+    data.range(7, 0) = a1;
+    data.range(15, 8) = a2;
+    data.range(23, 16) = a3;
+    data.range(31, 24) = a4;
   }
-  T &operator[](int i) {
-    idx = i;
-    return data[i];
-  }
-  int &operator=(int val) { data[idx] = val; }
-  void write(int i, T val) { data[i] = val; }
-  T read(int i) { return data[i]; }
 };
 
-struct sc_out_sig {
-  sc_out<int> oS;
-  sc_signal<int> iS;
-  void write(int x) {
-    oS.write(x);
-    iS.write(x);
-  }
-  int read() { return iS.read(); }
-  void operator=(int x) { write(x); }
-  void bind(sc_signal<int> &sig) { oS.bind(sig); }
-  void operator()(sc_signal<int> &sig) { bind(sig); }
-  void bind(sc_out<int> &sig) { oS.bind(sig); }
-  void operator()(sc_out<int> &sig) { bind(sig); }
-};
-
+typedef _NDATA ADATA;
 // typedef sc_int<8> acc_dt;
 #define acc_dt sc_int<8>
-#define DWAIT(x)
-#define ALOG(x)
 #endif
-#define ATOG(x)
+
+
+// PPU Scalers
+#define MAX 2147483647
+#define MIN -2147483648
+#define POS 1073741824
+#define NEG -1073741823
+#define DIVMAX 2147483648
+#define MAX8 127
+#define MIN8 -128
 
 struct opcode {
   unsigned int packet;
@@ -206,7 +202,7 @@ struct wgt_packet {
   unsigned int wgt_rows;
   unsigned int wgt_depth;
 
-  wgt_packet(sc_fifo_in<DATA> *din) {
+  wgt_packet(sc_fifo_in<ADATA> *din) {
     ALOG("WGT_PACKET");
     ALOG("Time: " << sc_time_stamp());
     a = din->read().data;
@@ -225,7 +221,7 @@ struct inp_packet {
   unsigned int inp_depth;
   unsigned int srow;
 
-  inp_packet(sc_fifo_in<DATA> *din) {
+  inp_packet(sc_fifo_in<ADATA> *din) {
     ALOG("INP_PACKET");
     ALOG("Time: " << sc_time_stamp());
     a = din->read().data;
@@ -287,21 +283,6 @@ typedef struct byteToUF {
     return os;
   }
 } bUF;
-
-// struct sc_out_sig {
-//   sc_out<int> oS;
-//   sc_signal<int> iS;
-//   void write(int x) {
-//     oS.write(x);
-//     iS.write(x);
-//   }
-//   int read() { return iS.read(); }
-//   void operator=(int x) { write(x); }
-//   void bind(sc_signal<int> &sig) { oS.bind(sig); }
-//   void operator()(sc_signal<int> &sig) { bind(sig); }
-//   void bind(sc_out<int> &sig) { oS.bind(sig); }
-//   void operator()(sc_out<int> &sig) { bind(sig); }
-// };
 
 struct PE_vars {
 
@@ -375,11 +356,11 @@ struct PE_vars {
   sc_fifo<int> wgt_sum_fifo;
   sc_fifo<bUF> wgt_fifo;
   sc_fifo<bUF> inp_fifo;
-  sc_fifo<DATA> out_fifo;
+  sc_fifo<ADATA> out_fifo;
   sc_fifo<int> temp_fifo;
 
-  sc_fifo<DATA> col_indices_fifo;
-  sc_fifo<DATA> out_indices_fifo;
+  sc_fifo<ADATA> col_indices_fifo;
+  sc_fifo<ADATA> out_indices_fifo;
 
   sc_out<int> computeS;
   sc_out<int> sendS;

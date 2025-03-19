@@ -19,12 +19,13 @@ void ACCNAME::Writer_Cycle_Counter() {
 
 
       int w1 = vars.vars_0.computeS.read();
+      gmSA->increment(w1);
+
       int p1 = vars.vars_0.postS.read();
       // if (w1 == 1) idle1->value++;
       // if (w1 == 3) gemm1->value++;
       // if (w1 == 4) wstall1->value++;
       // if (p1 != 1) post1->value++;
-      // gmSA->increment(w1);
       // psSA->increment(p1);
 
       int w2 = vars.vars_1.computeS.read();

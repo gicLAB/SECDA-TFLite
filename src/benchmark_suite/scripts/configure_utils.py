@@ -105,9 +105,15 @@ def get_board_config(sc, board):
 # Benchmark Configuration Functions
 # ============================================================
 
+def find_models_in_path(model,paths):
+    for path in paths:
+        for root, dirs, files in os.walk(path):
+            if f"{model}.tflite" in files:
+                return os.path.join(root, f"{model}.tflite")
+    return None
 
 def generate_benchmark_configs(
-    sc, boards, models, hardware, threads, num_runs, hardware_config
+    sc, boards, models,layers, hardware, threads, num_runs, hardware_config, time_out
 ):
     board_hardware_map = {board: [] for board in boards}
     for hw in hardware:
@@ -120,11 +126,13 @@ def generate_benchmark_configs(
                     break
 
     experiment_configs = {}
+    model_paths = {}
     for board, hws in board_hardware_map.items():
         log_out(f"Board: {board}")
         config_list = []
         hw_list = []
         model_list = []
+        layer_list = []
         thread_list = []
         num_run_list = []
         version_list = []
@@ -138,10 +146,13 @@ def generate_benchmark_configs(
                 f"{sc['secda_tflite_path']}/{sc['hw_configs']}", hw
             )
             hw_config = load_config(hw_config_file)
-            for model in models:
+            
+            # for model in models:
+            for model, layer in zip(models, layers):
                 for thread in threads:
                     hw_list.append(hw_config["acc_name"])
                     model_list.append(model)
+                    layer_list.append(layer)
                     thread_list.append(thread)
                     num_run_list.append(num_runs)
                     version_list.append(hw_config["version"])
@@ -152,6 +163,7 @@ def generate_benchmark_configs(
                         {
                             "hw": hw_config["acc_name"],
                             "model": model,
+                            "layer": layer,
                             "thread": thread,
                             "num_runs": num_runs,
                             "version": hw_config["version"],
@@ -159,12 +171,21 @@ def generate_benchmark_configs(
                             "del": hw_config["del"],
                         }
                     )
+        uniq_model_list = list(set(model_list))
+        for model in uniq_model_list:
+            model_path = find_models_in_path(model, sc["models_dirs"])
+            if model_path:
+                model_paths[model] = model_path
+                # log_out(f"Model {model} found in {model_path}")
+            # else:
+                # log_out(f"Model {model} not found in the specified paths.")
 
         os.makedirs(out_dir, exist_ok=True)
         f = open(f"{out_dir}/configs_{board}.sh", "w+")
         # list of all the config properties
         declare_array(f, "hw", hw_list)
         declare_array(f, "model", model_list)
+        declare_array(f, "layer", layer_list)
         declare_array(f, "thread", thread_list)
         declare_array(f, "num_run", num_run_list)
         declare_array(f, "version", version_list)
@@ -182,6 +203,7 @@ def generate_benchmark_configs(
             "board_user": board_config["board_user"],
             "board_dir": board_config["board_dir"],
             "sudo_type": board_config["sudo_type"],
+            "time_out": time_out,
         }
 
         with open("scripts/run_collect.tpl.sh") as f:
@@ -189,7 +211,7 @@ def generate_benchmark_configs(
         with open(f"{out_dir}/run_collect_{board}.sh", "w+") as f:
             f.write(script)
 
-    return experiment_configs
+    return experiment_configs, model_paths
 
     #   log_out(f"Written {out_dir}/configs_{board}.sh")
     #   log_out(f"Written {out_dir}/run_collect_{board}.sh")
@@ -413,42 +435,67 @@ def ping_board(board_hostname, board_port):
 
 
 def create_dir(board, board_hostname, board_port, board_user, bench_dir, board_dir):
-    commands = [
-        f"mkdir -p {bench_dir} && mkdir -p {board_dir}/bitstreams && mkdir -p {bench_dir}/bins && mkdir -p {bench_dir}/models",
-        f"rsync -r -avz ./model_gen/models {board_user}@{board_hostname}:{bench_dir}/",
-        f"rsync -r -avz ./bitstreams/{board}/ {board_user}@{board_hostname}:{board_dir}/bitstreams/",
-        f"rsync -q -r -avz ./scripts/fpga_scripts/ {board_user}@{board_hostname}:{board_dir}/scripts/"
-    ]
+    # commands = [
+    #     f"mkdir -p {bench_dir} && mkdir -p {board_dir}/bitstreams && mkdir -p {bench_dir}/bins && mkdir -p {bench_dir}/models",
+    #     f"rsync -r -avz ./model_gen/models {board_user}@{board_hostname}:{bench_dir}/",
+    #     f"rsync -r -avz ./bitstreams/{board}/ {board_user}@{board_hostname}:{board_dir}/bitstreams/",
+    #     f"rsync -q -r -avz ./scripts/fpga_scripts/ {board_user}@{board_hostname}:{board_dir}/scripts/"
+    # ]
+    # result = subprocess.run(
+    #     f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} \"{'; '.join(commands)}\"",
+    #     shell=True, check=False, capture_output = True, text = True
+    # )
+    # if result.returncode != 0:
+    #     log_out("-----------------------------------------------------------")
+    #     log_out("Error in Creating Board Directories")
+    #     log_out("-----------------------------------------------------------")
+    #     log_out(result.stdout)
+    #     log_out(result.stderr)
+    #     log.close()
+    #     return 1
+
+    resout =""
+    reserr = ""
+    resbool = 0
     result = subprocess.run(
-        f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} \"{'; '.join(commands)}\"",
+        f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'mkdir -p {bench_dir} && mkdir -p {board_dir}/bitstreams && mkdir -p {bench_dir}/bins && mkdir -p {bench_dir}/models'",
         shell=True, check=False, capture_output = True, text = True
     )
-    if result.returncode != 0:
+    resout += result.stdout
+    reserr += result.stderr
+    resbool = result.returncode or resbool
+
+    result = subprocess.run(
+        f"rsync -r -avz -e 'ssh -p {board_port}' ./model_gen/models {board_user}@{board_hostname}:{bench_dir}/",
+        shell=True, check=False, capture_output = True, text = True
+    )
+    resout += result.stdout
+    reserr += result.stderr
+    resbool = result.returncode or resbool
+
+    result = subprocess.run(
+        f"rsync -r -avz -e 'ssh -p {board_port}' ./bitstreams/{board}/ {board_user}@{board_hostname}:{board_dir}/bitstreams/",
+        shell=True, check=False, capture_output = True, text = True
+    )
+    resout += result.stdout
+    reserr += result.stderr
+    resbool = result.returncode or resbool
+
+    result = subprocess.run(
+        f"rsync -q -r -avz -e 'ssh -p {board_port}' ./scripts/fpga_scripts/ {board_user}@{board_hostname}:{board_dir}/scripts/",
+        shell=True, check=False, capture_output = True, text = True
+    )
+    resout += result.stdout
+    reserr += result.stderr
+    resbool = result.returncode or resbool
+    if resbool != 0:
         log_out("-----------------------------------------------------------")
-        log_out("Error in Creating Board Directories")
+        log_out("Error in Transferring Experiment Configs")
         log_out("-----------------------------------------------------------")
-        log_out(result.stdout)
-        log_out(result.stderr)
+        log_out(resout)
+        log_out(reserr)
         log.close()
-        return 1
 
-
-    # subprocess.run(
-    #     f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'mkdir -p {bench_dir} && mkdir -p {board_dir}/bitstreams && mkdir -p {bench_dir}/bins && mkdir -p {bench_dir}/models'",
-    #     shell=True,
-    # )
-    # subprocess.run(
-    #     f"rsync -r -avz -e 'ssh -p {board_port}' ./model_gen/models {board_user}@{board_hostname}:{bench_dir}/",
-    #     shell=True,
-    # )
-    # subprocess.run(
-    #     f"rsync -r -avz -e 'ssh -p {board_port}' ./bitstreams/{board}/ {board_user}@{board_hostname}:{board_dir}/bitstreams/",
-    #     shell=True,
-    # )
-    # subprocess.run(
-    #     f"rsync -q -r -avz -e 'ssh -p {board_port}' ./scripts/fpga_scripts/ {board_user}@{board_hostname}:{board_dir}/scripts/",
-    #     shell=True,
-    # )
     log_out(f"Initialization Done for {board}")
 
 
@@ -520,10 +567,40 @@ def run_exp(sc, board, skip_inf_diff, collect_power, test_run):
     board_port = board_info["board_port"]
     bench_dir = board_info["bench_dir"]
     if board == "Z1":
-        subprocess.run(
+        # subprocess.run(
+        #     f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
+        #     shell=True,
+        # )
+        try:
+            process = subprocess.Popen(
             f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
             shell=True,
-        )
+            )
+            process.wait()
+        except KeyboardInterrupt:
+            log_out("Process interrupted. Terminating...")
+            process.terminate()
+            process.wait()
+        except Exception as e:
+            log_out(f"An error occurred: {e}")
+            process.terminate()
+            process.wait()
+        finally:
+            if process.poll() is None:  # Check if the process is still running
+                log_out("Ensuring process termination...")
+                process.terminate()
+                process.wait()
+
+
+        # try:
+        #     process = subprocess.Popen(
+        #         f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
+        #         shell=True,
+        #         stdin=subprocess.PIPE,
+        #     )
+        # except:
+        #     process.send_signal(subprocess.signal.SIGINT)
+
     elif board == "KRIA":
         subprocess.run(
             f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} '((ls /etc/profile.d/pynq_venv.sh >> /dev/null 2>&1 && source /etc/profile.d/pynq_venv.sh) || echo '') && cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
@@ -620,6 +697,35 @@ def process_layer_details(df, run_dict, run_name):
     return run_dict
 
 
+# Reports in microseconds
+def process_layer_details_custom(df, run_dict, acc_layer):
+    # runtime is combination of driver, del and hardware
+    runtime = (
+        run_dict["hardware"]
+        + "_"
+        + run_dict["acc_version"]
+        + "_"
+        + run_dict["del"]
+        + "_"
+        + run_dict["del_version"]
+    )
+    df = add_new_columns(df, "Runtime", runtime)
+    run_dict["total_latency"] = int(
+        df["avg_ms"].astype(float).sum() * 1000
+    )  # convert to us
+    run_dict["acc_layer"] = int(
+        df[df["nodetype"].str.lower().str.contains("del")]["avg_ms"].astype(float).sum()
+        * 1000
+    )
+    if run_dict["acc_layer"] == 0:
+        run_dict["acc_layer"] = int(
+            df[df["nodetype"].str.lower().str.contains(acc_layer.lower())]["avg_ms"].astype(float).sum()
+            * 1000
+        )
+
+    run_dict["cpu_layers"] = int(run_dict["total_latency"] - run_dict["acc_layer"])
+    return run_dict
+
 def process_run(
     model,
     thread,
@@ -632,6 +738,7 @@ def process_run(
     board,
     runname,
     name,
+    acc_layer,
 ):
     run_dict = {}
     run_dict["model"] = model
@@ -667,9 +774,43 @@ def process_run(
             run_dict["cpu_layers"] = 0
         else:
             run_dict = {**run_dict, **acc_prf}
-            run_dict = process_layer_details(
-                get_df_from_csv(f"tmp/{runname}_layer.csv"), run_dict, runname
+            # run_dict = process_layer_details(
+            #     get_df_from_csv(f"tmp/{runname}_layer.csv"), run_dict, runname
+            # )
+            df = get_df_from_csv(f"tmp/{runname}_layer.csv")
+            run_dict = process_layer_details_custom(
+                df, run_dict, acc_layer
             )
+            if "CPU" in run_dict["hardware"]:
+                # Save pie chart of avg_ms using plotly
+                import plotly.express as px
+                pie_chart = px.pie(
+                    df,
+                    values="avg_ms",
+                    names="nodetype",
+                    title=f"Layer-wise Execution Time Breakdown for {runname}",
+                )
+  
+                df["avg_ms"] = df["avg_ms"].astype(float)
+                pie_chart.update_traces(
+                    textinfo="label+percent",
+                    texttemplate="%{label}: %{percent:.1%}",
+                    insidetextorientation="horizontal",
+                    textposition="inside",
+                    pull=[0.1 if v > 10 else 0 for v in (df["avg_ms"] / (df["avg_ms"].sum() * 100))],
+                )
+                pie_chart.update_layout(
+                    title={
+                        "text": f"Layer-wise Execution Time Breakdown for {runname}",
+                        "x": 0.5,  # Center the title
+                        "xanchor": "center",
+                    }
+                )
+                os.makedirs(f"results/{board}/{name}", exist_ok=True)
+                pie_chart.write_image(f"results/{board}/{name}/{runname}_pie_chart.png", scale=2, width=1280, height=720)
+                display(pie_chart)
+
+
     else:
         log_out("Invalid run : ", runname)
         run_dict["total_latency"] = 0
@@ -760,6 +901,7 @@ def run_benchmarking_suite(
     sc,
     selected_boards,
     selected_models,
+    selected_layers,
     selected_hardware,
     selected_threads,
     selected_num_runs,
@@ -774,6 +916,7 @@ def run_benchmarking_suite(
     bin_gen = exp_config["bin_gen"]
     skip_inf_diff = exp_config["skip_inf_diff"]
     collect_power = exp_config["collect_power"]
+    time_out = exp_config["time_out"]
     test_run = exp_config["test_run"]
     sim_mode = exp_config["sim_mode"]
     name = f"run_{now}" if exp_config["name"] == "" else exp_config["name"]
@@ -808,6 +951,7 @@ def run_benchmarking_suite(
     log_out(f"Skip Inf Diff: {skip_inf_diff}")
     log_out(f"Collect Power: {collect_power}")
     log_out(f"Test Run: {test_run}")
+    log_out(f"Time Out: {time_out}")
     log_out(f"Sim Mode: {sim_mode}")
     log_out(f"Name: {name}")
     log_out("-----------------------------------------------------------")
@@ -850,14 +994,16 @@ def run_benchmarking_suite(
         log_out("Configuring Benchmark")
         log_out("-----------------------------------------------------------")
         # Configure the benchmark
-        experiment_configs = generate_benchmark_configs(
+        experiment_configs, models_path = generate_benchmark_configs(
             sc,
             selected_boards,
             selected_models,
+            selected_layers,
             selected_hardware,
             selected_threads,
             selected_num_runs,
             hardware_config,
+            time_out,
         )
 
         if init:
@@ -895,6 +1041,9 @@ def run_benchmarking_suite(
                 log_out("-----------------------------------------------------------")
                 transfer_exp_configs(sc, board)
 
+                # I can addedd in automatic copying of selected models to the board here
+                # if needed
+
                 log_out("-----------------------------------------------------------")
                 log_out(f"Running {board} Experiments")
                 log_out("-----------------------------------------------------------")
@@ -921,6 +1070,7 @@ def run_benchmarking_suite(
                     i += 1
                     hw = exp["hw"]
                     model = exp["model"]
+                    layer = exp["layer"]
                     thread = exp["thread"]
                     num_runs = exp["num_runs"]
                     version = exp["version"]
@@ -955,6 +1105,7 @@ def run_benchmarking_suite(
                         board,
                         runname,
                         name,
+                        layer,
                     )
 
                 results_df = process_all_runs(name, board)
@@ -968,3 +1119,85 @@ def run_benchmarking_suite(
     log.close()
     # sys.stdout = sys.__stdout__
     # sys.stderr = sys.__stderr__
+
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib.ticker as ticker
+import matplotlib
+import os
+
+def plot_profiles(folder, show_all=False, show_x=1):
+    # cm = plt.get_cmap("Accent").reversed()
+    cm = plt.get_cmap("tab20").reversed()
+    NUM_COLORS = 7
+    font = {"family": "sans-serif", "weight": "normal", "size": 7}
+    matplotlib.rc("font", **font)
+
+    def plot_h(df):
+        for index, row in df.iterrows():
+            for col in df.columns:
+                if not col.startswith("T_"):
+                    row = row.drop([col])
+
+            T_rows = [row.split("_")[1] for row in df.columns if row.startswith("T_")]
+            T_rows = list(set(T_rows))
+            sdf = pd.DataFrame()
+            Tlen = T_rows.__len__()
+            fig, axs = plt.subplots(Tlen, 1, figsize=(10, Tlen * 2))
+            # reorder T_rows alphabetically
+            T_rows = sorted(T_rows)
+            for id, T_row in enumerate(T_rows):
+                all_T_row_cols = [row for row in df.columns if row.startswith("T_" + T_row)]
+                ndf = df[all_T_row_cols].sort_values(by=0, axis=1, ascending=True)
+                # ndf = df[all_T_row_cols]
+
+                ndf = ndf.iloc[index]
+                ndf = ndf.rename(T_row)
+                ndf = ndf.to_frame().T
+                ax = axs[id]
+                pd.DataFrame(ndf).plot(
+                    kind="barh", stacked=True, ax=ax, colormap=cm, width=0.3
+                )
+                ax.set_prop_cycle(color=[cm(5 + 1.0 * i) for i in range(NUM_COLORS)])
+                legends = [
+                    i.replace("T_", "").replace(T_row, "S") for i in list(ndf.columns)
+                ]
+                total_cycles = ndf.sum(axis=1).values[0]
+
+                ax.legend(
+                    legends,
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, 1),
+                    prop={"size": 7},
+                    ncol=10,
+                )
+
+                ax.set_xlabel(f"{T_row} | Total Clock Cycles: {total_cycles}")
+                ax.set_xlabel(ax.get_xlabel(), fontweight="normal", fontsize=9)
+                ax.set_yticklabels("")
+                ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: "{:,.0f}K".format(x/1000)))
+                ax.tick_params(axis='both', which='major', labelsize=9)
+                # add vertical line between all bar colour
+                for i in range(1, len(legends)):
+                    ax.axvline(x=i-0.5, color='black', linewidth=0.5)
+
+                
+            # plt.subplots_adjust(wspace=0.5, hspace=0.5/ Tlen)
+            #make save between subplots bigger
+            plt.tight_layout()
+            plt.show()
+            break
+
+    profs = sorted(os.listdir(folder), key=lambda x: os.path.getctime(folder + x))
+    profs.reverse()
+    for prof in profs:
+        filename = folder + prof
+        df = pd.read_csv(filename, sep=",", header=0)
+        print(prof)
+        plot_h(df)
+        show_x -= 1
+        if show_x == 0 and not show_all:
+            break

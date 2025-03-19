@@ -20,13 +20,15 @@
 #define dma_addr2 0x40420000
 #define dma_addr3 0x40430000
 #define dma_in0 0x16000000
-#define dma_in1 0x18000000
-#define dma_in2 0x1a000000
-#define dma_in3 0x1c000000
+// #define dma_in1 0x18000000
+// #define dma_in2 0x1a000000
+// #define dma_in3 0x1c000000
 #define dma_out0 0x16800000
-#define dma_out1 0x18800000
-#define dma_out2 0x1a800000
-#define dma_out3 0x1c800000
+// #define dma_out1 0x18800000
+// #define dma_out2 0x1a800000
+// #define dma_out3 0x1c800000
+// #define dma_in0 0x18000000
+// #define dma_out0 0x18800000
 #define DMA_BL 4194304
 
 // HERE //TCONV SYNTH v2_1/v2_4  Works

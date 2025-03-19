@@ -152,10 +152,10 @@ SC_MODULE(ACCNAME) {
   SignalTrack *psSC = new SignalTrack("T_psSC", true);
   SignalTrack *psSD = new SignalTrack("T_psSD", true);
 
-  // std::vector<Metric *> profiling_vars = {shS,  gmSA, gmSB, gmSC, gmSD,
-  //                                         psSA, psSB, psSC, psSD};
+  std::vector<Metric *> profiling_vars = {shS,  gmSA, gmSB, gmSC, gmSD,
+                                          psSA, psSB, psSC, psSD};
   // std::vector<Metric *> profiling_vars = {shS, gmSA, gmSB, psSA, psSB};
-  std::vector<Metric *> profiling_vars = {shS, gmSB, psSB};
+  // std::vector<Metric *> profiling_vars = {shS, gmSB, psSB};
 
   // std::vector<Metric *> profiling_vars = {
   //     cycles, load_inps,    load_wgts,  compute,     idle1,   idle2,   idle3,

@@ -5,7 +5,7 @@
       "dataset": "imagenet",
       "datatype": "int8",
       "layers": [
-        "conv2d",
+        "CONV_2D",
         "depthwise_conv2d"
       ]
     },
@@ -14,8 +14,8 @@
       "dataset": "imagenet",
       "datatype": "int8",
       "layers": [
-        "conv2d",
-        "fully_connected"
+        "CONV_2D",
+        "FULLY_CONNECTED"
       ]
     },
     {
@@ -23,7 +23,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "fully_connected"
+        "FULLY_CONNECTED"
       ]
     },
     {
@@ -31,7 +31,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "conv2d"
+        "CONV_2D"
       ]
     },
     {
@@ -39,7 +39,7 @@
       "dataset": "imagenet",
       "datatype": "int8",
       "layers": [
-        "conv2d"
+        "CONV_2D"
       ]
     },
     {
@@ -47,7 +47,7 @@
       "dataset": "imagenet",
       "datatype": "int8",
       "layers": [
-        "conv2d"
+        "CONV_2D"
       ]
     },
     {
@@ -55,7 +55,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "fully_connected"
+        "FULLY_CONNECTED"
       ]
     },
     {
@@ -63,7 +63,7 @@
       "dataset": "imagenet",
       "datatype": "int8",
       "layers": [
-        "conv2d",
+        "CONV_2D",
         "depthwise_conv2d"
       ]
     },
@@ -72,8 +72,8 @@
       "dataset": "imagenet",
       "datatype": "int8",
       "layers": [
-        "conv2d",
-        "fully_connected"
+        "CONV_2D",
+        "FULLY_CONNECTED"
       ]
     },
     {
@@ -81,7 +81,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "transpose_conv2d"
+        "TRANSPOSE_CONV"
       ]
     },
     {
@@ -89,7 +89,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "transpose_conv2d"
+        "TRANSPOSE_CONV"
       ]
     },
     {
@@ -97,7 +97,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "transpose_conv2d"
+        "TRANSPOSE_CONV"
       ]
     },
     {
@@ -105,7 +105,7 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "transpose_conv2d"
+        "TRANSPOSE_CONV"
       ]
     },
     {
@@ -113,7 +113,16 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "transpose_conv2d"
+        "TRANSPOSE_CONV"
+      ]
+    },
+    {
+      "name": "esrgan",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "TRANSPOSE_CONV",
+        "CONV_2D"
       ]
     },
     {
@@ -121,8 +130,26 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
-        "add"
+        "ADD"
+      ]
+    },
+    {
+      "name": "unet_carvana",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D",
+        "TRANSPOSE_CONV"
+      ]
+    },
+    {
+      "name": "unet_cycle_gan_f",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "TRANSPOSE_CONV"
       ]
     }
+    
   ]
 }

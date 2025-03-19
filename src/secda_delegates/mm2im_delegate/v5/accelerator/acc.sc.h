@@ -22,15 +22,15 @@ SC_MODULE(ACCNAME) {
   // sc_out_sig outS;
   // sc_out_sig tempS;
 
-  sc_fifo_in<DATA> din1;
-  sc_fifo_in<DATA> din2;
-  sc_fifo_in<DATA> din3;
-  sc_fifo_in<DATA> din4;
+  sc_fifo_in<ADATA> din1;
+  sc_fifo_in<ADATA> din2;
+  sc_fifo_in<ADATA> din3;
+  sc_fifo_in<ADATA> din4;
 
-  sc_fifo_out<DATA> dout1;
-  sc_fifo_out<DATA> dout2;
-  sc_fifo_out<DATA> dout3;
-  sc_fifo_out<DATA> dout4;
+  sc_fifo_out<ADATA> dout1;
+  sc_fifo_out<ADATA> dout2;
+  sc_fifo_out<ADATA> dout3;
+  sc_fifo_out<ADATA> dout4;
 
   // Global Buffer for wgt sum: needs to support ks * ks * filter_step
   ACC_DTYPE<32> wgt_sum_buf[G_WGTSUMBUF_SIZE];
@@ -38,8 +38,7 @@ SC_MODULE(ACCNAME) {
   // Global Buffer for bias, crf, crx:  needs to support filter_step
   ACC_DTYPE<32> bias_buf[PE_COUNT];
   ACC_DTYPE<32> crf_buf[PE_COUNT];
-  ACC_DTYPE<32> crx_buf[PE_COUNT];
-  int pe_cols[PE_COUNT];
+  ACC_DTYPE<32> crx_buf[PE_COUNT];;
 
 #ifndef __SYNTHESIS__
   sc_signal<bool, SC_MANY_WRITERS> load_wgt;
@@ -204,7 +203,7 @@ SC_MODULE(ACCNAME) {
     reset_signal_is(reset, true);
 #endif
 
-#pragma HLS array_partition variable = pe_cols complete
+// #pragma HLS array_partition variable = pe_cols complete
 
 #pragma HLS RESOURCE variable = din1 core = AXI4Stream metadata =              \
     "-bus_bundle S_AXIS_DATA1" port_map = {                                    \

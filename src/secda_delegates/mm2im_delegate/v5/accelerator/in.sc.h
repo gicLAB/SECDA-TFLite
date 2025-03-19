@@ -26,7 +26,7 @@ void ACCNAME::Input_Handler() {
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_7.computeS
 #pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=vars.vars_7.sendS
   // clang-format on
-  DATA d;
+  ADATA d;
 
   load_wgt.write(false);
   load_inp.write(false);

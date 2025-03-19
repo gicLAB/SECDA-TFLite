@@ -9,7 +9,7 @@
   "acc_src": "mm2im_delegate/v5/accelerator",
   "acc_link_folder": "mm2im_src_v2_5",
   "hlx_tcl_script": "sdma_axilite_hlx.tcl",
-  "top": "MM2IMv2",
+  "top": "MM2IMv5",
   "board_script": "",
   "del" : "mm2im_delegate",
   "del_version": "5"

@@ -16,7 +16,7 @@
 
 #define DMA_BC 1 // threaded execution does not work with multiple blocks
 #define DELEGATE_NAME "VM"
-#define DELEGATE_VERSION 3
+#define DELEGATE_VERSION 4
 
 static unsigned int dma_addrs[4] = {dma_addr0, dma_addr1, dma_addr2, dma_addr3};
 static unsigned int dma_addrs_in[4] = {dma_in0, dma_in1, dma_in2, dma_in3};
@@ -490,6 +490,8 @@ public:
       // drv.use_sim = options_.use_simmode;
       drv.use_sim = false;
       // drv.clear_traces();
+
+      // CPU GEMM
 
       prf_end(1, vm_t.p_ipack);
       // Calls the gemm_driver to offload the CONV2D operation

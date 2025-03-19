@@ -129,6 +129,9 @@ with open("model_gen/configs/tf_dcgan_layers.json") as f:
 with open("model_gen/configs/conv_models.json") as f:
     conv_models_pot_exp = json.load(f)["conv_models"]
 
+with open("model_gen/configs/pix2pix_models.json") as f:
+    pix2pix_models = json.load(f)["pix2pix_models"]
+
 # with open("model_gen/configs/mnk_broke.json") as f:
 #     mnk_models = json.load(f)["mnk_broke"]
 
@@ -206,29 +209,7 @@ conv_exp = [
 ]
 
 
-# DCGAN Experiment
-models = ["dcgan_gen"]
-hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
-# hardware = ["MM2IMv2_51"]
-threads = [1]
-num_run = 10
-board = "Z1"
-board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
-    get_board_config(sc, board)
-)
-board_config = [board, board_user, board_hostname, board_port, board_dir]
-# model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
-model_dir = f"{board_dir}/benchmark_suite/models/"
-dc_gan_exp = [
-    models,
-    hardware,
-    threads,
-    num_run,
-    model_dir,
-    bitstream_dir,
-    bin_dir,
-    board_config,
-]
+
 
 # GAN Experiment
 models = gan_models
@@ -287,9 +268,90 @@ test_exp = [
     board_config,
 ]
 
+
+
+
+
+# DCGAN Experiment
+
+# Works
+# models = ["dcgan_gen"]
+# models = ["tconv_2_2_7_4_14_14_64"]
+# models = ["tconv_2_2_3_5_4_4_64"]
+# models = ["tconv_2_2_1_8_14_14_64"]
+
+
+# Doesn't work
+models = ["tconv_2_2_8_4_14_14_64"] # produces error  
+
+
+
+# models = pix2pix_models
+# models = ["pix2pix_g"]
+
+# hardware = ["MM2IMv2_3", "MM2IMv2_4", "CPU", "MM2IMv2_4"]
+hardware = ["MM2IMv2_7"]
+# hardware = ["MM2IMv2_61"]
+
+threads = [1]
+num_run = 1
+board = "Z1"
+board_user, board_hostname, board_port, board_dir, bitstream_dir, bin_dir = (
+    get_board_config(sc, board)
+)
+board_config = [board, board_user, board_hostname, board_port, board_dir]
+# model_dir = f"/home/{board_user}/Workspace/secda_tflite/benchmark_suite/models/tconv"
+# model_dir = f"{board_dir}/benchmark_suite/models/pix2/"
+model_dir = f"{board_dir}/benchmark_suite/models/"
+dc_gan_exp = [
+    models,
+    hardware,
+    threads,
+    num_run,
+    model_dir,
+    bitstream_dir,
+    bin_dir,
+    board_config,
+]
 ####################################################
 ####################################################
 
 # Current experiment
 
-create_exp(sc, test_exp)
+create_exp(sc, dc_gan_exp)
+
+
+# pix2pix_models = [
+#     "tconv_2_2_512_4_1_1_512",
+#     "tconv_2_2_512_4_2_2_1024",
+#     "tconv_2_2_512_4_4_4_1024",
+#     "tconv_2_2_512_4_8_8_1024",
+#     "tconv_2_2_256_4_16_16_1024",
+#     "tconv_2_2_128_4_32_32_512",
+#     "tconv_2_2_64_4_64_64_256"
+# ]
+
+# f,1
+# ks,5
+# ih,14
+# iw,14
+# ic,64
+# oh,28
+# ow,28
+# oc,1
+# rows: 25, cols: 196, depth: 64
+# stride_x: 2
+# stride_y: 2
+# *******************
+# f,1
+# ks,8
+# ih,14
+# iw,14
+# ic,64
+# oh,28
+# ow,28
+# oc,1
+# rows: 64, cols: 196, depth: 64
+# stride_x: 2
+# stride_y: 2
+# *******************

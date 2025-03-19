@@ -13,7 +13,7 @@
 // #define TOG(X)                                                                 \
 //   if (drv.verb) X;
 
-#define TOG(X)
+// #define TOG(X) X
 
 int input_data_sent = 0;
 int weight_data_sent = 0;

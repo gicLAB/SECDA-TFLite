@@ -1,0 +1,21 @@
+{
+  "acc_name": "MM2IM",
+  "acc_version": 2,
+  "acc_sub_version": 7,
+  "version": "2_7",
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_src": "mm2im_delegate/v7/accelerator",
+  "acc_link_folder": "mm2im_src_v2_7",
+  "hlx_tcl_script": "mdma_axilite_hlx_reconfig_1_xfull.tcl",
+  "top": "MM2IMv7",
+  "board_script": "",
+  "del" : "mm2im_delegate",
+  "del_version": "7",
+  "hls_clock" : "5",
+  "hlx_Mhz": "200",
+  "axi_bitW": "32",
+  "axi_burstS": "32",
+  "board": "Z1"
+}

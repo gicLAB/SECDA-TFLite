@@ -1,23 +1,18 @@
-// #define SYSC
-
-#include "mm2im_delegate.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
 
 #include <iomanip>
 #include <iostream>
 #include <utility>
 
 #ifdef SYSC
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
+#include "secda_tools/secda_profiler/profiler.h"
 
 #include "accelerator/driver/mm2im_driver.h"
-#include "accelerator/driver/mm2im_util.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/multi_threading.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-#include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include "util.h"
+#include "mm2im_delegate.h"
+
+#include "tensorflow/lite/delegates/utils/simple_delegate.h"
 
 #define DELEGATE_NAME "MM2IM"
 #define DELEGATE_VERSION 5
@@ -26,16 +21,18 @@ unsigned int dma_addrs[1] = {dma_addr0};
 unsigned int dma_addrs_in[1] = {dma_in0};
 unsigned int dma_addrs_out[1] = {dma_out0};
 struct mm2im_times p_t;
-struct del_params dparams;
-static struct Profile profile;
 
 #ifdef SYSC
-static struct multi_dma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, 563840);
+#define SYSC_DMA_BL 563840
+static struct s_mdma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, SYSC_DMA_BL);
 ACCNAME *acc;
 #else
-struct multi_dma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
+struct s_mdma mdma(1, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
 int *acc;
 #endif
+
+struct del_params dparams;
+static struct Profile profile;
 struct MultiThreadContext mt_context;
 
 #define DTOG(X)
@@ -566,7 +563,7 @@ public:
       drv.t.layer = dparams.layer;
       prf_end(1, p_t.p_ipack);
 
-// #ifdef RUN_CPU_TCONV
+#ifdef RUN_CPU_TCONV
       cpu_backend_gemm::Gemm(lhs_params, hwoi_ordered_filter_data, rhs_params,
                              input_data, dst_params, col2im_data, gemm_params,
                              cpu_backend_context);
@@ -604,7 +601,7 @@ public:
       saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
                         "_out_cpu.csv",
                     output_data, scratch_cols, scratch_rows);
-// #endif
+#endif
 
 // CPU implemented here does provide correct results
 #ifdef DELEGATE_VERBOSE
@@ -617,11 +614,11 @@ public:
       mm2im_driver::Entry(drv);
       p_t = drv.p_t;
 
-// #ifdef SYSC
+#ifdef SYSC
       saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
                         "_out_acc.csv",
                     output_data, scratch_cols, scratch_rows);
-// #endif
+#endif
       dparams.layer++;
       dparams.delegated_nodes--;
     }

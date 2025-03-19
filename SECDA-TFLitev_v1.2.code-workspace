@@ -129,7 +129,12 @@
 			"__locale": "cpp",
 			"*.tpp": "cpp",
 			"__mutex_base": "cpp",
-			"nnls": "cpp"
+			"nnls": "cpp",
+			"__tuple": "cpp",
+			"__string": "cpp",
+			"__hash_table": "cpp",
+			"__split_buffer": "cpp",
+			"__tree": "cpp"
 		},
 		"editor.inlineSuggest.enabled": true,
 		"java.compile.nullAnalysis.mode": "disabled",

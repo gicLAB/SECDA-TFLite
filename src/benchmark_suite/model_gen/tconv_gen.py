@@ -3,12 +3,14 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import logging
+
 logging.getLogger("tensorflow").disabled = True
 import tensorflow as tf
 import numpy as np
 
+
 def build_tconv_model(params, mdir):
-    '''params = [stride_x, stride_y, filters, kernel_size, in1, in2, in3, padding_val]'''
+    """params = [stride_x, stride_y, filters, kernel_size, in1, in2, in3, padding_val]"""
 
     stride_x = params[0]
     stride_y = params[1]
@@ -65,7 +67,8 @@ def build_tconv_model(params, mdir):
     os.system(f"rm -rf {mdir}tf")
     return file_s
 
-def generate_python_list(params, filename,name):
+
+def generate_python_list(params, filename, name):
     # create a json with list of all the models to be used in the benchmarking script
     f = open(filename, "w+")
     f.write("{\n")
@@ -82,7 +85,7 @@ def generate_python_list(params, filename,name):
 
 
 params = []
-fs = [16,32,64]
+fs = [16, 32, 64]
 ks = [3, 5, 7]
 inh = [7, 9, 11]
 ic = [32, 64, 128, 256]
@@ -96,33 +99,63 @@ for s in strides:
                     params.append([s, s, f, k, i, i, o, "same"])
 
 # params = [sx, sy, oc, k, ih, iw, ic, "same"]
-dcgan_layer1 = [2,2,512,5,4,4,1024,"same"]
-dcgan_layer2 = [2,2,256,5,8,8,512,"same"]
-dcgan_layer3 = [2,2,128,5,16,16,256,"same"]
-dcgan_layer4 = [2,2,3,5,32,32,128,"same"]
-dcgan= [dcgan_layer1, dcgan_layer2, dcgan_layer3, dcgan_layer4]
+dcgan_layer1 = [2, 2, 512, 5, 4, 4, 1024, "same"]
+dcgan_layer2 = [2, 2, 256, 5, 8, 8, 512, "same"]
+dcgan_layer3 = [2, 2, 128, 5, 16, 16, 256, "same"]
+dcgan_layer4 = [2, 2, 3, 5, 32, 32, 128, "same"]
+dcgan = [dcgan_layer1, dcgan_layer2, dcgan_layer3, dcgan_layer4]
 
-tf_dcgan_layer1 = [1,1,128,5,7,7,256,"same"]
-tf_dcgan_layer2 = [2,2,64,5,7,7,128,"same"]
-tf_dcgan_layer3 = [2,2,1,5,14,14,64,"same"]
+tf_dcgan_layer1 = [1, 1, 128, 5, 7, 7, 256, "same"]
+tf_dcgan_layer2 = [2, 2, 64, 5, 7, 7, 128, "same"]
+tf_dcgan_layer3 = [2, 2, 1, 5, 14, 14, 64, "same"]
 tf_dcgan = [tf_dcgan_layer1, tf_dcgan_layer2, tf_dcgan_layer3]
 
-fcn_layer1 = [2,2,21,4,1,1,21,"same"]
-fcn_layer2 = [2,2,21,4,4,4,21,"same"]
-fcn_layer3 = [2,2,128,5,16,16,256,"same"]
+fcn_layer1 = [2, 2, 21, 4, 1, 1, 21, "same"]
+fcn_layer2 = [2, 2, 21, 4, 4, 4, 21, "same"]
+fcn_layer3 = [2, 2, 128, 5, 16, 16, 256, "same"]
 fcn = [fcn_layer1, fcn_layer2, fcn_layer3]
-                    
-#  [s, s, f, k, i, i, o, "same"]
-params = tf_dcgan
+
+# test_layer = [2,2,3,5,4,4,64,"same"]
+# test_layer = [2, 2, 1, 8, 14, 14, 64, "same"]
+# test_layer = [2, 2, 8, 4, 14, 14, 64, "same"]
+test_layer = [2, 2, 7, 4, 14, 14, 64, "same"]
 
 
 
-mdir = "models/tconv/"
-name = "tconv_models"
+
+pix2pix_layer1 = [2, 2, 512, 4, 1, 1, 512, "same"]
+pix2pix_layer2 = [2, 2, 512, 4, 2, 2, 1024, "same"]
+pix2pix_layer3 = [2, 2, 512, 4, 4, 4, 1024, "same"]
+pix2pix_layer4 = [2, 2, 512, 4, 8, 8, 1024, "same"]
+pix2pix_layer5 = [2, 2, 256, 4, 16, 16, 1024, "same"]
+pix2pix_layer6 = [2, 2, 128, 4, 32, 32, 512, "same"]
+pix2pix_layer7 = [2, 2, 64, 4, 64, 64, 256, "same"]
+pix2pix_layer8 = [2, 2, 3, 4, 128, 128, 128, "same"]
+pix2pix = [
+    pix2pix_layer1,
+    pix2pix_layer2,
+    pix2pix_layer3,
+    pix2pix_layer4,
+    pix2pix_layer5,
+    pix2pix_layer6,
+    pix2pix_layer7,
+    pix2pix_layer8,
+]
+
+#  [s, s, oc, ks, iw, ih, ic, "same"]
+# params = tf_dcgan
+params = pix2pix
+# params = fcn
+# params = dcgan
+# params = [test_layer]
+
+
+mdir = "models/pix2pix/"
+name = "pix2pix"
 
 for param in params:
     build_tconv_model(param, mdir)
-generate_python_list(params, f"configs/{name}.json",name)
+generate_python_list(params, f"configs/{name}.json", name)
 
 
 print(f"Generated {len(params)} models")

@@ -58,8 +58,6 @@ void ACCNAME::Data_In() {
         crx_buf[i+1] = data.range(15, 8);
         crx_buf[i+2] = data.range(23, 16);
         crx_buf[i+3] = data.range(31, 24);
-
-        // crx_buf[i] = data;
         DWAIT();
       }
 

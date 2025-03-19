@@ -13,12 +13,12 @@ SC_MODULE(PE) {
   sc_fifo_in<int> wgt_sum_fifo_in;
   sc_fifo_in<bUF> wgt_fifo_in;
   sc_fifo_in<bUF> inp_fifo_in;
-  sc_fifo_out<DATA> out_fifo_out;
+  sc_fifo_out<ADATA> out_fifo_out;
   sc_fifo_in<int> temp_fifo_in;
   sc_fifo_out<int> temp_fifo_out;
 
-  sc_fifo_in<DATA> col_indices_fifo;
-  sc_fifo_in<DATA> out_indices_fifo;
+  sc_fifo_in<ADATA> col_indices_fifo;
+  sc_fifo_in<ADATA> out_indices_fifo;
 
   sc_in<bool> online;
   sc_in<bool> compute;
@@ -233,7 +233,7 @@ SC_MODULE(PE) {
         computeS.write(61);
         DWAIT();
         int pouts = 0;
-        DATA d = col_indices_fifo.read();
+        ADATA d = col_indices_fifo.read();
         while (!d.tlast) {
 #pragma HLS PIPELINE II = 1
           sc_uint<8> data = d.data.range(7, 0);
@@ -299,8 +299,8 @@ SC_MODULE(PE) {
   }
 
   void Out() {
-    DATA last = {4000, 1};
-    DATA d = {0, 0};
+    ADATA last = {4000, 1};
+    ADATA d = {0, 0};
     int start_addr = 0;
     int send_len = 0;
     int bias;
@@ -360,7 +360,7 @@ SC_MODULE(PE) {
 
       if (out) {
         sendS.write(4);
-        DATA d = out_indices_fifo.read();
+        ADATA d = out_indices_fifo.read();
         while (!d.tlast) {
           int dex = d.data % PE_ACC_BUF_SIZE;
           int out_data = temp_fifo_in.read();
@@ -510,7 +510,7 @@ struct var_array {
   }
 
   void col_indices_fifo_write(int d, bool tlast, int index) {
-    DATA data = {d, tlast};
+    ADATA data = {d, tlast};
     if (index == 0) return vars_0.col_indices_fifo.write(data);
     else if (index == 1) return vars_1.col_indices_fifo.write(data);
     else if (index == 2) return vars_2.col_indices_fifo.write(data);
@@ -523,7 +523,7 @@ struct var_array {
   }
 
   void out_indices_fifo_write(int d, bool tlast, int index) {
-    DATA data = {d, tlast};
+    ADATA data = {d, tlast};
     if (index == 0) return vars_0.out_indices_fifo.write(data);
     else if (index == 1) return vars_1.out_indices_fifo.write(data);
     else if (index == 2) return vars_2.out_indices_fifo.write(data);
@@ -559,7 +559,7 @@ struct var_array {
     else return vars_0.wgt_sum_fifo.write(data);
   }
 
-  DATA get(int index) {
+  ADATA get(int index) {
     if (index == 0) return vars_0.out_fifo.read();
     else if (index == 1) return vars_1.out_fifo.read();
     else if (index == 2) return vars_2.out_fifo.read();

@@ -47,6 +47,11 @@ __pycache__
 /src/benchmark_suite/scripts/tmp
 /src/benchmark_suite/tmp
 /src/benchmark_suite/logs
+/hardware_automation/architecture.ipynb
+/hardware_automation/architectures/
+scripts/update_launch.ipynb
+
+
 
 
 
