@@ -68,6 +68,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
     for (int j = 0; j < 4; j++) {
 #pragma HLS unroll
       accum[j * 4 + i] = g[j * 4 + i] + y[i] + x[j];
+      cout << "accum[" << j * 4 + i << "] = " << accum[j * 4 + i] << endl;
     }
   }
 
@@ -98,8 +99,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
 
 #ifndef KRIA
       int ret_accum1 = Quantised_Multiplier_gemmlowp(accum1, pcrf[j], pls[j],
-                                                     prs[j], msks[j],
-                                                     sms[j]);
+                                                     prs[j], msks[j], sms[j]);
 #else
       int ret_accum1 =
           Quantised_Multiplier_ruy_reference(accum1, pcrf[j], pex[j]);
@@ -110,6 +110,7 @@ void VMM_UNIT::PPU(int *x, int *y, int *pcrf, sc_int<8> *pex, sc_int<32> *g,
       if (f1_a1 > MAX8) f1_a1 = MAX8;
       else if (f1_a1 < MIN8) f1_a1 = MIN8;
       r[j * 4 + i] = f1_a1.range(7, 0);
+      cout << "r[" << j * 4 + i << "] = " << r[j * 4 + i] << endl;
     }
   }
   DWAIT(44);
@@ -171,6 +172,7 @@ void VMM_UNIT::Compute() {
     for (int i = 0; i < 16; i++) {
 #pragma HLS unroll
       g[i] = out[i][0];
+      cout << "g[" << i << "] = " << g[i] << endl;
     }
     computeS.write(6);
     post_ready.write(false);

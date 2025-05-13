@@ -52,6 +52,8 @@ struct sysC_sigs {
   sc_signal<int> sig_postS2;
   sc_signal<int> sig_postS3;
 
+  sc_signal<bool> sig_hwc_reset;
+
   sc_fifo<ADATA> dout1;
   sc_fifo<ADATA> dout2;
   sc_fifo<ADATA> dout3;
@@ -137,6 +139,8 @@ void sysC_binder(ACCNAME *acc, s_mdma *mdma, sysC_sigs *scs) {
 
   acc->vars.vars_3.computeS(scs->sig_computeS3);
   acc->vars.vars_3.postS(scs->sig_postS3);
+
+  acc->hwc_reset(scs->sig_hwc_reset);
 }
 
 #endif // SYSTEMC_BINDING

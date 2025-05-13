@@ -239,33 +239,6 @@ void TileMM2IM(acc_container &drv, int padded_depth) {
       starting = drv.oh_ends[o_1] + 1;
     }
   }
-
-  // ==============================================
-
-  // int depth_step = min(padded_depth, PE_WGTCOLBUF_SIZE);
-  // for (; o_3 < drv.oc; o_3 += filter_step) {
-  //   int fs_rem = min(filter_step, drv.oc - o_3);
-  //   // Send filter_step * cols_per_filter rows of weights to accelerator
-
-  //   int start_input_row = 0;
-  //   for (int o_1 = 0; o_1 < drv.oh; o_1++) {
-  //     int rows_to_send = drv.oh_ends[o_1] + 1 - starting;
-
-  //     for (int o_2 = 0; o_2 < drv.ow; drv.ow++) {
-
-  //       for (int d = 0; d < padded_depth; d += depth_step) {
-  //         LoadWeight(drv, o_3 * cols_per_filter, fs_rem * cols_per_filter,
-  //                    current_depth, fs_rem, o_3);
-  //         if (drv.oh_ends[o_1] != start_input_row - 1) {
-  //           LoadInput(drv, starting, rows_to_send, current_depth);
-  //         }
-  //       }
-  //     }
-  //     starting = drv.oh_ends[o_1] + 1;
-  //   }
-  // }
-
-  // ==============================================
   // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
 };
 

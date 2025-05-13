@@ -248,6 +248,7 @@ SC_MODULE(PE) {
         for (int i = 0; i < pouts; i++) {
 #pragma HLS PIPELINE II = 1
           int dout = out_buf[i];
+          // cout << "out_buf[" << i << "] = " << out_buf[i] << endl;
           temp_fifo_out.write(out_buf[i]);
           DWAIT();
         }

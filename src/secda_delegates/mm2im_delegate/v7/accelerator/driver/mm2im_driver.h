@@ -68,10 +68,7 @@ void LoadWeight(acc_container &drv, int starting_row, int number_of_rows,
   in0[inl0++] = wgt_packet_a;
   in0[inl0++] = wgt_packet_b;
   in0[inl0++] = filter_step;
-  cout << "Starting Row: " << starting_row
-       << " Number of Rows: " << number_of_rows
-       << " Padded Depth: " << padded_depth << " Filter Step: " << filter_step
-       << " Starting Filter: " << starting_filter << endl;
+
   prf_start(0);
   for (int i = 0; i < number_of_rows; i++) {
     int src_addr = (starting_row + i) * padded_depth_4;
@@ -165,9 +162,7 @@ void StoreOutTileRow(acc_container &drv, int o_1, int o_3, int filter_step,
     int o_dex = ((o_1 * drv.ow) + o_2) * drv.oc + o_3;
     for (int f = 0; f < filter_step; f++) {
       drv.output_data[o_dex + f] = out0[outl0++];
-      // cout << (int)drv.output_data[o_dex + f] << ",";
     }
-    // cout << endl;
   }
   write_data_recv += outl0;
   prf_end(1, drv.p_t.p_store);

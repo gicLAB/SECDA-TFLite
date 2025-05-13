@@ -27,6 +27,14 @@
       ]
     },
     {
+      "name": "mobilevit_xxs_int8",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "FULLY_CONNECTED"
+      ]
+    },
+    {
       "name": "efficientnet_lite",
       "dataset": "unknown",
       "datatype": "int8",

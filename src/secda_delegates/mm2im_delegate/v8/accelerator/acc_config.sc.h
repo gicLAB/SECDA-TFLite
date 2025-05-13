@@ -27,7 +27,9 @@
 static const int PE_COUNT = 8;
 static const int UF = 16;
 // #define SUP_KS 9
-#define SUP_KS 4
+// #define SUP_KS 5
+#define SUP_KS 16
+#define SUP_WGT_KS 5
 #define SUP_DEPTH 1024
 
 #define G_WGTSUMBUF_SIZE (SUP_KS * SUP_KS * PE_COUNT)
@@ -35,12 +37,14 @@ static const int UF = 16;
 #define PE_WGTCOLSUMBUF_SIZE (SUP_KS * SUP_KS)
 #define PE_OUTBUF_SIZE (SUP_KS * SUP_KS)
 
-#define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 784
+// #define PE_WGTCOLBUF_SIZE ((SUP_KS * SUP_KS * SUP_DEPTH) / UF) // 784
+#define PE_WGTCOLBUF_SIZE ((SUP_WGT_KS * SUP_WGT_KS * SUP_DEPTH) / UF) // 784
 #define PE_INPROWBUF_SIZE (SUP_DEPTH / UF)                     // 16
 
 // This needs to be x * OH, where x is the max number of partial outputs
 // rows that being computed before send (if we can formalise this it be great)
-#define PE_ACC_BUF_SIZE 1024
+// #define PE_ACC_BUF_SIZE 1024
+#define PE_ACC_BUF_SIZE (1024 * 8)
 
 // Data types
 #define ACC_DTYPE sc_int

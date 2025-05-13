@@ -6,11 +6,10 @@ sc_int<32> VMM_UNIT::mul_s8(sc_int<8> a, sc_int<8> b) {
   return c;
 }
 
-
 void VMM_UNIT::VM_PE(ACC_DTYPE<32> *l1, ACC_DTYPE<32> *l2, ACC_DTYPE<32> *l3,
-                    ACC_DTYPE<32> *l4, ACC_DTYPE<32> *r1, ACC_DTYPE<32> *r2,
-                    ACC_DTYPE<32> *r3, ACC_DTYPE<32> *r4,
-                    ACC_DTYPE<32> out[][4], int d, int w_idx, int wID) {
+                     ACC_DTYPE<32> *l4, ACC_DTYPE<32> *r1, ACC_DTYPE<32> *r2,
+                     ACC_DTYPE<32> *r3, ACC_DTYPE<32> *r4,
+                     ACC_DTYPE<32> out[][4], int d, int w_idx, int wID) {
   ACC_DTYPE<32> wgt_read[4];
   ACC_DTYPE<32> inp_read[4];
   ACC_DTYPE<8> in_a[8];
@@ -36,7 +35,7 @@ void VMM_UNIT::VM_PE(ACC_DTYPE<32> *l1, ACC_DTYPE<32> *l2, ACC_DTYPE<32> *l3,
   }
 
   for (int rin = 0; rin < d; rin++) {
-#pragma HLS loop_tripcount min=64 max=64 avg=64
+#pragma HLS loop_tripcount min = 64 max = 64 avg = 64
 #pragma HLS pipeline II = 1
     wgt_read[0] = l1[rin + w_idx];
     wgt_read[1] = l2[rin + w_idx];
@@ -76,6 +75,17 @@ void VMM_UNIT::VM_PE(ACC_DTYPE<32> *l1, ACC_DTYPE<32> *l2, ACC_DTYPE<32> *l3,
       prod[i * 4 + 1][3] = mul_s8(in_b[1 * 4 + i], we_b[1 * 4 + 1]);
       prod[i * 4 + 2][3] = mul_s8(in_b[1 * 4 + i], we_b[1 * 4 + 2]);
       prod[i * 4 + 3][3] = mul_s8(in_b[1 * 4 + i], we_b[1 * 4 + 3]);
+
+      // if (i == 0) {
+      //   cout << in_a[0 * 4 + i] << " * " << we_a[0 * 4 + 0] << " = "
+      //        << prod[i * 4 + 0][0] << endl;
+      //   cout << in_a[1 * 4 + i] << " * " << we_a[1 * 4 + 0] << " = "
+      //        << prod[i * 4 + 0][1] << endl;
+      //   cout << in_b[0 * 4 + i] << " * " << we_b[0 * 4 + 0] << " = "
+      //        << prod[i * 4 + 0][2] << endl;
+      //   cout << in_b[1 * 4 + i] << " * " << we_b[1 * 4 + 0] << " = "
+      //        << prod[i * 4 + 0][3] << endl;
+      // }
     }
     for (int i = 0; i < 16; i++) {
 #pragma HLS unroll

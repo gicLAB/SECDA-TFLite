@@ -258,12 +258,6 @@ public:
   std::vector<OpData *> opdatas;
   std::vector<TfLiteAddParams *> cparams;
 
-  std::vector<std::vector<int>> wgt_sum;
-  std::vector<int> weight_offsets;
-  std::vector<uint32_t *> del_weights;
-  std::vector<int *> biases;
-  std::vector<int *> crf;
-  std::vector<int8_t *> crx;
 
 private:
   const AddDelegateOptions options_;

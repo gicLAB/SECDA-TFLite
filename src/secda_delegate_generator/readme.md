@@ -18,4 +18,4 @@
   
 
 ## TODO
-* Add template generation for specfic type of TFLite layer
+* Add template generation for specific type of TFLite layer

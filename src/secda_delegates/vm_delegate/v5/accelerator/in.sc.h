@@ -36,7 +36,7 @@ void ACCNAME::Input_Handler() {
 #endif
 
   inS.write(0);
-  Input_Handler_si.write(0);
+  // Input_Handler_si.write(0);
   wait();
   while (1) {
 

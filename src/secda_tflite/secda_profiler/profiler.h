@@ -7,8 +7,8 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
 #include <sys/stat.h>
+#include <vector>
 
 #ifdef ACC_PROFILE
 #define prf_start(N) auto start##N = chrono::high_resolution_clock::now();
@@ -30,8 +30,14 @@ using namespace std::chrono;
 #define prf_out(TSCALE, X)                                                     \
   cerr << #X << ": " << duration_cast<TSCALE>(X).count() << endl;
 
+#define prf_out_n(TSCALE, X, N)                                                \
+  cerr << #X << ": " << (duration_cast<TSCALE>(X).count() / N) << endl;
+
 #define prf_file_out(TSCALE, X, file)                                          \
   file << #X << "," << duration_cast<TSCALE>(X).count() << endl;
+
+#define prf_file_out_n(TSCALE, X, file, N)                                     \
+  file << #X << "," << (duration_cast<TSCALE>(X).count() / N) << endl;
 
 #define prf_file_out_x(TSCALE, X, file)                                        \
   file << duration_cast<TSCALE>(X).count() << ",";
