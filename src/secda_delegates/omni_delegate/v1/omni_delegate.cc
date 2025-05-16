@@ -84,6 +84,10 @@ public:
     int conv2d_count = 0;
     int fc_count = 0;
     int add_count = 0;
+    int dwconv2d_count = 0;
+    int tconv_count = 0;
+    int shape_count = 0;
+    int softmax_count = 0;
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
       // Get this node information.
@@ -102,18 +106,19 @@ public:
 
       builtin_code_[i] = delegated_node_registration->builtin_code;
       associated_nodes.push_back(node_index);
-      // TfLiteAddParams *cparam =
-      //     reinterpret_cast<TfLiteAddParams *>(delegated_node->builtin_data);
-      // OpData *opdata = reinterpret_cast<OpData *>(delegated_node->user_data);
       layers_params[i] = delegated_node->builtin_data;
       opdatas[i] = delegated_node->user_data;
       if (builtin_code_[i] == kTfLiteBuiltinAdd) add_count++;
       if (builtin_code_[i] == kTfLiteBuiltinConv2d) conv2d_count++;
       if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) fc_count++;
+      if (builtin_code_[i] == kTfLiteBuiltinDepthwiseConv2d) dwconv2d_count++;
+      if (builtin_code_[i] == kTfLiteBuiltinTransposeConv) tconv_count++;
+      if (builtin_code_[i] == kTfLiteBuiltinShape) shape_count++;
+      if (builtin_code_[i] == kTfLiteBuiltinSoftmax) softmax_count++;
     }
 
     // CONV2D/FC specific
-    wt_sum.resize(conv2d_count + fc_count);
+    wt_sum.resize(conv2d_count + fc_count + dwconv2d_count + tconv_count);
     temp_im2col.resize(conv2d_count);
     return kTfLiteOk;
   }
@@ -126,17 +131,33 @@ public:
   TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) override {
     int node_count = inputs_.size();
     int out_tid = 0;
+    int wsum_i = 0;
     for (int i = 0; i < node_count; i++) {
       if (builtin_code_[i] == kTfLiteBuiltinAdd) {
         Prepare_ADD_INT8(context, node, i, layers_params[i], opdatas[i],
                          inputs_, outputs_);
       } else if (builtin_code_[i] == kTfLiteBuiltinConv2d) {
         Prepare_CONV2D_INT8(context, node, i, layers_params[i], opdatas[i],
-                            inputs_, outputs_, out_tid, wt_sum[i],
+                            inputs_, outputs_, out_tid, wt_sum[wsum_i++],
                             temp_im2col[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) {
         Prepare_FC_INT8(context, node, i, layers_params[i], opdatas[i], inputs_,
-                        outputs_, out_tid, wt_sum[i]);
+                        outputs_, out_tid, wt_sum[wsum_i++]);
+      } else if (builtin_code_[i] == kTfLiteBuiltinDepthwiseConv2d) {
+        Prepare_DWCONV2D_INT8(context, node, i, layers_params[i], opdatas[i],
+                              inputs_, outputs_, out_tid, wt_sum[wsum_i++]);
+      } else if (builtin_code_[i] == kTfLiteBuiltinTransposeConv) {
+        Prepare_TCONV_INT8(context, node, i, layers_params[i], opdatas[i],
+                           inputs_, outputs_, out_tid, wt_sum[wsum_i++]);
+      } else if (builtin_code_[i] == kTfLiteBuiltinShape) {
+        Prepare_SHAPE_INT8(context, node, i, layers_params[i], opdatas[i],
+                           inputs_, outputs_, out_tid);
+      } else if (builtin_code_[i] == kTfLiteBuiltinSoftmax) {
+        Prepare_SOFTMAX_INT8(context, node, i, layers_params[i], opdatas[i],
+                             inputs_, outputs_, out_tid);
+      } else {
+        // Unsupported operation
+        return kTfLiteError;
       }
     }
     return kTfLiteOk;
@@ -160,7 +181,8 @@ public:
     for (int i = 0; i < node_count; i++) {
       drv.op_type = builtin_code_[i];
       if (builtin_code_[i] == kTfLiteBuiltinAdd) { // ADD
-        auto *params = layers_params[i];
+        TfLiteAddParams *params =
+            reinterpret_cast<TfLiteAddParams *>(layers_params[i]);
         ADD_Data *data = reinterpret_cast<ADD_Data *>(opdatas[i]);
         const TfLiteTensor *input1;
         const TfLiteTensor *input2;
@@ -326,8 +348,8 @@ public:
               int out_offset = op_params.output_offset;
               int out_min = op_params.quantized_activation_min;
               int out_max = op_params.quantized_activation_max;
-              acc = Quantised_Multiplier_S(acc, out_mult, out_shift, out_offset,
-                                           out_min, out_max);
+              acc = Quantised_Multiplier_V1(acc, out_mult, out_shift,
+                                            out_offset, out_min, out_max);
               int output_index =
                   ((oh * output_width) + ow) * output_channel + oc;
               output_data[output_index] = static_cast<int8_t>(acc);
@@ -335,7 +357,8 @@ public:
           }
         }
       } else if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) { // FC
-        auto *params = layers_params[i];
+        TfLiteFullyConnectedParams *params =
+            reinterpret_cast<TfLiteFullyConnectedParams *>(layers_params[i]);
         FC_Data *data = reinterpret_cast<FC_Data *>(opdatas[i]);
         const TfLiteTensor *input;
         const TfLiteTensor *filter;
@@ -368,8 +391,8 @@ public:
         op_params.rhs_cacheable = IsConstantTensor(input);
 
         const int32_t output_offset = op_params.output_offset;
-        const int32_t lhs_offset = -op_params.weights_offset;
-        const int32_t rhs_offset = -op_params.input_offset;
+        const int32_t weight_offset = op_params.weights_offset;
+        const int32_t input_offset = op_params.input_offset;
         const int32_t output_multiplier = op_params.output_multiplier;
         const int output_shift = op_params.output_shift;
         const int32_t output_activation_min =
@@ -416,32 +439,319 @@ public:
             for (int k = 0; k < K; k++) {
               int in = input_data[n * K + k];
               int wt = filter_data[m * K + k];
+              if (!is_per_channel) {
+                in += input_offset;
+                wt += weight_offset;
+              }
               int mul = in * wt;
               sum += in * wt;
             }
-            // add bias
-            // sum += biases[i][m] + (wt_sum[m] * (-rhs_offset)) +
-            //        (in_sum[n] * (-lhs_offset));
-            sum += (wt_sum[i][m] * (-rhs_offset));
-            if (bias != nullptr) sum += bias->data.i32[m];
 
-            // re-quantize
             int out_shift = output_shift;
             int out_mult = output_multiplier;
             if (is_per_channel) {
               out_shift = data->per_channel_output_shift.data()[m];
               out_mult = data->per_channel_output_multiplier.data()[m];
+              sum += (wt_sum[i][m] * (input_offset));
             }
+            if (bias != nullptr) sum += bias->data.i32[m];
+
             int out_offset = op_params.output_offset;
             int out_min = op_params.quantized_activation_min;
             int out_max = op_params.quantized_activation_max;
-            sum = Quantised_Multiplier_S(sum, out_mult, out_shift, out_offset,
-                                         out_min, out_max);
+            sum = Quantised_Multiplier_V2(sum, out_mult, out_shift, out_offset,
+                                          out_min, out_max);
+
             output_data[n * M + m] = sum;
           }
         }
       } else if (builtin_code_[i] == kTfLiteBuiltinDepthwiseConv2d) { // DWCONV
+        TfLiteDepthwiseConvParams *params =
+            reinterpret_cast<TfLiteDepthwiseConvParams *>(layers_params[i]);
+        DWCONV2D_Data *data = reinterpret_cast<DWCONV2D_Data *>(opdatas[i]);
+
+        TfLiteTensor *output;
+        const TfLiteTensor *input;
+        const TfLiteTensor *filter;
+        const TfLiteTensor *bias;
+
+        GetInputSafe(context, inputs_[i][0], &input);
+        GetInputSafe(context, inputs_[i][1], &filter);
+        GetInputSafe(context, inputs_[i][2], &bias);
+        GetOutputSafe(context, outputs_[i][0], &output);
+        bool isBias = (inputs_[i].size() == 3 && inputs_[i][2] >= 0);
+        if (isBias) GetInputSafe(context, inputs_[i][2], &bias);
+        else bias = nullptr;
+
+        DepthwiseParams op_params;
+        op_params.padding_type = PaddingType::kSame;
+        op_params.padding_values.width = data->padding.width;
+        op_params.padding_values.height = data->padding.height;
+        op_params.stride_width = params->stride_width;
+        op_params.stride_height = params->stride_height;
+        op_params.dilation_width_factor = params->dilation_width_factor;
+        op_params.dilation_height_factor = params->dilation_height_factor;
+        op_params.input_offset = -input->params.zero_point;
+        op_params.weights_offset = 0;
+        op_params.output_offset = output->params.zero_point;
+        op_params.quantized_activation_min = data->output_activation_min;
+        op_params.quantized_activation_max = data->output_activation_max;
+        TF_LITE_ENSURE_STATUS(ComputeDepthMultiplier(
+            context, input, filter, &op_params.depth_multiplier));
+        // Get parameters.
+        const int stride_width = op_params.stride_width;
+        const int stride_height = op_params.stride_height;
+        const int dilation_width_factor = op_params.dilation_width_factor;
+        const int dilation_height_factor = op_params.dilation_height_factor;
+        const int pad_width = op_params.padding_values.width;
+        const int pad_height = op_params.padding_values.height;
+        const int depth_multiplier = op_params.depth_multiplier;
+        const int32_t input_offset = op_params.input_offset;
+        const int32_t output_offset = op_params.output_offset;
+        const int32_t output_activation_min =
+            op_params.quantized_activation_min;
+        const int32_t output_activation_max =
+            op_params.quantized_activation_max;
+
+        // Check dimensions of the tensors.
+        RuntimeShape input_shape =
+            RuntimeShape(input->dims->size, input->dims->data);
+        RuntimeShape filter_shape =
+            RuntimeShape(filter->dims->size, filter->dims->data);
+        RuntimeShape output_shape =
+            RuntimeShape(output->dims->size, output->dims->data);
+        TFLITE_DCHECK_EQ(input_shape.DimensionsCount(), 4);
+        TFLITE_DCHECK_EQ(filter_shape.DimensionsCount(), 4);
+        TFLITE_DCHECK_EQ(output_shape.DimensionsCount(), 4);
+
+        TFLITE_DCHECK_LE(output_activation_min, output_activation_max);
+        const int batches = MatchingDim(input_shape, 0, output_shape, 0);
+        const int output_depth = MatchingDim(filter_shape, 3, output_shape, 3);
+        const int input_height = input_shape.Dims(1);
+        const int input_width = input_shape.Dims(2);
+        const int input_depth = input_shape.Dims(3);
+        const int filter_height = filter_shape.Dims(1);
+        const int filter_width = filter_shape.Dims(2);
+        const int output_height = output_shape.Dims(1);
+        const int output_width = output_shape.Dims(2);
+        TFLITE_DCHECK_EQ(output_depth, input_depth * depth_multiplier);
+
+        const int8_t *input_data = input->data.int8;
+        const int8_t *filter_data = filter->data.int8;
+        int8_t *output_data = output->data.int8;
+        const int32_t *bias_data =
+            (bias != nullptr ? reinterpret_cast<int32_t *>(bias->data.raw)
+                             : nullptr);
+
+        for (int batch = 0; batch < batches; ++batch) {
+          for (int out_y = 0; out_y < output_height; ++out_y) {
+            for (int out_x = 0; out_x < output_width; ++out_x) {
+              for (int in_channel = 0; in_channel < input_depth; ++in_channel) {
+                for (int m = 0; m < depth_multiplier; ++m) {
+                  const int output_channel = m + in_channel * depth_multiplier;
+                  const int in_x_origin = (out_x * stride_width) - pad_width;
+                  const int in_y_origin = (out_y * stride_height) - pad_height;
+                  int32_t acc = 0;
+                  for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
+                    for (int filter_x = 0; filter_x < filter_width;
+                         ++filter_x) {
+                      const int in_x =
+                          in_x_origin + dilation_width_factor * filter_x;
+                      const int in_y =
+                          in_y_origin + dilation_height_factor * filter_y;
+                      // Zero padding by omitting the areas outside the image.
+                      const bool is_point_inside_image =
+                          (in_x >= 0) && (in_x < input_width) && (in_y >= 0) &&
+                          (in_y < input_height);
+                      if (is_point_inside_image) {
+                        int32_t input_val = input_data[Offset(
+                            input_shape, batch, in_y, in_x, in_channel)];
+                        int32_t filter_val =
+                            filter_data[Offset(filter_shape, 0, filter_y,
+                                               filter_x, output_channel)];
+                        acc += filter_val * (input_val + input_offset);
+                      }
+                    }
+                  }
+                  if (bias_data) acc += bias_data[output_channel];
+                  int out_shift =
+                      data->per_channel_output_shift.data()[output_channel];
+                  int out_mult = data->per_channel_output_multiplier
+                                     .data()[output_channel];
+                  acc = Quantised_Multiplier_V1(
+                      acc, out_mult, out_shift, output_offset,
+                      output_activation_min, output_activation_max);
+                  output_data[Offset(output_shape, batch, out_y, out_x,
+                                     output_channel)] =
+                      static_cast<int8_t>(acc);
+                }
+              }
+            }
+          }
+        }
+      } else if (builtin_code_[i] == kTfLiteBuiltinTransposeConv) { // TCONV
+        TfLiteTransposeConvParams *params =
+            reinterpret_cast<TfLiteTransposeConvParams *>(layers_params[i]);
+        TCONV_Data *data = reinterpret_cast<TCONV_Data *>(opdatas[i]);
+        const TfLiteTensor *input;
+        const TfLiteTensor *weights;
+        TfLiteTensor *output;
+        const TfLiteTensor *bias;
+        const TfLiteTensor *output_shape_tensor;
+        bool has_bias = inputs_[i][3] != 0;
+
+        TfLiteTensor *transposed_weights =
+            data->weights_are_transposed
+                ? GetTemporary(context, node, data->transposed_weights_index)
+                : nullptr;
+
+        TfLiteTensor *col2im =
+            data->has_col2im ? GetTemporary(context, node, data->col2im_index)
+                             : nullptr;
+
+        TfLiteTensor *scratch_buffer;
+        TF_LITE_ENSURE_OK(context, GetTemporarySafe(context, node,
+                                                    data->scratch_tensor_index,
+                                                    &scratch_buffer));
+
+        GetInputSafe(context, inputs_[i][0], &output_shape_tensor);
+        GetInputSafe(context, inputs_[i][2], &input);
+        GetInputSafe(context, inputs_[i][1], &weights);
+        GetInputSafe(context, inputs_[i][3], &bias);
+        GetOutputSafe(context, outputs_[i][0], &output);
+
+        // Resize any deferred dynamic tensors
+        if (tflite::IsDynamicTensor(output)) {
+          TF_LITE_ENSURE_OK(context, ResizeTensorOutShapeTensor(
+                                         context, output_shape_tensor, output));
+        }
+        if (data->has_col2im && tflite::IsDynamicTensor(col2im)) {
+          TF_LITE_ENSURE_OK(context,
+                            ResizeCol2ImTensor(context, output_shape_tensor,
+                                               weights, input, col2im));
+        }
+        if (tflite::IsDynamicTensor(scratch_buffer)) {
+          TF_LITE_ENSURE_OK(
+              context, ResizeTensorOutShapeTensor(context, output_shape_tensor,
+                                                  scratch_buffer));
+        }
+        const int width = SizeOfDimension(output, 2);
+        const int height = SizeOfDimension(output, 1);
+        const int filter_width = SizeOfDimension(weights, 2);
+        const int filter_height = SizeOfDimension(weights, 1);
+        int unused_output_height, unused_output_width;
+        data->padding = ComputePaddingHeightWidth(
+            params->stride_height, params->stride_width, 1, 1, height, width,
+            filter_height, filter_width, params->padding, &unused_output_height,
+            &unused_output_width);
+
+        // Check dimensions of the tensors.
+        RuntimeShape input_shape =
+            RuntimeShape(input->dims->size, input->dims->data);
+        RuntimeShape transposed_weights_shape = RuntimeShape(
+            transposed_weights->dims->size, transposed_weights->dims->data);
+        RuntimeShape filter_shape =
+            RuntimeShape(weights->dims->size, weights->dims->data);
+        RuntimeShape output_shape =
+            RuntimeShape(output->dims->size, output->dims->data);
+        const RuntimeShape &scratch_shape = GetTensorShape(scratch_buffer);
+        TFLITE_DCHECK_EQ(input_shape.DimensionsCount(), 4);
+        TFLITE_DCHECK_EQ(transposed_weights_shape.DimensionsCount(), 4);
+        TFLITE_DCHECK_EQ(filter_shape.DimensionsCount(), 4);
+        TFLITE_DCHECK_EQ(output_shape.DimensionsCount(), 4);
+        const int scratch_cols = scratch_shape.Dims(1) * scratch_shape.Dims(2);
+        const int scratch_rows = scratch_shape.Dims(0) * scratch_shape.Dims(3);
+
+        const int batches = MatchingDim(input_shape, 0, output_shape, 0);
+        const int input_depth = MatchingDim(input_shape, 3, filter_shape, 3);
+        const int output_depth = MatchingDim(filter_shape, 0, output_shape, 3);
+        const int stride_width = params->stride_width;
+        const int stride_height = params->stride_height;
+        const int pad_width = data->padding.width;
+        const int pad_height = data->padding.height;
+        const int input_height = input_shape.Dims(1);
+        const int input_width = input_shape.Dims(2);
+        // const int t_weights_height = transposed_weights_shape.Dims(1);
+        // const int t_weights_width = transposed_weights_shape.Dims(2);
+        const int output_height = output_shape.Dims(1);
+        const int output_width = output_shape.Dims(2);
+        const int32_t input_offset = -input->params.zero_point;
+        const int32_t output_offset = output->params.zero_point;
+        const int32_t output_activation_min = data->output_activation_min;
+        const int32_t output_activation_max = data->output_activation_max;
+
+        const int8_t *input_data = GetTensorData<int8>(input);
+        const int8_t *transposed_weight_data =
+            GetTensorData<int8>(transposed_weights);
+        const int8_t *filter_data = GetTensorData<int8>(weights);
+        int8_t *output_data = GetTensorData<int8>(output);
+        int32_t *col2im_data = GetTensorData<int32>(col2im);
+        int32_t *scratch_data = GetTensorData<int32>(scratch_buffer);
+        const int32_t *bias_data =
+            (has_bias ? GetTensorData<int32>(bias) : nullptr);
+        const int num_elements = output_shape.FlatSize();
+
+        memset(scratch_data, 0, num_elements * sizeof(int32_t));
+        // Loop through input elements one at a time.
+        for (int batch = 0; batch < batches; ++batch) {
+          for (int in_y = 0; in_y < input_height; ++in_y) {
+            for (int in_x = 0; in_x < input_width; ++in_x) {
+              for (int in_channel = 0; in_channel < input_depth; ++in_channel) {
+                // Loop through the output elements it will influence.
+                const int out_x_origin = (in_x * stride_width) - pad_width;
+                const int out_y_origin = (in_y * stride_height) - pad_height;
+                for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
+                  for (int filter_x = 0; filter_x < filter_width; ++filter_x) {
+                    for (int out_channel = 0; out_channel < output_depth;
+                         ++out_channel) {
+                      // Compute output element location.
+                      const int out_x = out_x_origin + filter_x;
+                      const int out_y = out_y_origin + filter_y;
+                      // We cannot accumulate out of bounds.
+                      if ((out_x >= 0) && (out_x < output_width) &&
+                          (out_y >= 0) && (out_y < output_height)) {
+                        const int8_t input_value = input_data[Offset(
+                            input_shape, batch, in_y, in_x, in_channel)];
+                        const int8_t filter_value =
+                            filter_data[Offset(filter_shape, out_channel,
+                                               filter_y, filter_x, in_channel)];
+                        scratch_data[Offset(output_shape, batch, out_y, out_x,
+                                            out_channel)] +=
+                            (input_value + input_offset) * filter_value;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        for (int batch = 0; batch < batches; ++batch) {
+          for (int out_y = 0; out_y < output_height; ++out_y) {
+            for (int out_x = 0; out_x < output_width; ++out_x) {
+              for (int out_channel = 0; out_channel < output_depth;
+                   ++out_channel) {
+                int32_t acc = scratch_data[Offset(output_shape, batch, out_y,
+                                                  out_x, out_channel)];
+                if (bias_data) acc += bias_data[out_channel];
+                int out_shift =
+                    data->per_channel_output_shift.data()[out_channel];
+                int out_mult =
+                    data->per_channel_output_multiplier.data()[out_channel];
+                acc = Quantised_Multiplier_V1(
+                    acc, out_mult, out_shift, output_offset,
+                    output_activation_min, output_activation_max);
+                output_data[Offset(output_shape, batch, out_y, out_x,
+                                   out_channel)] = static_cast<int8_t>(acc);
+              }
+            }
+          }
+        }
+      } else if (builtin_code_[i] == kTfLiteBuiltinShape) { // SHAPE
+        // Nothing to do during eval
       }
+      // End of All Operator Evals
 
       // Debugging
       drv.t.layer = dparams.layer;
@@ -498,17 +808,40 @@ public:
     bool isADD = IsNode_ADD_INT8(registration, node, context);
     bool isFC = IsNode_FC_INT8(registration, node, context);
     bool isTCONV = IsNode_TCONV_INT8(registration, node, context);
+    bool isSHAPE = IsNode_SHAPE_INT8(registration, node, context);
+    bool isSOFTMAX = IsNode_SOFTMAX_INT8(registration, node, context);
 
     // Check if the node is supported by the delegate
-    // bool supported_nodes = [isCONV2D, isDWCONV2D, isADD, isFC, isTCONV];
-    // std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD, isFC,
-    // isTCONV};
+    std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD, isFC,
+                                         isTCONV,  isSHAPE,    isSOFTMAX};
+
     // std::vector<bool> supported_nodes = {isADD};
     // std::vector<bool> supported_nodes = {isCONV2D, isFC};
     // std::vector<bool> supported_nodes = {isCONV2D, isADD};
-
-    std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD};
     // std::vector<bool> supported_nodes = {isCONV2D};
+    // std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD};
+    // std::vector<bool> supported_nodes = {isDWCONV2D};
+    // std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD, isDWCONV2D};
+    // std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD, isDWCONV2D,
+    //                                      isTCONV};
+
+    // std::vector<bool> supported_nodes = {isTCONV, isFC};
+    // std::vector<bool> supported_nodes = {isSHAPE, isDWCONV2D};
+    // std::vector<bool> supported_nodes = {isDWCONV2D};
+
+    // std::vector<bool> supported_nodes = {isDWCONV2D};
+
+    // std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD, isFC,
+    //                                      isTCONV,  isSHAPE,    isSOFTMAX};
+    // std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD,
+    //                                      isFC,     isSHAPE,    isDWCONV2D};
+
+    // std::vector<bool> supported_nodes = {
+    //     isCONV2D,
+    //     isFC,
+    //     isADD,
+    //     isDWCONV2D,
+    // };
 
     bool delegated_node = false;
     for (int i = 0; i < supported_nodes.size(); i++) {

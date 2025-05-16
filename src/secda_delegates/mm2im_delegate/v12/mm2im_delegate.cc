@@ -199,7 +199,6 @@ public:
       if (SizeOfDimension(input, 3) != SizeOfDimension(weights, 3))
         return kTfLiteError;
 
-      OpData *user_data = opdatas[i];
       int temp_out_id;
       bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
       if (!req_temp_out) out_tid++;
@@ -213,7 +212,7 @@ public:
         node->temporaries->data[data->col2im_index] = data->col2im_id;
         TF_LITE_ENSURE_OK(
             context,
-            GetTemporarySafe(context, node, user_data->col2im_index, &col2im));
+            GetTemporarySafe(context, node, data->col2im_index, &col2im));
       }
 
       // Output & Col2Im
@@ -248,7 +247,7 @@ public:
         TfLiteTensor *transposed_weights;
         TF_LITE_ENSURE_OK(context,
                           GetTemporarySafe(context, node,
-                                           user_data->transposed_weights_index,
+                                           data->transposed_weights_index,
                                            &transposed_weights));
         if (!IsConstantTensor(weights)) {
           SetTensorToDynamic(transposed_weights);
@@ -306,7 +305,7 @@ public:
       TfLiteTensor *transposed_weights;
       TF_LITE_ENSURE_OK(context,
                         GetTemporarySafe(context, node,
-                                         user_data->transposed_weights_index,
+                                         data->transposed_weights_index,
                                          &transposed_weights));
 
       acc_weights[i].resize(rounded_depth * rows);

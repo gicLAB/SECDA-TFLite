@@ -31,6 +31,9 @@ cc_library(
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels/internal:types",
+        "//tensorflow/lite/kernels/internal:tensor",
+        "//tensorflow/lite/kernels/internal:common",
+        "//tensorflow/lite/kernels/internal:optimized_base",
         "//tensorflow/lite/kernels/internal:optimized_4bit",
         "//tensorflow/lite/delegates/utils/secda_delegates/omni_delegate/v1/accelerator/driver:omni_driver"
     ]
