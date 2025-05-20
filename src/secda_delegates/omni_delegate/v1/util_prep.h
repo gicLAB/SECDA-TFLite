@@ -5,8 +5,77 @@
 #include "util.h"
 using namespace std;
 
+#define PadKernelMaxDimensionCount 5
+const int kMaxConstantOutputTensorSize = 8;
+
 // =========================================================
-// Layer Specfifc Helper functions
+// Layer Specific Structs
+// =========================================================
+struct PadContext {
+  PadContext(TfLiteContext *context, int i, vector<vector<int>> inputs_,
+             vector<vector<int>> outputs_) {
+    GetInputSafe(context, inputs_[i][0], &input);
+    GetInputSafe(context, inputs_[i][1], &paddings);
+
+    if (inputs_[i].size() == 3)
+      GetInputSafe(context, inputs_[i][2], &constant_values);
+    else constant_values = nullptr;
+
+    GetOutputSafe(context, outputs_[i][0], &output);
+    // output = GetOutput(context, node, 0);
+    dims = tflite::NumDimensions(input);
+    switch (paddings->type) {
+    case kTfLiteInt64: {
+      SetResizingCategory<int64_t>(context);
+      break;
+    }
+    case kTfLiteInt32: SetResizingCategory<int32_t>(context); break;
+    default:
+      TF_LITE_KERNEL_LOG(context,
+                         "Padding type %s is currently not supported by Pad.",
+                         TfLiteTypeGetName(paddings->type));
+    }
+  }
+
+  template <typename padding_integer_type>
+  void SetResizingCategory(TfLiteContext *context) {
+    const padding_integer_type *paddings_data =
+        tflite::GetTensorData<padding_integer_type>(paddings);
+    resizing_category = tflite::ResizingCategory::kGenericResize;
+    const int paddings_total = tflite::GetTensorShape(paddings).FlatSize();
+    // Paddings will be a n,2 array, and we need to detect 4D arrays with the
+    // pattern { {0,0}, {a, b}, {c, d}, {0,0} }.
+    if (tflite::IsConstantTensor(paddings) && paddings_total == 8 &&
+        (paddings_data[0] == 0 && paddings_data[1] == 0) &&
+        (paddings_data[6] == 0 && paddings_data[7] == 0)) {
+      resizing_category = tflite::ResizingCategory::kImageStyle;
+    }
+  }
+
+  const TfLiteTensor *constant_values;
+  const TfLiteTensor *input;
+  const TfLiteTensor *paddings;
+  TfLiteTensor *output;
+  int dims;
+  tflite::ResizingCategory resizing_category;
+};
+
+struct ReduceOpContext {
+  ReduceOpContext(TfLiteContext *context, TfLiteReducerParams *params_, int i,
+                  vector<vector<int>> inputs_, vector<vector<int>> outputs_) {
+    params = params_;
+    GetInputSafe(context, inputs_[i][0], &input);
+    GetInputSafe(context, inputs_[i][1], &axis);
+    GetOutputSafe(context, outputs_[i][0], &output);
+  }
+  TfLiteReducerParams *params;
+  const TfLiteTensor *input;
+  const TfLiteTensor *axis;
+  TfLiteTensor *output;
+};
+
+// =========================================================
+// Layer Specific Helper functions
 // =========================================================
 
 bool IsIm2ColRequired(const TfLiteTensor *input, TfLiteConvParams *params,
@@ -147,6 +216,112 @@ ResizeTempOutTensorDefault(TfLiteContext *context, TfLiteNode *node,
   return kTfLiteOk;
 }
 
+// Returns the output shape for reduce operations.
+TfLiteStatus GetReduceOutputShape(TfLiteContext *context,
+                                  ReduceOpContext *op_context,
+                                  TfLiteIntArray **output_shape) {
+  size_t num_axis = tflite::NumElements(op_context->axis);
+  const TfLiteIntArray *input_dims = op_context->input->dims;
+  int input_num_dims = tflite::NumDimensions(op_context->input);
+  if (input_num_dims == 0) {
+    *output_shape = TfLiteIntArrayCreate(0);
+    return kTfLiteOk;
+  }
+  const int *axis = tflite::GetTensorData<int>(op_context->axis);
+  if (op_context->params->keep_dims) {
+    TfLiteIntArray *output_dims = TfLiteIntArrayCreate(input_num_dims);
+    for (int idx = 0; idx < input_num_dims; ++idx) {
+      bool is_axis = false;
+      for (int axis_idx = 0; axis_idx < num_axis; ++axis_idx) {
+        if (axis[axis_idx] == idx || axis[axis_idx] + input_num_dims == idx) {
+          is_axis = true;
+          break;
+        }
+      }
+      if (is_axis) {
+        output_dims->data[idx] = 1;
+      } else {
+        output_dims->data[idx] = input_dims->data[idx];
+      }
+    }
+    *output_shape = output_dims;
+    return kTfLiteOk;
+  } else {
+    // Calculates size of reducing axis.
+    int num_reduce_axis = num_axis;
+    for (int i = 0; i < num_axis; ++i) {
+      int current = axis[i];
+      if (current < 0) {
+        current += input_num_dims;
+      }
+      TF_LITE_ENSURE(context, current >= 0 && current < input_num_dims);
+      for (int j = 0; j < i; ++j) {
+        int previous = axis[j];
+        if (previous < 0) {
+          previous += input_num_dims;
+        }
+        if (current == previous) {
+          --num_reduce_axis;
+          break;
+        }
+      }
+    }
+    // Determines output dimensions.
+    TfLiteIntArray *output_dims =
+        TfLiteIntArrayCreate(input_num_dims - num_reduce_axis);
+    int num_skip_axis = 0;
+    for (int idx = 0; idx < input_num_dims; ++idx) {
+      bool is_axis = false;
+      for (int axis_idx = 0; axis_idx < num_axis; ++axis_idx) {
+        if (axis[axis_idx] == idx || axis[axis_idx] + input_num_dims == idx) {
+          ++num_skip_axis;
+          is_axis = true;
+          break;
+        }
+      }
+      if (!is_axis) {
+        output_dims->data[idx - num_skip_axis] = input_dims->data[idx];
+      }
+    }
+    *output_shape = output_dims;
+    return kTfLiteOk;
+  }
+}
+
+// Resizes the temp tensor that stores resolved axis.
+TfLiteStatus ResizeTempAxis(TfLiteContext *context, ReduceOpContext *op_context,
+                            TfLiteTensor *resolved_axis) {
+  TfLiteIntArray *axis_size = TfLiteIntArrayCreate(1);
+  axis_size->data[0] = static_cast<int>(tflite::NumElements(op_context->axis));
+  return context->ResizeTensor(context, resolved_axis, axis_size);
+}
+
+// Resizes the temp tensor that stores normalized dims.
+TfLiteStatus ResizeTempDims(TfLiteContext *context, ReduceOpContext *op_context,
+                            TfLiteTensor *normalized_dims) {
+  TfLiteIntArray *dims_size = TfLiteIntArrayCreate(1);
+  dims_size->data[0] = (op_context->input->dims->size);
+  return context->ResizeTensor(context, normalized_dims, dims_size);
+}
+
+// Resizes output array based on the input size and resolved axis.
+TfLiteStatus ResizeOutputTensor(TfLiteContext *context,
+                                ReduceOpContext *op_context) {
+  TfLiteIntArray *output_dims;
+  TF_LITE_ENSURE_OK(context,
+                    GetReduceOutputShape(context, op_context, &output_dims));
+  return context->ResizeTensor(context, op_context->output, output_dims);
+}
+
+// Resizes the temp tensor that stores temp sum of reduced elements.
+TfLiteStatus ResizeTempAccum(TfLiteContext *context,
+                             ReduceOpContext *op_context,
+                             TfLiteTensor *temp_accum) {
+  TfLiteIntArray *size = TfLiteIntArrayCreate(1);
+  size->data[0] = static_cast<int>(tflite::NumElements(op_context->output));
+  return context->ResizeTensor(context, temp_accum, size);
+}
+
 static TfLiteStatus AllocateTemporaryTensorsIfRequiredCONV2D(
     TfLiteContext *context, TfLiteNode *node, bool is_hybrid,
     bool is_per_channel, size_t im2col_bytes, TfLiteConvParams *params,
@@ -210,6 +385,51 @@ static TfLiteStatus AllocateTemporaryOutTensorsIfRequiredTCONV(
   return UpdateTempTensors(node, temporaries_count);
 }
 
+static TfLiteStatus AllocateTemporaryOutTensorsIfRequiredMEAN(
+    TfLiteContext *context, TfLiteNode *node, REDUCE_Data *data,
+    bool req_temp_out, int temp_out_tid, int &temp_out_id,
+    vector<tuple<int, int>> &temp_tensor_ids) {
+
+  int scratch_tensor_index = data->scratch_tensor_index;
+  int resolved_axis_tensor_index = data->scratch_tensor_index + 1;
+  int temp_accum_tensor_index = data->scratch_tensor_index + 2;
+  int normalized_dims_tensor_index = data->scratch_tensor_index + 3;
+
+  int temporaries_count = node->temporaries->size;
+  if (data->scratch_tensor_index == kTensorNotAllocated) {
+    context->AddTensors(context, 1, &data->scratch_tensor_index);
+  }
+  temp_tensor_ids.push_back(
+      make_tuple(temporaries_count, scratch_tensor_index));
+  ++temporaries_count;
+
+  if ((resolved_axis_tensor_index) == kTensorNotAllocated) {
+    context->AddTensors(context, 1, &resolved_axis_tensor_index);
+  }
+  temp_tensor_ids.push_back(
+      make_tuple(temporaries_count, resolved_axis_tensor_index));
+  ++temporaries_count;
+
+  if ((temp_accum_tensor_index) == kTensorNotAllocated) {
+    context->AddTensors(context, 1, &temp_accum_tensor_index);
+  }
+  temp_tensor_ids.push_back(
+      make_tuple(temporaries_count, temp_accum_tensor_index));
+  ++temporaries_count;
+
+  if ((normalized_dims_tensor_index) == kTensorNotAllocated) {
+    context->AddTensors(context, 1, &normalized_dims_tensor_index);
+  }
+  temp_tensor_ids.push_back(
+      make_tuple(temporaries_count, normalized_dims_tensor_index));
+  ++temporaries_count;
+
+  AddTempOutTensor(context, node, req_temp_out, temporaries_count, temp_out_tid,
+                   temp_out_id);
+
+  return UpdateTempTensors(node, temporaries_count);
+}
+
 static TfLiteStatus
 AllocateTemporaryOutTensorsIfRequired(TfLiteContext *context, TfLiteNode *node,
                                       bool req_temp_out, int temp_out_tid,
@@ -218,6 +438,26 @@ AllocateTemporaryOutTensorsIfRequired(TfLiteContext *context, TfLiteNode *node,
   AddTempOutTensor(context, node, req_temp_out, temporaries_count, temp_out_tid,
                    temp_out_id);
   return UpdateTempTensors(node, temporaries_count);
+}
+
+bool CheckPaddingOverflow(PadContext *op_context) {
+  if (op_context->paddings->type == kTfLiteInt64) {
+    const int64_t *paddings_data =
+        tflite::GetTensorData<int64_t>(op_context->paddings);
+    if (paddings_data != nullptr) {
+      int64_t int32_min =
+          static_cast<int64_t>(std::numeric_limits<int32_t>::min());
+      int64_t int32_max =
+          static_cast<int64_t>(std::numeric_limits<int32_t>::max());
+      for (int idx = 0; idx < op_context->dims; ++idx) {
+        int64_t padding = paddings_data[idx];
+        if (padding < int32_min || padding > int32_max) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 // =========================================================
@@ -356,6 +596,17 @@ void ExtractShape(const TfLiteTensor *input, OutType *output_data) {
   }
 }
 
+TfLiteStatus InitializeMeanOutputTyped(TfLiteTensor *output) {
+  tflite::RuntimeShape output_shape = tflite::GetTensorShape(output);
+  const size_t flat_size = output_shape.FlatSize();
+  int8_t *output_data = tflite::GetTensorData<int8_t>(output);
+  int8_t nan_value = std::numeric_limits<int8_t>::quiet_NaN();
+  for (int idx = 0; idx < flat_size; ++idx) {
+    *output_data++ = nan_value;
+  }
+  return kTfLiteOk;
+}
+
 // =========================================================
 // Prepare function for all supported Ops
 // =========================================================
@@ -363,8 +614,8 @@ void ExtractShape(const TfLiteTensor *input, OutType *output_data) {
 // tensorflow/lite/kernels/add.cc
 bool Prepare_ADD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                       void *layers_params, void *opdatas,
-                      vector<vector<int>> inputs_,
-                      vector<vector<int>> outputs_) {
+                      vector<vector<int>> inputs_, vector<vector<int>> outputs_,
+                      int out_tid) {
 
   TfLiteAddParams *params = reinterpret_cast<TfLiteAddParams *>(layers_params);
   ADD_Data *data = reinterpret_cast<ADD_Data *>(opdatas);
@@ -408,7 +659,21 @@ bool Prepare_ADD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
   tflite::CalculateActivationRangeQuantized(context, params->activation, output,
                                             &data->output_activation_min,
                                             &data->output_activation_max);
+
+  // Output tensor management
   context->ResizeTensor(context, output, output_size);
+
+  // Temporary tensor management
+  int temp_out_id;
+  bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
+  if (!req_temp_out) out_tid++;
+  TF_LITE_ENSURE_STATUS(AllocateTemporaryOutTensorsIfRequired(
+      context, node, req_temp_out, outputs_[i][0], temp_out_id));
+
+  // Resize temporary output tensor
+  ResizeTempOutTensor(context, node, req_temp_out, temp_out_id, outputs_, i,
+                      output_size);
+
   return kTfLiteOk;
 }
 
@@ -958,65 +1223,250 @@ bool Prepare_SOFTMAX_INT8(TfLiteContext *context, TfLiteNode *node, int i,
   // TF_LITE_ENSURE_EQ(context, inputs_[i].size(), 1);
   // TF_LITE_ENSURE_EQ(context, outputs_[i].size(), 1);
 
-  auto *params = reinterpret_cast<TfLiteSoftmaxParams *>(node->builtin_data);
+  auto *params = reinterpret_cast<TfLiteSoftmaxParams *>(layers_params);
   SOFTMAX_Data *data = reinterpret_cast<SOFTMAX_Data *>(opdatas);
 
-//   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
-//   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
-//   const TfLiteTensor *input;
-//   TF_LITE_ENSURE_OK(context, GetInputSafe(context, node, 0, &input));
-//   TfLiteTensor *output;
-//   TF_LITE_ENSURE_OK(context, GetOutputSafe(context, node, 0, &output));
+  TfLiteTensor *output;
+  const TfLiteTensor *input;
 
-//   TF_LITE_ENSURE(context, NumDimensions(input) >= 1);
+  GetOutputSafe(context, outputs_[i][0], &output);
+  GetInputSafe(context, inputs_[i][0], &input);
 
-//   if (input->type == kTfLiteInt8 && output->type == kTfLiteInt8) {
-//     TF_LITE_ENSURE_EQ(context, output->params.zero_point, -128);
-//     TF_LITE_ENSURE_NEAR(context, output->params.scale, 1.f / 256,
-//                         (0.001f * 1.f / 256));
-//   } else if (input->type == kTfLiteInt16 && output->type == kTfLiteInt16) {
-//     TF_LITE_ENSURE_EQ(context, output->params.zero_point, 0);
-//     TF_LITE_ENSURE_NEAR(context, output->params.scale, 1.f / 32768,
-//                         (0.001f * 1.f / 32768));
-//   }
+  TF_LITE_ENSURE_EQ(context, output->params.zero_point, -128);
+  TF_LITE_ENSURE_NEAR(context, output->params.scale, 1.f / 256,
+                      (0.001f * 1.f / 256));
 
-//   if (kernel_type == kReference) {
-//     const int kScaledDiffIntegerBits = 5;
-//     int input_left_shift;
-//     tflite::PreprocessSoftmaxScaling(
-//         static_cast<double>(params->beta),
-//         static_cast<double>(input->params.scale), kScaledDiffIntegerBits,
-//         &data->params.input_multiplier, &input_left_shift);
-//     data->params.input_left_shift = input_left_shift;
-//     data->params.diff_min =
-//         -1.0 *
-//         tflite::CalculateInputRadius(kScaledDiffIntegerBits, input_left_shift);
-//   } else {
-//     switch (output->type) {
-//     case kTfLiteUInt8:
-//     case kTfLiteInt8:
-// #ifdef TFLITE_SOFTMAX_USE_UINT16_LUT
-//       // Only apply when both input & output are uint8/int8 & build with
-//       // clang on aarch64.
-//       // TODO(b/143709993): Port to ARMv7 and other platforms.
-//       data->params.uint8_table1 = data->uint8_table1;
-//       data->params.uint8_table2 = data->uint8_table2;
-//       optimized_ops::PopulateSoftmaxUInt8LookupTable(
-//           &data->params, input->params.scale, params->beta);
-//       break;
-// #endif
-//     case kTfLiteInt16:
-//     default:
-//       data->params.table = data->table;
-//       optimized_ops::PopulateSoftmaxLookupTable(
-//           &data->params, input->params.scale, params->beta);
-//     }
+  // const int kScaledDiffIntegerBits = 5;
+  // int input_left_shift;
+  // tflite::PreprocessSoftmaxScaling(
+  //     static_cast<double>(params->beta),
+  //     static_cast<double>(input->params.scale), kScaledDiffIntegerBits,
+  //     &data->params.input_multiplier, &input_left_shift);
+  // data->params.input_left_shift = input_left_shift;
+  // data->params.diff_min = -1.0 * tflite::CalculateInputRadius(
+  //                                    kScaledDiffIntegerBits,
+  //                                    input_left_shift);
 
-//     data->params.zero_point = output->params.zero_point;
-//     data->params.scale = output->params.scale;
-//   }
+  data->params.table = data->table;
+  tflite::optimized_ops::PopulateSoftmaxLookupTable(
+      &data->params, input->params.scale, params->beta);
+  data->params.zero_point = output->params.zero_point;
+  data->params.scale = output->params.scale;
+
+  // Resize Output tensor
+  TfLiteIntArray *output_size = TfLiteIntArrayCopy(input->dims);
+  TF_LITE_ENSURE_STATUS(context->ResizeTensor(context, output, output_size));
+
+  // Temporary Output tensor management
+  int temp_out_id;
+  bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
+  if (!req_temp_out) out_tid++;
+  TF_LITE_ENSURE_STATUS(AllocateTemporaryOutTensorsIfRequired(
+      context, node, req_temp_out, outputs_[i][0], temp_out_id));
+  // Resize temporary output tensor
+  ResizeTempOutTensor(context, node, req_temp_out, temp_out_id, outputs_, i,
+                      output_size);
 
   return kTfLiteOk;
 }
 
+// tensorflow/lite/kernels/pad.cc
+bool Prepare_PAD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
+                      void *layers_params, void *opdatas,
+                      vector<vector<int>> inputs_, vector<vector<int>> outputs_,
+                      int out_tid) {
+
+  TF_LITE_ENSURE(context, inputs_[i].size() == 2 || inputs_[i].size() == 3);
+  TF_LITE_ENSURE_EQ(context, outputs_[i].size(), 1);
+
+  PadContext op_context(context, i, inputs_, outputs_);
+  if (tflite::IsConstantTensor(op_context.paddings)) {
+    TF_LITE_ENSURE_MSG(context, !CheckPaddingOverflow(&op_context),
+                       "INT64 padding overflow. Only support value between "
+                       "INT32_MIN and INT32_MAX.");
+  }
+  TF_LITE_ENSURE_TYPES_EQ(context, op_context.input->type,
+                          op_context.output->type);
+  if (op_context.constant_values != nullptr) {
+    TF_LITE_ENSURE_TYPES_EQ(context, op_context.input->type,
+                            op_context.constant_values->type);
+  }
+
+  // Ensure we do not exceed maximum dimension count.
+  TF_LITE_ENSURE(context, op_context.dims <= PadKernelMaxDimensionCount);
+
+  // Temporary Output tensor management
+  int temp_out_id;
+  bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
+  if (!req_temp_out) out_tid++;
+  TF_LITE_ENSURE_STATUS(AllocateTemporaryOutTensorsIfRequired(
+      context, node, req_temp_out, outputs_[i][0], temp_out_id));
+
+  // Exit early if paddings is a non-const tensor or the given input is an
+  // unranked input. Set output tensor to dynamic so output size can be
+  // determined in Eval.
+  if (tflite::NumDimensions(op_context.input) == 0 ||
+      !tflite::IsConstantOrPersistentTensor(op_context.paddings)) {
+    tflite::SetTensorToDynamic(op_context.output);
+    return kTfLiteOk;
+  }
+
+  // Ensures the paddings array is dims x 2.
+  TF_LITE_ENSURE_EQ(context, tflite::SizeOfDimension(op_context.paddings, 0),
+                    op_context.dims);
+  TF_LITE_ENSURE_EQ(context, tflite::SizeOfDimension(op_context.paddings, 1),
+                    2);
+
+  // Right now we only support paddings between INT32_MIN and INT32_MAX, so
+  // we are using int here and below.
+  TfLiteIntArray *input_size = op_context.input->dims;
+  TfLiteIntArray *output_size = TfLiteIntArrayCopy(input_size);
+  const int32_t *paddings_data =
+      tflite::GetTensorData<int32_t>(op_context.paddings);
+  for (int idx = 0; idx < op_context.dims; ++idx) {
+    // Paddings are between INT32_MIN and INT32_MAX.
+    int before_padding = static_cast<int>(*paddings_data++);
+    int after_padding = static_cast<int>(*paddings_data++);
+    TF_LITE_ENSURE_MSG(context, (before_padding >= 0 && after_padding >= 0),
+                       "Pad value has to be greater than equal to 0.");
+  }
+  paddings_data = tflite::GetTensorData<int32_t>(op_context.paddings);
+  for (int idx = 0; idx < op_context.dims; ++idx) {
+    // Paddings are between INT32_MIN and INT32_MAX.
+    int before_padding = static_cast<int>(*paddings_data++);
+    int after_padding = static_cast<int>(*paddings_data++);
+    output_size->data[idx] =
+        (input_size->data[idx] + before_padding + after_padding);
+  }
+
+  // Output tensor management
+  TF_LITE_ENSURE_STATUS(
+      context->ResizeTensor(context, op_context.output, output_size));
+
+  // Resize temporary output tensor
+  ResizeTempOutTensor(context, node, req_temp_out, temp_out_id, outputs_, i,
+                      output_size);
+  return kTfLiteOk;
+}
+
+// tensorflow/lite/kernels/mean.cc
+bool Prepare_MEAN_INT8(TfLiteContext *context, TfLiteNode *node, int i,
+                       void *layers_params, void *opdatas,
+                       vector<vector<int>> inputs_,
+                       vector<vector<int>> outputs_, int out_tid,
+                       vector<tuple<int, int>> &temp_tensor_ids) {
+
+  TF_LITE_ENSURE_EQ(context, inputs_[i].size(), 2);
+  TF_LITE_ENSURE_EQ(context, outputs_[i].size(), 1);
+
+  REDUCE_Data *data = reinterpret_cast<REDUCE_Data *>(opdatas);
+  TfLiteReducerParams *params =
+      reinterpret_cast<TfLiteReducerParams *>(layers_params);
+
+  ReduceOpContext op_context(context, params, i, inputs_, outputs_);
+  TF_LITE_ENSURE_TYPES_EQ(context, op_context.axis->type, kTfLiteInt32);
+  TfLiteIntArray *output_size;
+  TF_LITE_ENSURE_OK(context,
+                    GetReduceOutputShape(context, &op_context, &output_size));
+  int output_num_elements = 1;
+  for (int i = 0; i < output_size->size; ++i)
+    output_num_elements *= output_size->data[i];
+
+  // Quantization Parameters Calculation
+  const double real_multiplier =
+      static_cast<double>(op_context.input->params.scale) /
+      static_cast<double>(op_context.output->params.scale);
+  int exponent;
+  tflite::QuantizeMultiplier(real_multiplier, &data->multiplier, &exponent);
+  data->shift = exponent;
+
+  // Creates a temp index to iterate through input data.
+  // Temporary Output tensor management
+  int temp_out_id;
+  bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
+  if (!req_temp_out) out_tid++;
+  TF_LITE_ENSURE_STATUS(AllocateTemporaryOutTensorsIfRequiredMEAN(
+      context, node, data, req_temp_out, outputs_[i][0], temp_out_id,
+      temp_tensor_ids));
+
+  // Resize output tensor
+  context->ResizeTensor(context, op_context.output, output_size);
+
+  // Resize temporary output tensor
+  ResizeTempOutTensor(context, node, req_temp_out, temp_out_id, outputs_, i,
+                      output_size);
+
+  int scratch_index = get<0>(temp_tensor_ids[0]);
+  int resolved_axis_index = get<0>(temp_tensor_ids[1]);
+  int temp_accum_index = get<0>(temp_tensor_ids[2]);
+  int normalized_dims_index = get<0>(temp_tensor_ids[3]);
+
+  node->temporaries->data[scratch_index] = get<1>(temp_tensor_ids[0]);
+  node->temporaries->data[resolved_axis_index] = get<1>(temp_tensor_ids[1]);
+  node->temporaries->data[temp_accum_index] = get<1>(temp_tensor_ids[2]);
+  node->temporaries->data[normalized_dims_index] = get<1>(temp_tensor_ids[3]);
+
+  TfLiteTensor *scratch_tensor;
+  tflite::GetTemporarySafe(context, node, scratch_index, &scratch_tensor);
+  scratch_tensor->type = kTfLiteInt32;
+  scratch_tensor->allocation_type = kTfLiteArenaRw;
+  TfLiteIntArray *index_size = TfLiteIntArrayCreate(1);
+  index_size->data[0] = tflite::NumDimensions(op_context.input);
+  TF_LITE_ENSURE_OK(context,
+                    context->ResizeTensor(context, scratch_tensor, index_size));
+
+  // Creates a temp tensor to store resolved axis given input data.
+  TfLiteTensor *resolved_axis;
+  tflite::GetTemporarySafe(context, node, resolved_axis_index, &resolved_axis);
+  resolved_axis->type = kTfLiteInt32;
+
+  // Creates a temporary accumulation tensor to store temp sums when calculating
+  // mean or temp prod when calculating reduce prod.
+  TfLiteTensor *temp_accum;
+  tflite::GetTemporarySafe(context, node, temp_accum_index, &temp_accum);
+  temp_accum->type = kTfLiteInt32;
+
+  // Creates a temp tensor to store normalized shape given input data.
+  TfLiteTensor *normalized_dims;
+  tflite::GetTemporarySafe(context, node, normalized_dims_index,
+                           &normalized_dims);
+  normalized_dims->type = kTfLiteInt32;
+
+  data->noop = tflite::IsConstantOrPersistentTensor(op_context.input) &&
+               tflite::IsConstantOrPersistentTensor(op_context.axis);
+
+  if (data->noop)
+    data->noop &= output_num_elements <= kMaxConstantOutputTensorSize;
+
+  if (!tflite::IsConstantOrPersistentTensor(op_context.input)) {
+    tflite::SetTensorToDynamic(normalized_dims);
+  } else {
+    TfLiteTensorDataFree(normalized_dims);
+    normalized_dims->allocation_type = kTfLiteArenaRw;
+    TF_LITE_ENSURE_OK(context,
+                      ResizeTempDims(context, &op_context, normalized_dims));
+  }
+  // Leaves work to Eval if axis is not constant; else resizes output.
+  if (!tflite::IsConstantOrPersistentTensor(op_context.axis)) {
+    tflite::SetTensorToDynamic(op_context.output);
+    tflite::SetTensorToDynamic(resolved_axis);
+    return kTfLiteOk;
+  }
+  TfLiteTensorDataFree(resolved_axis);
+  resolved_axis->allocation_type = kTfLiteArenaRw;
+  TF_LITE_ENSURE_OK(context,
+                    ResizeTempAxis(context, &op_context, resolved_axis));
+
+  // reduce_mean requires a buffer to store intermediate sum result.
+  TfLiteTensor *temp_sum;
+  tflite::GetTemporarySafe(context, node, temp_accum_index, &temp_sum);
+  if (!tflite::IsConstantOrPersistentTensor(op_context.axis)) {
+    tflite::SetTensorToDynamic(temp_sum);
+    return kTfLiteOk;
+  }
+  temp_sum->allocation_type = kTfLiteArenaRw;
+  ResizeTempAccum(context, &op_context, temp_sum);
+
+  return kTfLiteOk;
+}
 #endif

@@ -80,6 +80,10 @@ public:
     builtin_code_.resize(params->nodes_to_replace->size);
     opdatas.resize(params->nodes_to_replace->size);
     layers_params.resize(params->nodes_to_replace->size);
+    is_global_output.resize(params->nodes_to_replace->size);
+    output_dependencies.resize(params->nodes_to_replace->size);
+    node_output_needed.resize(params->nodes_to_replace->size);
+    temp_tensor_ids.resize(params->nodes_to_replace->size);
 
     int conv2d_count = 0;
     int fc_count = 0;
@@ -88,6 +92,8 @@ public:
     int tconv_count = 0;
     int shape_count = 0;
     int softmax_count = 0;
+    int pad_count = 0;
+    int mean_count = 0;
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
       // Get this node information.
@@ -115,11 +121,11 @@ public:
       if (builtin_code_[i] == kTfLiteBuiltinTransposeConv) tconv_count++;
       if (builtin_code_[i] == kTfLiteBuiltinShape) shape_count++;
       if (builtin_code_[i] == kTfLiteBuiltinSoftmax) softmax_count++;
+      if (builtin_code_[i] == kTfLiteBuiltinPad) pad_count++;
+      if (builtin_code_[i] == kTfLiteBuiltinMean) mean_count++;
     }
-
-    // CONV2D/FC specific
-    wt_sum.resize(conv2d_count + fc_count + dwconv2d_count + tconv_count);
-    temp_im2col.resize(conv2d_count);
+    wt_sum.resize(params->nodes_to_replace->size);
+    temp_im2col.resize(params->nodes_to_replace->size);
     return kTfLiteOk;
   }
 
@@ -131,30 +137,54 @@ public:
   TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) override {
     int node_count = inputs_.size();
     int out_tid = 0;
-    int wsum_i = 0;
+    // int wsum_i = 0;
     for (int i = 0; i < node_count; i++) {
+      // =======================================================
+      // Tracking Output dependencies
+      // =======================================================
+      int current_output = outputs_[i][0];
+      bool isOG = false;
+      vector<int> future_nodes;
+
+      for (int j = 0; j < node->outputs->size; j++)
+        isOG = isOG || (node->outputs->data[j] == current_output);
+      is_global_output[i] = isOG;
+      // Find all the remaining nodes that are dependent on this output tensor
+      for (int j = i; j < node_count; j++)
+        for (int k = 0; k < inputs_[j].size(); k++)
+          if (inputs_[j][k] == current_output) future_nodes.push_back(j);
+      output_dependencies[i] = future_nodes;
+      node_output_needed[i] = output_dependencies[i].size() > 0;
+      // =======================================================
+
       if (builtin_code_[i] == kTfLiteBuiltinAdd) {
         Prepare_ADD_INT8(context, node, i, layers_params[i], opdatas[i],
-                         inputs_, outputs_);
+                         inputs_, outputs_, out_tid);
       } else if (builtin_code_[i] == kTfLiteBuiltinConv2d) {
         Prepare_CONV2D_INT8(context, node, i, layers_params[i], opdatas[i],
-                            inputs_, outputs_, out_tid, wt_sum[wsum_i++],
+                            inputs_, outputs_, out_tid, wt_sum[i],
                             temp_im2col[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) {
         Prepare_FC_INT8(context, node, i, layers_params[i], opdatas[i], inputs_,
-                        outputs_, out_tid, wt_sum[wsum_i++]);
+                        outputs_, out_tid, wt_sum[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinDepthwiseConv2d) {
         Prepare_DWCONV2D_INT8(context, node, i, layers_params[i], opdatas[i],
-                              inputs_, outputs_, out_tid, wt_sum[wsum_i++]);
+                              inputs_, outputs_, out_tid, wt_sum[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinTransposeConv) {
         Prepare_TCONV_INT8(context, node, i, layers_params[i], opdatas[i],
-                           inputs_, outputs_, out_tid, wt_sum[wsum_i++]);
+                           inputs_, outputs_, out_tid, wt_sum[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinShape) {
         Prepare_SHAPE_INT8(context, node, i, layers_params[i], opdatas[i],
                            inputs_, outputs_, out_tid);
       } else if (builtin_code_[i] == kTfLiteBuiltinSoftmax) {
         Prepare_SOFTMAX_INT8(context, node, i, layers_params[i], opdatas[i],
                              inputs_, outputs_, out_tid);
+      } else if (builtin_code_[i] == kTfLiteBuiltinPad) {
+        Prepare_PAD_INT8(context, node, i, layers_params[i], opdatas[i],
+                         inputs_, outputs_, out_tid);
+      } else if (builtin_code_[i] == kTfLiteBuiltinMean) {
+        Prepare_MEAN_INT8(context, node, i, layers_params[i], opdatas[i],
+                          inputs_, outputs_, out_tid, temp_tensor_ids[i]);
       } else {
         // Unsupported operation
         return kTfLiteError;
@@ -179,7 +209,18 @@ public:
     drv.thread_count = context->recommended_num_threads;
 
     for (int i = 0; i < node_count; i++) {
+      // =======================================================
+      // Delegate Mangement Code
       drv.op_type = builtin_code_[i];
+      // #ifdef DELEGATE_VERBOSE
+      cout << "======================================================" << endl;
+      cout << "Layer: " << dparams.layer
+           << "      Node: " << associated_nodes[i]
+           << "      Type: " << EnumNamesBuiltinOperator()[builtin_code_[i]]
+           << endl;
+      cout << "======================================================" << endl;
+      // #endif
+      // =======================================================
       if (builtin_code_[i] == kTfLiteBuiltinAdd) { // ADD
         TfLiteAddParams *params =
             reinterpret_cast<TfLiteAddParams *>(layers_params[i]);
@@ -578,7 +619,7 @@ public:
                       data->per_channel_output_shift.data()[output_channel];
                   int out_mult = data->per_channel_output_multiplier
                                      .data()[output_channel];
-                  acc = Quantised_Multiplier_V1(
+                  acc = Quantised_Multiplier_V2(
                       acc, out_mult, out_shift, output_offset,
                       output_activation_min, output_activation_max);
                   output_data[Offset(output_shape, batch, out_y, out_x,
@@ -750,27 +791,359 @@ public:
         }
       } else if (builtin_code_[i] == kTfLiteBuiltinShape) { // SHAPE
         // Nothing to do during eval
+      } else if (builtin_code_[i] == kTfLiteBuiltinSoftmax) { // SOFTMAX
+        SOFTMAX_Data *data = reinterpret_cast<SOFTMAX_Data *>(opdatas[i]);
+        tflite::SoftmaxParams params = data->params;
+        const TfLiteTensor *input;
+        TfLiteTensor *output;
+        GetInputSafe(context, inputs_[i][0], &input);
+        GetOutputSafe(context, outputs_[i][0], &output);
+
+        const int8_t *input_data = input->data.int8;
+        int8_t *output_data = output->data.int8;
+
+        // Check dimensions of the tensors.
+        RuntimeShape input_shape =
+            RuntimeShape(input->dims->size, input->dims->data);
+        RuntimeShape output_shape =
+            RuntimeShape(output->dims->size, output->dims->data);
+
+        const int trailing_dim = input_shape.DimensionsCount() - 1;
+        const int excluding_last_dim = tflite::MatchingFlatSizeSkipDim(
+            input_shape, trailing_dim, output_shape);
+        const int last_dim = tflite::MatchingDim(input_shape, trailing_dim,
+                                                 output_shape, trailing_dim);
+
+        const int32_t clamp_max = std::numeric_limits<int8_t>::max();
+        const int32_t clamp_min = std::numeric_limits<int8_t>::min();
+        for (int i = 0; i < excluding_last_dim; ++i) {
+          int32_t max_val = std::numeric_limits<int8_t>::min();
+          // Find max quantized value.
+          for (int j = 0; j < last_dim; ++j) {
+            max_val = std::max(max_val, static_cast<int32_t>(input_data[j]));
+          }
+
+          float sum_exp = 0.0f;
+          const int32_t max_uint8 = std::numeric_limits<uint8_t>::max();
+          const float *table_offset = &params.table[max_uint8 - max_val];
+          // Calculate normalizer sum(exp(x)).
+          for (int j = 0; j < last_dim; ++j) {
+            sum_exp += table_offset[input_data[j]];
+          }
+
+          const float inv_sum_exp = 1.0f / (sum_exp * params.scale);
+          // Normalize and quantize probabilities.
+          for (int j = 0; j < last_dim; ++j) {
+            const float prob_rescaled =
+                table_offset[input_data[j]] * inv_sum_exp;
+            const int32_t prob_quantized =
+                optimized_ops::QuantizeSoftmaxOutput<int8_t>(prob_rescaled,
+                                                             params.zero_point);
+            output_data[j] = static_cast<int8_t>(
+                std::max(std::min(clamp_max, prob_quantized), clamp_min));
+          }
+          input_data += last_dim;
+          output_data += last_dim;
+        }
+      } else if (builtin_code_[i] == kTfLiteBuiltinPad) { // PAD
+
+        PadContext op_context(context, i, inputs_, outputs_);
+        if (op_context.constant_values != nullptr) {
+          // Ensure that constant_values is a scalar.
+          TF_LITE_ENSURE_EQ(context,
+                            tflite::NumElements(op_context.constant_values), 1);
+        }
+        // Resize the output tensor if the output tensor is dynamic.
+        if (tflite::IsDynamicTensor(op_context.output)) {
+          TfLiteIntArray *input_size = op_context.input->dims;
+          TfLiteIntArray *output_size = TfLiteIntArrayCopy(input_size);
+          const int32_t *paddings_data =
+              tflite::GetTensorData<int32_t>(op_context.paddings);
+          for (int idx = 0; idx < op_context.dims; ++idx) {
+            // Paddings are between INT32_MIN and INT32_MAX.
+            int before_padding = static_cast<int>(*paddings_data++);
+            int after_padding = static_cast<int>(*paddings_data++);
+            TF_LITE_ENSURE_MSG(context,
+                               (before_padding >= 0 && after_padding >= 0),
+                               "Pad value has to be greater than equal to 0.");
+          }
+          paddings_data = tflite::GetTensorData<int32_t>(op_context.paddings);
+          for (int idx = 0; idx < op_context.dims; ++idx) {
+            // Paddings are between INT32_MIN and INT32_MAX.
+            int before_padding = static_cast<int>(*paddings_data++);
+            int after_padding = static_cast<int>(*paddings_data++);
+            output_size->data[idx] =
+                (input_size->data[idx] + before_padding + after_padding);
+          }
+
+          // Output tensor management
+          TF_LITE_ENSURE_STATUS(
+              context->ResizeTensor(context, op_context.output, output_size));
+        }
+
+        tflite::PadParams op_params;
+        const int32_t *paddings_data =
+            tflite::GetTensorData<int32_t>(op_context.paddings);
+        op_params.left_padding_count = op_context.dims;
+        op_params.right_padding_count = op_context.dims;
+        for (int idx = op_context.dims - 1; idx >= 0; --idx) {
+          op_params.left_padding[idx] =
+              static_cast<int32_t>(paddings_data[idx * 2]);
+          op_params.right_padding[idx] =
+              static_cast<int32_t>(paddings_data[idx * 2 + 1]);
+        }
+
+        int8_t pad_value;
+        if (op_context.constant_values == nullptr) {
+          // Quantized Pad requires that 0 is represented in the quantized
+          // range.
+          TF_LITE_ENSURE(context, op_context.output->params.zero_point >=
+                                      std::numeric_limits<int8_t>::min());
+          TF_LITE_ENSURE(context, op_context.output->params.zero_point <=
+                                      std::numeric_limits<int8_t>::max());
+          pad_value = static_cast<int8_t>(op_context.output->params.zero_point);
+        } else {
+          // Quantized Pad requires that 'constant_values' is represented in
+          // the same quantized range as the input and output tensors.
+          TF_LITE_ENSURE_EQ(context, op_context.output->params.zero_point,
+                            op_context.constant_values->params.zero_point);
+          TF_LITE_ENSURE_EQ(context, op_context.output->params.scale,
+                            op_context.constant_values->params.scale);
+          pad_value =
+              *tflite::GetTensorData<int8_t>(op_context.constant_values);
+        }
+        const int8_t pad_value_copy = pad_value;
+
+        // Core implementation
+        // Check dimensions of the tensors.
+        RuntimeShape input_shape = RuntimeShape(op_context.input->dims->size,
+                                                op_context.input->dims->data);
+        RuntimeShape output_shape = RuntimeShape(op_context.output->dims->size,
+                                                 op_context.output->dims->data);
+
+        const int8_t *input_data = op_context.input->data.int8;
+        int8_t *output_data = op_context.output->data.int8;
+
+        const RuntimeShape ext_input_shape = RuntimeShape::ExtendedShape(
+            PadKernelMaxDimensionCount, input_shape);
+        const RuntimeShape ext_output_shape = RuntimeShape::ExtendedShape(
+            PadKernelMaxDimensionCount, output_shape);
+        TFLITE_DCHECK_LE(op_params.left_padding_count,
+                         PadKernelMaxDimensionCount);
+        TFLITE_DCHECK_LE(op_params.right_padding_count,
+                         PadKernelMaxDimensionCount);
+
+        // Runtime calls are currently fixed at 5 dimensions. Copy inputs so
+        // we can pad them to 5 dims (yes, we are "padding the padding").
+        int left_padding_copy[PadKernelMaxDimensionCount];
+        for (int i = 0; i < PadKernelMaxDimensionCount; i++) {
+          left_padding_copy[i] = 0;
+        }
+        for (int i = 0; i < op_params.left_padding_count; ++i) {
+          left_padding_copy[i + PadKernelMaxDimensionCount -
+                            op_params.left_padding_count] =
+              op_params.left_padding[i];
+        }
+        int right_padding_copy[PadKernelMaxDimensionCount];
+        for (int i = 0; i < PadKernelMaxDimensionCount; i++) {
+          right_padding_copy[i] = 0;
+        }
+        for (int i = 0; i < op_params.right_padding_count; ++i) {
+          right_padding_copy[i + PadKernelMaxDimensionCount -
+                             op_params.right_padding_count] =
+              op_params.right_padding[i];
+        }
+
+        const int output_batch = ext_output_shape.Dims(0);
+        const int output_plane = ext_output_shape.Dims(1);
+        const int output_height = ext_output_shape.Dims(2);
+        const int output_width = ext_output_shape.Dims(3);
+        const int output_depth = ext_output_shape.Dims(4);
+
+        const int left_b_padding = left_padding_copy[0];
+        const int left_p_padding = left_padding_copy[1];
+        const int left_h_padding = left_padding_copy[2];
+        const int left_w_padding = left_padding_copy[3];
+        const int left_d_padding = left_padding_copy[4];
+
+        const int right_b_padding = right_padding_copy[0];
+        const int right_p_padding = right_padding_copy[1];
+        const int right_h_padding = right_padding_copy[2];
+        const int right_w_padding = right_padding_copy[3];
+        const int right_d_padding = right_padding_copy[4];
+
+        const int8_t *in_ptr = input_data;
+        int8_t *out_ptr = output_data;
+        for (int out_b = 0; out_b < output_batch; ++out_b) {
+          for (int out_p = 0; out_p < output_plane; ++out_p) {
+            for (int out_h = 0; out_h < output_height; ++out_h) {
+              for (int out_w = 0; out_w < output_width; ++out_w) {
+                for (int out_d = 0; out_d < output_depth; ++out_d) {
+                  if (out_b < left_b_padding ||
+                      out_b >= output_batch - right_b_padding ||
+                      out_p < left_p_padding ||
+                      out_p >= output_plane - right_p_padding ||
+                      out_h < left_h_padding ||
+                      out_h >= output_height - right_h_padding ||
+                      out_w < left_w_padding ||
+                      out_w >= output_width - right_w_padding ||
+                      out_d < left_d_padding ||
+                      out_d >= output_depth - right_d_padding) {
+                    *out_ptr++ = pad_value;
+                  } else {
+                    *out_ptr++ = *in_ptr++;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+      } else if (builtin_code_[i] == kTfLiteBuiltinMean) { // MEAN
+
+        REDUCE_Data *data = reinterpret_cast<REDUCE_Data *>(opdatas[i]);
+        TfLiteReducerParams *params =
+            reinterpret_cast<TfLiteReducerParams *>(layers_params[i]);
+        ReduceOpContext op_context(context, params, i, inputs_, outputs_);
+
+        int num_axis = static_cast<int>(NumElements(op_context.axis));
+        TfLiteTensor *temp_index;
+        TfLiteTensor *resolved_axis;
+        TfLiteTensor *temp_sum;
+        TfLiteTensor *normalized_dims;
+
+        int scratch_index = get<0>(temp_tensor_ids[i][0]);
+        int resolved_axis_index = get<0>(temp_tensor_ids[i][1]);
+        int temp_accum_index = get<0>(temp_tensor_ids[i][2]);
+        int normalized_dims_index = get<0>(temp_tensor_ids[i][3]);
+
+        GetTemporarySafe(context, node, scratch_index, &temp_index);
+        GetTemporarySafe(context, node, resolved_axis_index, &resolved_axis);
+        GetTemporarySafe(context, node, temp_accum_index, &temp_sum);
+        GetTemporarySafe(context, node, normalized_dims_index,
+                         &normalized_dims);
+
+        // Resize the output tensor if the output tensor is dynamic.
+        if (IsDynamicTensor(op_context.output)) {
+          TF_LITE_ENSURE_OK(
+              context, ResizeTempAxis(context, &op_context, resolved_axis));
+          TF_LITE_ENSURE_OK(context, ResizeOutputTensor(context, &op_context));
+          TF_LITE_ENSURE_OK(context,
+                            ResizeTempAccum(context, &op_context, temp_sum));
+        }
+
+        if (IsDynamicTensor(normalized_dims)) {
+          TF_LITE_ENSURE_OK(
+              context, ResizeTempDims(context, &op_context, normalized_dims));
+        }
+
+        // Return early when input is empty.
+        const TfLiteTensor *input = op_context.input;
+        RuntimeShape input_shape = GetTensorShape(input);
+        if (input_shape.FlatSize() == 0) {
+          TF_LITE_ENSURE_OK(context,
+                            InitializeMeanOutputTyped(op_context.output));
+          continue;
+        }
+
+        TfLiteTensor *output = op_context.output;
+        tflite::reference_ops::QuantizedMeanOrSum(
+            tflite::GetTensorData<int8_t>(input), input->params.zero_point,
+            input->dims->data, input->dims->size,
+            tflite::GetTensorData<int8_t>(output), data->multiplier,
+            data->shift, output->params.zero_point, output->dims->data,
+            output->dims->size, tflite::GetTensorData<int>(op_context.axis),
+            num_axis, op_context.params->keep_dims,
+            tflite::GetTensorData<int>(temp_index),
+            tflite::GetTensorData<int>(resolved_axis),
+            tflite::GetTensorData<int32_t>(temp_sum),
+            /*compute_sum=*/false);
+
+        // TF_LITE_ENSURE_OK(context, EvalQuantizedMean<int8_t>(
+        //                                context, op_context, num_axis, data,
+        //                                temp_index, resolved_axis,
+        //                                temp_sum));
+        // const TfLiteTensor *input = op_context.input;
+        // if (kernel_type == kGenericOptimized) {
+        //   // Use optimized ops if available.
+        //   tflite::MeanParams op_params;
+        //   op_params.axis_count = num_axis;
+        //   ResolveAxis(GetTensorData<int>(op_context.axis), num_axis,
+        //               &op_params);
+        //   if (op_context.params->keep_dims && NumDimensions(input) == 4 &&
+        //       op_params.axis_count == 2 &&
+        //       ((op_params.axis[0] == 1 && op_params.axis[1] == 2) ||
+        //        (op_params.axis[0] == 2 && op_params.axis[1] == 1))) {
+        //     optimized_integer_ops::Mean(
+        //         op_params, input_shape, GetTensorData<int8_t>(input),
+        //         input->params.zero_point, input->params.scale,
+        //         GetTensorShape(op_context.output),
+        //         GetTensorData<int8_t>(op_context.output),
+        //         op_context.output->params.zero_point,
+        //         op_context.output->params.scale,
+        //         CpuBackendContext::GetFromContext(context));
+        //   }
+        // } else {
+        //   TF_LITE_ENSURE_OK(context, EvalQuantizedMean<int8_t>(
+        //                                  context, op_context, num_axis,
+        //                                  data, temp_index, resolved_axis,
+        //                                  temp_sum));
+        // }
+
+      } else {
+        // Unsupported builtin code
+        return kTfLiteError;
       }
+      cout << "======================================================" << endl;
       // End of All Operator Evals
 
-      // Debugging
+      // =======================================================================
+      // Accelerator Offload Code
+      // =======================================================================
       drv.t.layer = dparams.layer;
       drv.p_t = p_t;
-#ifdef DELEGATE_VERBOSE
-      cout << "===========================" << endl;
-      cout << "Layer: " << dparams.layer
-           << "      Node: " << associated_nodes[i]
-           << "      Type: " << builtin_code_[i] << endl;
-      cout << "===========================" << endl;
-#endif
+
       // Enter the driver code
       // if (builtin_code_[i] == kTfLiteBuiltinAdd) {
       //   tflite_omnisim::Entry(drv);
       // }
       p_t = drv.p_t;
 
+      // =======================================================================
+      // Delegate Management Code
+      // =======================================================================
+      // Pops output dependencies
+      for (int n = 0; n < i; n++) {
+        for (int dep_node : output_dependencies[n]) {
+          if (dep_node == i) {
+#ifdef DELEGATE_VERBOSE
+            cout << "Popping node: " << associated_nodes[i]
+                 << " from layer dependency: " << associated_nodes[n] << endl;
+#endif
+            output_dependencies[n].erase(
+                std::remove(output_dependencies[n].begin(),
+                            output_dependencies[n].end(), dep_node),
+                output_dependencies[n].end());
+          }
+          node_output_needed[n] = output_dependencies[n].size() > 0;
+        }
+      }
       dparams.layer++;
       dparams.delegated_nodes--;
+      // Save output data to file
+      // TfLiteTensor *output;
+      // GetOutputSafe(context, outputs_[i][0], &output);
+      // int output_size = 1;
+      // int8_t *output_data = output->data.int8;
+      // vector<int> odims;
+      // for (int dims = 0; dims < output->dims->size; dims++)
+      //   output_size *= output->dims->data[dims];
+      // ofstream out_file;
+      // out_file.open("aData/omni/output_" + std::to_string(outputs_[i][0]) +
+      //               "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]] +
+      //               ".csv");
+      // for (int i = 0; i < output_size; ++i)
+      //   out_file << static_cast<int>(output_data[i]) << "\n";
     }
 
     prf_end(0, p_t.delegate_total); // Stop the profiling delegate
@@ -781,6 +1154,11 @@ public:
   std::vector<int> builtin_code_, associated_nodes;
   std::vector<void *> opdatas;
   std::vector<void *> layers_params;
+
+  std::vector<std::vector<int>> output_dependencies;
+  std::vector<bool> node_output_needed;
+  std::vector<bool> is_global_output;
+  std::vector<std::vector<std::tuple<int, int>>> temp_tensor_ids;
 
   // Convolution specific variables
   std::vector<std::vector<int>> wt_sum;
@@ -810,46 +1188,26 @@ public:
     bool isTCONV = IsNode_TCONV_INT8(registration, node, context);
     bool isSHAPE = IsNode_SHAPE_INT8(registration, node, context);
     bool isSOFTMAX = IsNode_SOFTMAX_INT8(registration, node, context);
+    bool isPAD = IsNode_PAD_INT8(registration, node, context);
+    bool isMEAN = IsNode_MEAN_INT8(registration, node, context);
 
-    // Check if the node is supported by the delegate
-    std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD, isFC,
-                                         isTCONV,  isSHAPE,    isSOFTMAX};
-
-    // std::vector<bool> supported_nodes = {isADD};
-    // std::vector<bool> supported_nodes = {isCONV2D, isFC};
-    // std::vector<bool> supported_nodes = {isCONV2D, isADD};
-    // std::vector<bool> supported_nodes = {isCONV2D};
-    // std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD};
-    // std::vector<bool> supported_nodes = {isDWCONV2D};
-    // std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD, isDWCONV2D};
-    // std::vector<bool> supported_nodes = {isCONV2D, isFC, isADD, isDWCONV2D,
-    //                                      isTCONV};
-
-    // std::vector<bool> supported_nodes = {isTCONV, isFC};
-    // std::vector<bool> supported_nodes = {isSHAPE, isDWCONV2D};
-    // std::vector<bool> supported_nodes = {isDWCONV2D};
-
-    // std::vector<bool> supported_nodes = {isDWCONV2D};
-
-    // std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD, isFC,
-    //                                      isTCONV,  isSHAPE,    isSOFTMAX};
-    // std::vector<bool> supported_nodes = {isCONV2D, isDWCONV2D, isADD,
-    //                                      isFC,     isSHAPE,    isDWCONV2D};
-
-    // std::vector<bool> supported_nodes = {
-    //     isCONV2D,
-    //     isFC,
-    //     isADD,
-    //     isDWCONV2D,
-    // };
+    // Node will be delegated if inside supported_nodes
+    std::vector<bool> supported_nodes = {isCONV2D, isFC,       isSOFTMAX,
+                                         isSHAPE,  isDWCONV2D, isTCONV,
+                                         isADD,    isPAD,      isMEAN};
 
     bool delegated_node = false;
-    for (int i = 0; i < supported_nodes.size(); i++) {
-      if (supported_nodes[i]) {
-        delegated_node = true;
-        break;
-      }
-    }
+    // Check if the node is supported by the delegate
+    for (int i = 0; i < supported_nodes.size(); i++)
+      if (supported_nodes[i]) delegated_node = true;
+
+    // Use this to restrict certain nodes from being delegated
+    int output_tid = node->outputs->data[0];
+    int forbidden_output_tid[] = {
+        // 110, //  restricts node with output tid 110 from being delegated
+    };
+    for (int tid : forbidden_output_tid)
+      if (output_tid == tid) delegated_node = false;
 
     if (delegated_node) dparams.delegated_nodes++;
     return delegated_node;
@@ -920,3 +1278,23 @@ void TfLiteOmniDelegateDelete(TfLiteDelegate *delegate) {
   std::cout << "===========================" << std::endl;
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }
+
+// if (outputs_[i][0] == 117) {
+//   ofstream out_file;
+//   out_file.open("aData/output_del_" + std::to_string(outputs_[i][0])
+//   +
+//                 ".csv");
+//   for (int i = 0; i < output_size; ++i) {
+//     int sdim = 1;
+//     for (int dim : odims) {
+//       sdim *= dim;
+//       if (i % sdim == 0) out_file << "[";
+//     }
+//     out_file << static_cast<int>(output_data[i]) << " ";
+//     sdim = 1;
+//     for (int dim : odims) {
+//       sdim *= dim;
+//       if ((i + 1) % sdim == 0) out_file << "]\n";
+//     }
+//   }
+// }

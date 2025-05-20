@@ -16,9 +16,221 @@
 
 using namespace std;
 
+inline const char *const *EnumNamesBuiltinOperator() {
+  static const char *const names[207] = {"ADD",
+                                         "AVERAGE_POOL_2D",
+                                         "CONCATENATION",
+                                         "CONV_2D",
+                                         "DEPTHWISE_CONV_2D",
+                                         "DEPTH_TO_SPACE",
+                                         "DEQUANTIZE",
+                                         "EMBEDDING_LOOKUP",
+                                         "FLOOR",
+                                         "FULLY_CONNECTED",
+                                         "HASHTABLE_LOOKUP",
+                                         "L2_NORMALIZATION",
+                                         "L2_POOL_2D",
+                                         "LOCAL_RESPONSE_NORMALIZATION",
+                                         "LOGISTIC",
+                                         "LSH_PROJECTION",
+                                         "LSTM",
+                                         "MAX_POOL_2D",
+                                         "MUL",
+                                         "RELU",
+                                         "RELU_N1_TO_1",
+                                         "RELU6",
+                                         "RESHAPE",
+                                         "RESIZE_BILINEAR",
+                                         "RNN",
+                                         "SOFTMAX",
+                                         "SPACE_TO_DEPTH",
+                                         "SVDF",
+                                         "TANH",
+                                         "CONCAT_EMBEDDINGS",
+                                         "SKIP_GRAM",
+                                         "CALL",
+                                         "CUSTOM",
+                                         "EMBEDDING_LOOKUP_SPARSE",
+                                         "PAD",
+                                         "UNIDIRECTIONAL_SEQUENCE_RNN",
+                                         "GATHER",
+                                         "BATCH_TO_SPACE_ND",
+                                         "SPACE_TO_BATCH_ND",
+                                         "TRANSPOSE",
+                                         "MEAN",
+                                         "SUB",
+                                         "DIV",
+                                         "SQUEEZE",
+                                         "UNIDIRECTIONAL_SEQUENCE_LSTM",
+                                         "STRIDED_SLICE",
+                                         "BIDIRECTIONAL_SEQUENCE_RNN",
+                                         "EXP",
+                                         "TOPK_V2",
+                                         "SPLIT",
+                                         "LOG_SOFTMAX",
+                                         "DELEGATE",
+                                         "BIDIRECTIONAL_SEQUENCE_LSTM",
+                                         "CAST",
+                                         "PRELU",
+                                         "MAXIMUM",
+                                         "ARG_MAX",
+                                         "MINIMUM",
+                                         "LESS",
+                                         "NEG",
+                                         "PADV2",
+                                         "GREATER",
+                                         "GREATER_EQUAL",
+                                         "LESS_EQUAL",
+                                         "SELECT",
+                                         "SLICE",
+                                         "SIN",
+                                         "TRANSPOSE_CONV",
+                                         "SPARSE_TO_DENSE",
+                                         "TILE",
+                                         "EXPAND_DIMS",
+                                         "EQUAL",
+                                         "NOT_EQUAL",
+                                         "LOG",
+                                         "SUM",
+                                         "SQRT",
+                                         "RSQRT",
+                                         "SHAPE",
+                                         "POW",
+                                         "ARG_MIN",
+                                         "FAKE_QUANT",
+                                         "REDUCE_PROD",
+                                         "REDUCE_MAX",
+                                         "PACK",
+                                         "LOGICAL_OR",
+                                         "ONE_HOT",
+                                         "LOGICAL_AND",
+                                         "LOGICAL_NOT",
+                                         "UNPACK",
+                                         "REDUCE_MIN",
+                                         "FLOOR_DIV",
+                                         "REDUCE_ANY",
+                                         "SQUARE",
+                                         "ZEROS_LIKE",
+                                         "FILL",
+                                         "FLOOR_MOD",
+                                         "RANGE",
+                                         "RESIZE_NEAREST_NEIGHBOR",
+                                         "LEAKY_RELU",
+                                         "SQUARED_DIFFERENCE",
+                                         "MIRROR_PAD",
+                                         "ABS",
+                                         "SPLIT_V",
+                                         "UNIQUE",
+                                         "CEIL",
+                                         "REVERSE_V2",
+                                         "ADD_N",
+                                         "GATHER_ND",
+                                         "COS",
+                                         "WHERE",
+                                         "RANK",
+                                         "ELU",
+                                         "REVERSE_SEQUENCE",
+                                         "MATRIX_DIAG",
+                                         "QUANTIZE",
+                                         "MATRIX_SET_DIAG",
+                                         "ROUND",
+                                         "HARD_SWISH",
+                                         "IF",
+                                         "WHILE",
+                                         "NON_MAX_SUPPRESSION_V4",
+                                         "NON_MAX_SUPPRESSION_V5",
+                                         "SCATTER_ND",
+                                         "SELECT_V2",
+                                         "DENSIFY",
+                                         "SEGMENT_SUM",
+                                         "BATCH_MATMUL",
+                                         "PLACEHOLDER_FOR_GREATER_OP_CODES",
+                                         "CUMSUM",
+                                         "CALL_ONCE",
+                                         "BROADCAST_TO",
+                                         "RFFT2D",
+                                         "CONV_3D",
+                                         "IMAG",
+                                         "REAL",
+                                         "COMPLEX_ABS",
+                                         "HASHTABLE",
+                                         "HASHTABLE_FIND",
+                                         "HASHTABLE_IMPORT",
+                                         "HASHTABLE_SIZE",
+                                         "REDUCE_ALL",
+                                         "CONV_3D_TRANSPOSE",
+                                         "VAR_HANDLE",
+                                         "READ_VARIABLE",
+                                         "ASSIGN_VARIABLE",
+                                         "BROADCAST_ARGS",
+                                         "RANDOM_STANDARD_NORMAL",
+                                         "BUCKETIZE",
+                                         "RANDOM_UNIFORM",
+                                         "MULTINOMIAL",
+                                         "GELU",
+                                         "DYNAMIC_UPDATE_SLICE",
+                                         "RELU_0_TO_1",
+                                         "UNSORTED_SEGMENT_PROD",
+                                         "UNSORTED_SEGMENT_MAX",
+                                         "UNSORTED_SEGMENT_SUM",
+                                         "ATAN2",
+                                         "UNSORTED_SEGMENT_MIN",
+                                         "SIGN",
+                                         "BITCAST",
+                                         "BITWISE_XOR",
+                                         "RIGHT_SHIFT",
+                                         "STABLEHLO_LOGISTIC",
+                                         "STABLEHLO_ADD",
+                                         "STABLEHLO_DIVIDE",
+                                         "STABLEHLO_MULTIPLY",
+                                         "STABLEHLO_MAXIMUM",
+                                         "STABLEHLO_RESHAPE",
+                                         "STABLEHLO_CLAMP",
+                                         "STABLEHLO_CONCATENATE",
+                                         "STABLEHLO_BROADCAST_IN_DIM",
+                                         "STABLEHLO_CONVOLUTION",
+                                         "STABLEHLO_SLICE",
+                                         "STABLEHLO_CUSTOM_CALL",
+                                         "STABLEHLO_REDUCE",
+                                         "STABLEHLO_ABS",
+                                         "STABLEHLO_AND",
+                                         "STABLEHLO_COSINE",
+                                         "STABLEHLO_EXPONENTIAL",
+                                         "STABLEHLO_FLOOR",
+                                         "STABLEHLO_LOG",
+                                         "STABLEHLO_MINIMUM",
+                                         "STABLEHLO_NEGATE",
+                                         "STABLEHLO_OR",
+                                         "STABLEHLO_POWER",
+                                         "STABLEHLO_REMAINDER",
+                                         "STABLEHLO_RSQRT",
+                                         "STABLEHLO_SELECT",
+                                         "STABLEHLO_SUBTRACT",
+                                         "STABLEHLO_TANH",
+                                         "STABLEHLO_SCATTER",
+                                         "STABLEHLO_COMPARE",
+                                         "STABLEHLO_CONVERT",
+                                         "STABLEHLO_DYNAMIC_SLICE",
+                                         "STABLEHLO_DYNAMIC_UPDATE_SLICE",
+                                         "STABLEHLO_PAD",
+                                         "STABLEHLO_IOTA",
+                                         "STABLEHLO_DOT_GENERAL",
+                                         "STABLEHLO_REDUCE_WINDOW",
+                                         "STABLEHLO_SORT",
+                                         "STABLEHLO_WHILE",
+                                         "STABLEHLO_GATHER",
+                                         "STABLEHLO_TRANSPOSE",
+                                         "DILATE",
+                                         "STABLEHLO_RNG_BIT_GENERATOR",
+                                         "REDUCE_WINDOW",
+                                         nullptr};
+  return names;
+}
+
 // =========================================================
 // OpDatas for all supported Ops
 // =========================================================
+
 const int kTensorNotAllocated = -1;
 static constexpr size_t kMaxIm2colBufferSizeMobile = 1024 * 1024 * 1024; // 1GB
 
@@ -189,7 +401,7 @@ struct TCONV_Data {
 
 // SOFTMAX_INT8
 struct SOFTMAX_Data {
-  struct SoftmaxParams params();
+  struct tflite::SoftmaxParams params;
   float table[256];
 #ifdef TFLITE_SOFTMAX_USE_UINT16_LUT
   uint8_t uint8_table1[256];
@@ -202,6 +414,16 @@ struct SOFTMAX_Data {
                                                        // (1 + x), where x
                                                        // uniform distributed
                                                        // between [0.0 , 1.0]
+};
+
+// REDUCE_INT8
+struct REDUCE_Data {
+  int32_t multiplier;
+  int shift;
+  // The index of the temporary tensor where the quantized inputs are cached.
+  int scratch_tensor_index;
+  // Indicates that 'Eval' is a noop as the output as written during 'Prepare'.
+  bool noop;
 };
 
 // =========================================================
@@ -379,6 +601,15 @@ bool IsNode_CONV2D_INT8(const TfLiteRegistration *registration,
   // Only supports CONV2D ops
   if (kTfLiteBuiltinConv2d != registration->builtin_code) return false;
 
+  Conv2D_Data *data = reinterpret_cast<Conv2D_Data *>(node->user_data);
+  TfLiteConvParams *params =
+      reinterpret_cast<TfLiteConvParams *>(node->builtin_data);
+  // if (params->padding == kTfLitePaddingValid) return false;
+  // if (params->activation != kTfLiteActNone) return false;
+  // if (params->activation != kTfLiteActNone) {
+  //   cout << node->outputs->data[0] << ",\n";
+  // }
+
   // This delegate only supports int8 types.
   if (node->inputs->size != 3 && node->inputs->size != 2) return false;
   for (int i = 0; i < 2; ++i) {
@@ -435,12 +666,55 @@ bool IsNode_SOFTMAX_INT8(const TfLiteRegistration *registration,
   return true;
 }
 
+bool IsNode_PAD_INT8(const TfLiteRegistration *registration,
+                     const TfLiteNode *node, TfLiteContext *context) {
+  // Only supports PAD ops
+  if (kTfLiteBuiltinPad != registration->builtin_code) return false;
+
+  // This delegate only supports int8 types.
+  if (node->inputs->size != 2) return false;
+
+  auto &itensor1 = context->tensors[node->inputs->data[0]];
+  if (itensor1.type != kTfLiteInt8) return false;
+  auto &itensor2 = context->tensors[node->inputs->data[1]];
+  if (itensor2.type != kTfLiteInt32) return false;
+
+  // Verify the output tensor type is int32
+  if (node->outputs->size != 1) return false;
+  auto &otensor = context->tensors[node->outputs->data[0]];
+  if (otensor.type != kTfLiteInt8) return false;
+
+  return true;
+}
+
+bool IsNode_MEAN_INT8(const TfLiteRegistration *registration,
+                      const TfLiteNode *node, TfLiteContext *context) {
+  // Only supports MEAN ops
+  if (kTfLiteBuiltinMean != registration->builtin_code) return false;
+
+  // This delegate only supports int8 types.
+  if (node->inputs->size != 2) return false;
+
+  auto &itensor1 = context->tensors[node->inputs->data[0]];
+  if (itensor1.type != kTfLiteInt8) return false;
+  auto &itensor2 = context->tensors[node->inputs->data[1]];
+  if (itensor2.type != kTfLiteInt32) return false;
+
+  // Verify the output tensor type is int32
+  if (node->outputs->size != 1) return false;
+  auto &otensor = context->tensors[node->outputs->data[0]];
+  if (otensor.type != kTfLiteInt8) return false;
+
+  return true;
+}
+
 #endif
 
 // #include <fstream>
 // #include <iostream>
-// int counter = 0;
 // using namespace std;
+// int counter = 0;
+
 // ofstream file;
 // file.open("aData/???/" + std::to_string(counter++) + "_out_cpu.csv");
 // file.open("aData/???/" + std::to_string(counter2++) +
