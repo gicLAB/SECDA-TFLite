@@ -1094,7 +1094,6 @@ public:
         // Unsupported builtin code
         return kTfLiteError;
       }
-      cout << "======================================================" << endl;
       // End of All Operator Evals
 
       // =======================================================================
@@ -1131,19 +1130,20 @@ public:
       dparams.layer++;
       dparams.delegated_nodes--;
       // Save output data to file
-      // TfLiteTensor *output;
-      // GetOutputSafe(context, outputs_[i][0], &output);
-      // int output_size = 1;
-      // int8_t *output_data = output->data.int8;
-      // vector<int> odims;
-      // for (int dims = 0; dims < output->dims->size; dims++)
-      //   output_size *= output->dims->data[dims];
-      // ofstream out_file;
-      // out_file.open("aData/omni/output_" + std::to_string(outputs_[i][0]) +
-      //               "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]] +
-      //               ".csv");
-      // for (int i = 0; i < output_size; ++i)
-      //   out_file << static_cast<int>(output_data[i]) << "\n";
+      //   TfLiteTensor *output;
+      //   GetOutputSafe(context, outputs_[i][0], &output);
+      //   int output_size = 1;
+      //   int8_t *output_data = output->data.int8;
+      //   vector<int> odims;
+      //   for (int dims = 0; dims < output->dims->size; dims++)
+      //     output_size *= output->dims->data[dims];
+      //   ofstream out_file;
+      //   out_file.open("aData/omni/output_" + std::to_string(outputs_[i][0]) +
+      //                 "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]]
+      //                 +
+      //                 ".csv");
+      //   for (int i = 0; i < output_size; ++i)
+      //     out_file << static_cast<int>(output_data[i]) << "\n";
     }
 
     prf_end(0, p_t.delegate_total); // Stop the profiling delegate
@@ -1298,3 +1298,17 @@ void TfLiteOmniDelegateDelete(TfLiteDelegate *delegate) {
 //     }
 //   }
 // }
+
+// // Save input data to file
+// const TfLiteTensor *input;
+// GetInputSafe(context, inputs_[i][0], &input);
+// int8_t *input_data = input->data.int8;
+// int input_size = 1;
+// for (int dims = 0; dims < input->dims->size; dims++)
+//   input_size *= input->dims->data[dims];
+// ofstream in_file;
+// in_file.open("aData/omni/input_" + std::to_string(inputs_[i][0]) +
+//              "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]] +
+//              ".csv");
+// for (int i = 0; i < input_size; ++i)
+//   in_file << static_cast<int>(input_data[i]) << "\n";

@@ -185,8 +185,6 @@ public:
                                   filter_width * im2col_type_size;
 
       int temp_o_id;
-      int nod = node->outputs->data[out_tid];
-      int oi = outputs_[i][0];
       bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
       if (!req_temp_out) out_tid++;
 

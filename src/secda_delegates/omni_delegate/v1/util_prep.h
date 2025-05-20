@@ -615,7 +615,7 @@ TfLiteStatus InitializeMeanOutputTyped(TfLiteTensor *output) {
 bool Prepare_ADD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                       void *layers_params, void *opdatas,
                       vector<vector<int>> inputs_, vector<vector<int>> outputs_,
-                      int out_tid) {
+                      int &out_tid) {
 
   TfLiteAddParams *params = reinterpret_cast<TfLiteAddParams *>(layers_params);
   ADD_Data *data = reinterpret_cast<ADD_Data *>(opdatas);
@@ -681,7 +681,7 @@ bool Prepare_ADD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_CONV2D_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                          void *layers_params, void *opdatas,
                          vector<vector<int>> inputs_,
-                         vector<vector<int>> outputs_, int out_tid,
+                         vector<vector<int>> outputs_, int &out_tid,
                          vector<int> &wt_sum, vector<int8_t> &temp_im2col) {
 
   TfLiteConvParams *params =
@@ -739,7 +739,6 @@ bool Prepare_CONV2D_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 
   // Output tensor management
   int temp_out_id;
-  int oi = outputs_[i][0];
   bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
   if (!req_temp_out) out_tid++;
   TF_LITE_ENSURE_STATUS(AllocateTemporaryTensorsIfRequiredCONV2D(
@@ -809,7 +808,7 @@ bool Prepare_CONV2D_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_FC_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                      void *layers_params, void *opdatas,
                      vector<vector<int>> inputs_, vector<vector<int>> outputs_,
-                     int out_tid, vector<int> &wt_sum) {
+                     int &out_tid, vector<int> &wt_sum) {
   TfLiteFullyConnectedParams *params =
       reinterpret_cast<TfLiteFullyConnectedParams *>(layers_params);
   FC_Data *data = reinterpret_cast<FC_Data *>(opdatas);
@@ -927,7 +926,7 @@ bool Prepare_FC_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_DWCONV2D_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                            void *layers_params, void *opdatas,
                            vector<vector<int>> inputs_,
-                           vector<vector<int>> outputs_, int out_tid,
+                           vector<vector<int>> outputs_, int &out_tid,
                            vector<int> &wt_sum) {
 
   TfLiteDepthwiseConvParams *params =
@@ -1029,7 +1028,7 @@ bool Prepare_DWCONV2D_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_TCONV_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                         void *layers_params, void *opdatas,
                         vector<vector<int>> inputs_,
-                        vector<vector<int>> outputs_, int out_tid,
+                        vector<vector<int>> outputs_, int &out_tid,
                         vector<int> &wt_sum) {
   TfLiteTransposeConvParams *params =
       reinterpret_cast<TfLiteTransposeConvParams *>(layers_params);
@@ -1158,7 +1157,7 @@ bool Prepare_TCONV_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_SHAPE_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                         void *layers_params, void *opdatas,
                         vector<vector<int>> inputs_,
-                        vector<vector<int>> outputs_, int out_tid) {
+                        vector<vector<int>> outputs_, int &out_tid) {
   TF_LITE_ENSURE_EQ(context, inputs_[i].size(), 1);
   TF_LITE_ENSURE_EQ(context, outputs_[i].size(), 1);
 
@@ -1219,7 +1218,7 @@ bool Prepare_SHAPE_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_SOFTMAX_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                           void *layers_params, void *opdatas,
                           vector<vector<int>> inputs_,
-                          vector<vector<int>> outputs_, int out_tid) {
+                          vector<vector<int>> outputs_, int &out_tid) {
   // TF_LITE_ENSURE_EQ(context, inputs_[i].size(), 1);
   // TF_LITE_ENSURE_EQ(context, outputs_[i].size(), 1);
 
@@ -1274,7 +1273,7 @@ bool Prepare_SOFTMAX_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_PAD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                       void *layers_params, void *opdatas,
                       vector<vector<int>> inputs_, vector<vector<int>> outputs_,
-                      int out_tid) {
+                      int &out_tid) {
 
   TF_LITE_ENSURE(context, inputs_[i].size() == 2 || inputs_[i].size() == 3);
   TF_LITE_ENSURE_EQ(context, outputs_[i].size(), 1);
@@ -1353,7 +1352,7 @@ bool Prepare_PAD_INT8(TfLiteContext *context, TfLiteNode *node, int i,
 bool Prepare_MEAN_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                        void *layers_params, void *opdatas,
                        vector<vector<int>> inputs_,
-                       vector<vector<int>> outputs_, int out_tid,
+                       vector<vector<int>> outputs_, int &out_tid,
                        vector<tuple<int, int>> &temp_tensor_ids) {
 
   TF_LITE_ENSURE_EQ(context, inputs_[i].size(), 2);
