@@ -74,6 +74,17 @@ struct ReduceOpContext {
   TfLiteTensor *output;
 };
 
+struct DequantizeOpContext {
+  DequantizeOpContext(TfLiteContext *context, int i,
+                      vector<vector<int>> inputs_,
+                      vector<vector<int>> outputs_) {
+    GetInputSafe(context, inputs_[i][0], &input);
+    GetOutputSafe(context, outputs_[i][0], &output);
+  }
+  const TfLiteTensor *input;
+  TfLiteTensor *output;
+};
+
 // =========================================================
 // Layer Specific Helper functions
 // =========================================================
@@ -606,6 +617,51 @@ TfLiteStatus InitializeMeanOutputTyped(TfLiteTensor *output) {
   }
   return kTfLiteOk;
 }
+
+inline bool IsQuantizedPerChannel(const TfLiteTensor *input) {
+  if (input->quantization.type == kTfLiteAffineQuantization &&
+      input->quantization.params) {
+    auto *quant_params = reinterpret_cast<TfLiteAffineQuantization *>(
+        input->quantization.params);
+    return (quant_params->scale && quant_params->scale->size > 1);
+  }
+  return false;
+}
+namespace {
+
+template <QuantizeKernelType kernel_type, typename output_type>
+static inline void AffineQuantize(const tflite::QuantizationParams &op_params,
+                                  const tflite::RuntimeShape &input_shape,
+                                  const float *input_data,
+                                  const tflite::RuntimeShape &output_shape,
+                                  output_type *output_data) {
+  if (kernel_type == kReference) {
+    tflite::reference_ops::AffineQuantize(op_params, input_shape, input_data,
+                                          output_shape, output_data);
+  } else {
+    tflite::optimized_ops::AffineQuantize(op_params, input_shape, input_data,
+                                          output_shape, output_data);
+  }
+}
+
+template <QuantizeKernelType kernel_type, typename input_type,
+          typename output_type>
+static inline void Requantize(const input_type *input_data, int32_t size,
+                              int32_t effective_scale_multiplier,
+                              int32_t effective_scale_shift,
+                              int32_t input_zeropoint, int32_t output_zeropoint,
+                              output_type *output_data) {
+  if (kernel_type == kReference) {
+    tflite::reference_ops::Requantize(
+        input_data, size, effective_scale_multiplier, effective_scale_shift,
+        input_zeropoint, output_zeropoint, output_data);
+  } else {
+    tflite::optimized_ops::Requantize(
+        input_data, size, effective_scale_multiplier, effective_scale_shift,
+        input_zeropoint, output_zeropoint, output_data);
+  }
+}
+} // namespace
 
 // =========================================================
 // Prepare function for all supported Ops
@@ -1465,6 +1521,117 @@ bool Prepare_MEAN_INT8(TfLiteContext *context, TfLiteNode *node, int i,
   }
   temp_sum->allocation_type = kTfLiteArenaRw;
   ResizeTempAccum(context, &op_context, temp_sum);
+
+  return kTfLiteOk;
+}
+
+// tensorflow/lite/kernels/quantize.cc
+bool Prepare_QUANTIZE_INT8(TfLiteContext *context, TfLiteNode *node, int i,
+                           void *layers_params, void *opdatas,
+                           vector<vector<int>> inputs_,
+                           vector<vector<int>> outputs_, int &out_tid,
+                           vector<tuple<int, int>> &temp_tensor_ids) {
+
+  QUANTIZE_Data *data = reinterpret_cast<QUANTIZE_Data *>(opdatas);
+  TfLiteTensor *output;
+  const TfLiteTensor *input;
+
+  GetOutputSafe(context, outputs_[i][0], &output);
+  GetInputSafe(context, inputs_[i][0], &input);
+
+  // Currently this only support affine quantization.
+  TF_LITE_ENSURE_EQ(context, output->quantization.type,
+                    kTfLiteAffineQuantization);
+
+  if (input->type == kTfLiteFloat32) {
+    // Quantize use case.
+    TF_LITE_ENSURE(context, output->type == kTfLiteUInt8 ||
+                                output->type == kTfLiteInt8 ||
+                                output->type == kTfLiteInt16);
+  } else {
+    // Requantize use case.
+    if (input->type == kTfLiteInt16) {
+      TF_LITE_ENSURE(context, output->type == kTfLiteInt8 ||
+                                  output->type == kTfLiteInt16 ||
+                                  output->type == kTfLiteInt32);
+    } else if (input->type == kTfLiteInt32) {
+      TF_LITE_ENSURE(context, output->type == kTfLiteInt8 ||
+                                  output->type == kTfLiteInt16);
+    } else {
+      TF_LITE_ENSURE(context,
+                     input->type == kTfLiteInt8 || input->type == kTfLiteUInt8);
+      TF_LITE_ENSURE(context, output->type == kTfLiteUInt8 ||
+                                  output->type == kTfLiteInt8);
+    }
+    const double effective_output_scale =
+        static_cast<double>(input->params.scale) /
+        static_cast<double>(output->params.scale);
+    tflite::QuantizeMultiplier(effective_output_scale, &data->output_multiplier,
+                               &data->output_shift);
+  }
+
+  if (input->type == kTfLiteInt16 && output->type == kTfLiteInt16) {
+    TF_LITE_ENSURE_EQ(context, input->params.zero_point, 0);
+    TF_LITE_ENSURE_EQ(context, output->params.zero_point, 0);
+  }
+
+  TfLiteIntArray *output_size = TfLiteIntArrayCopy(input->dims);
+  // Creates a temp index to iterate through input data.
+  // Temporary Output tensor management
+  int temp_out_id;
+  bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
+  if (!req_temp_out) out_tid++;
+  TF_LITE_ENSURE_STATUS(AllocateTemporaryOutTensorsIfRequired(
+      context, node, req_temp_out, outputs_[i][0], temp_out_id));
+
+  // Resize output tensor
+  context->ResizeTensor(context, output, output_size);
+
+  // Resize temporary output tensor
+  ResizeTempOutTensor(context, node, req_temp_out, temp_out_id, outputs_, i,
+                      output_size);
+
+  return kTfLiteOk;
+}
+
+// tensorflow/lite/kernels/dequantize.cc
+bool Prepare_DEQUANTIZE_INT8(TfLiteContext *context, TfLiteNode *node, int i,
+                             void *layers_params, void *opdatas,
+                             vector<vector<int>> inputs_,
+                             vector<vector<int>> outputs_, int &out_tid,
+                             vector<tuple<int, int>> &temp_tensor_ids) {
+
+  DEQUANTIZE_Data *data = reinterpret_cast<DEQUANTIZE_Data *>(opdatas);
+  DequantizeOpContext op_context(context, i, inputs_, outputs_);
+
+  TF_LITE_ENSURE(context, op_context.input->type == kTfLiteUInt8 ||
+                              op_context.input->type == kTfLiteInt8 ||
+                              op_context.input->type == kTfLiteInt16 ||
+                              op_context.input->type == kTfLiteFloat16);
+
+  if (op_context.input->type == kTfLiteInt16) {
+    TF_LITE_ENSURE_EQ(context, op_context.input->params.zero_point, 0);
+  }
+  op_context.output->type = kTfLiteFloat32;
+  if (tflite::IsConstantTensor(op_context.input)) {
+    op_context.output->allocation_type = kTfLiteArenaRwPersistent;
+  }
+
+  TfLiteIntArray *output_size = TfLiteIntArrayCopy(op_context.input->dims);
+  // Creates a temp index to iterate through input data.
+  // Temporary Output tensor management
+  int temp_out_id;
+  bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
+  if (!req_temp_out) out_tid++;
+  TF_LITE_ENSURE_STATUS(AllocateTemporaryOutTensorsIfRequired(
+      context, node, req_temp_out, outputs_[i][0], temp_out_id));
+
+  // Resize output tensor
+  context->ResizeTensor(context, op_context.output, output_size);
+
+  // Resize temporary output tensor
+  ResizeTempOutTensor(context, node, req_temp_out, temp_out_id, outputs_, i,
+                      output_size);
 
   return kTfLiteOk;
 }

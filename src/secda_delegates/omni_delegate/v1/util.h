@@ -227,6 +227,11 @@ inline const char *const *EnumNamesBuiltinOperator() {
   return names;
 }
 
+enum QuantizeKernelType {
+  kReference,
+  kGenericOptimized,
+};
+
 // =========================================================
 // OpDatas for all supported Ops
 // =========================================================
@@ -424,6 +429,18 @@ struct REDUCE_Data {
   int scratch_tensor_index;
   // Indicates that 'Eval' is a noop as the output as written during 'Prepare'.
   bool noop;
+};
+
+// QUANTIZE_INT8
+struct QUANTIZE_Data {
+  int32_t output_multiplier;
+  int output_shift;
+};
+
+// DEQUANTIZE_INT8
+struct DEQUANTIZE_Data {
+  // This boolean value is only used when the input tensor is constant.
+  bool float_dequantized_weights_initialized;
 };
 
 // =========================================================
@@ -704,6 +721,40 @@ bool IsNode_MEAN_INT8(const TfLiteRegistration *registration,
   if (node->outputs->size != 1) return false;
   auto &otensor = context->tensors[node->outputs->data[0]];
   if (otensor.type != kTfLiteInt8) return false;
+
+  return true;
+}
+
+bool IsNode_QUANTIZE_INT8(const TfLiteRegistration *registration,
+                          const TfLiteNode *node, TfLiteContext *context) {
+  // Only supports QUANTIZE ops
+  if (kTfLiteBuiltinQuantize != registration->builtin_code) return false;
+
+  // This delegate only supports int8 types.
+  if (node->inputs->size != 1) return false;
+
+  // Verify the output tensor type is int32
+  if (node->outputs->size != 1) return false;
+  auto &otensor = context->tensors[node->outputs->data[0]];
+  if (otensor.type != kTfLiteInt8) return false;
+
+  return true;
+}
+
+bool IsNode_DEQUANTIZE_INT8(const TfLiteRegistration *registration,
+                            const TfLiteNode *node, TfLiteContext *context) {
+  // Only supports QUANTIZE ops
+  if (kTfLiteBuiltinQuantize != registration->builtin_code) return false;
+  auto &itensor1 = context->tensors[node->inputs->data[0]];
+  if (itensor1.type != kTfLiteInt8) return false;
+
+  // This delegate only supports int8 types.
+  if (node->inputs->size != 1) return false;
+
+  // Verify the output tensor type is int32
+  if (node->outputs->size != 1) return false;
+  auto &otensor = context->tensors[node->outputs->data[0]];
+  if (otensor.type != kTfLiteFloat32) return false;
 
   return true;
 }

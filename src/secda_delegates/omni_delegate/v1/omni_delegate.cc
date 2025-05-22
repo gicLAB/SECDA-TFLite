@@ -185,9 +185,12 @@ public:
       } else if (builtin_code_[i] == kTfLiteBuiltinMean) {
         Prepare_MEAN_INT8(context, node, i, layers_params[i], opdatas[i],
                           inputs_, outputs_, out_tid, temp_tensor_ids[i]);
-      } else {
-        // Unsupported operation
-        return kTfLiteError;
+      } else if (builtin_code_[i] == kTfLiteBuiltinQuantize) {
+        Prepare_QUANTIZE_INT8(context, node, i, layers_params[i], opdatas[i],
+                              inputs_, outputs_, out_tid, temp_tensor_ids[i]);
+      } else if (builtin_code_[i] == kTfLiteBuiltinDequantize) {
+        Prepare_DEQUANTIZE_INT8(context, node, i, layers_params[i], opdatas[i],
+                                inputs_, outputs_, out_tid, temp_tensor_ids[i]);
       }
     }
     return kTfLiteOk;
@@ -221,6 +224,10 @@ public:
       cout << "======================================================" << endl;
       // #endif
       // =======================================================
+
+      // =======================================================================
+      // Operation Evaluation
+      // =======================================================================
       if (builtin_code_[i] == kTfLiteBuiltinAdd) { // ADD
         TfLiteAddParams *params =
             reinterpret_cast<TfLiteAddParams *>(layers_params[i]);
@@ -1059,42 +1066,227 @@ public:
             tflite::GetTensorData<int32_t>(temp_sum),
             /*compute_sum=*/false);
 
-        // TF_LITE_ENSURE_OK(context, EvalQuantizedMean<int8_t>(
-        //                                context, op_context, num_axis, data,
-        //                                temp_index, resolved_axis,
-        //                                temp_sum));
-        // const TfLiteTensor *input = op_context.input;
-        // if (kernel_type == kGenericOptimized) {
-        //   // Use optimized ops if available.
-        //   tflite::MeanParams op_params;
-        //   op_params.axis_count = num_axis;
-        //   ResolveAxis(GetTensorData<int>(op_context.axis), num_axis,
-        //               &op_params);
-        //   if (op_context.params->keep_dims && NumDimensions(input) == 4 &&
-        //       op_params.axis_count == 2 &&
-        //       ((op_params.axis[0] == 1 && op_params.axis[1] == 2) ||
-        //        (op_params.axis[0] == 2 && op_params.axis[1] == 1))) {
-        //     optimized_integer_ops::Mean(
-        //         op_params, input_shape, GetTensorData<int8_t>(input),
-        //         input->params.zero_point, input->params.scale,
-        //         GetTensorShape(op_context.output),
-        //         GetTensorData<int8_t>(op_context.output),
-        //         op_context.output->params.zero_point,
-        //         op_context.output->params.scale,
-        //         CpuBackendContext::GetFromContext(context));
-        //   }
-        // } else {
-        //   TF_LITE_ENSURE_OK(context, EvalQuantizedMean<int8_t>(
-        //                                  context, op_context, num_axis,
-        //                                  data, temp_index, resolved_axis,
-        //                                  temp_sum));
-        // }
+      } else if (builtin_code_[i] == kTfLiteBuiltinQuantize) { // QUANTIZE
 
-      } else {
-        // Unsupported builtin code
-        return kTfLiteError;
+        QUANTIZE_Data *data = reinterpret_cast<QUANTIZE_Data *>(opdatas[i]);
+        TfLiteTensor *output;
+        const TfLiteTensor *input;
+
+        GetOutputSafe(context, outputs_[i][0], &output);
+        GetInputSafe(context, inputs_[i][0], &input);
+        const RuntimeShape input_shape = GetTensorShape(input);
+        const RuntimeShape output_shape = GetTensorShape(output);
+        QuantizeKernelType kernel_type = kGenericOptimized;
+        switch (input->type) {
+        case kTfLiteFloat32: {
+          // Float to int8, uint8, int16.
+          const float *input_data = GetTensorData<float>(input);
+
+          if (IsQuantizedPerChannel(output)) {
+            // Per-channel quantization: one scale and zero point for each
+            // channel.
+            const auto *quantization_params =
+                reinterpret_cast<const TfLiteAffineQuantization *>(
+                    output->quantization.params);
+            PerChannelQuantizationParams per_channel_op_params;
+            per_channel_op_params.quantized_dimension =
+                quantization_params->quantized_dimension;
+            per_channel_op_params.scale = quantization_params->scale->data;
+            per_channel_op_params.zero_point =
+                quantization_params->zero_point->data;
+
+            switch (output->type) {
+            case kTfLiteInt8:
+              reference_ops::PerChannelQuantize(
+                  per_channel_op_params, input_shape, input_data, output_shape,
+                  GetTensorData<int8_t>(output));
+              break;
+            case kTfLiteUInt8:
+              reference_ops::PerChannelQuantize(
+                  per_channel_op_params, input_shape, input_data, output_shape,
+                  GetTensorData<uint8_t>(output));
+              break;
+            case kTfLiteInt16:
+              reference_ops::PerChannelQuantize(
+                  per_channel_op_params, input_shape, input_data, output_shape,
+                  GetTensorData<int16_t>(output));
+              break;
+            default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+            }
+          } else {
+            // Per-node quantization: single scale and zero point for all
+            // channels.
+            tflite::QuantizationParams op_params;
+            op_params.zero_point = output->params.zero_point;
+            op_params.scale = output->params.scale;
+
+            switch (output->type) {
+            case kTfLiteInt8:
+              AffineQuantize<kGenericOptimized>(op_params, input_shape,
+                                                input_data, output_shape,
+                                                GetTensorData<int8_t>(output));
+              break;
+            case kTfLiteUInt8:
+              AffineQuantize<kGenericOptimized>(op_params, input_shape,
+                                                input_data, output_shape,
+                                                GetTensorData<uint8_t>(output));
+              break;
+            case kTfLiteInt16:
+              AffineQuantize<kGenericOptimized>(op_params, input_shape,
+                                                input_data, output_shape,
+                                                GetTensorData<int16_t>(output));
+              break;
+            default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+            }
+          }
+          break;
+        }
+        // This case is not supported by the converter or other TFLite tools.
+        // The only use case is for applications that take quantized int32
+        // inference inputs.
+        case kTfLiteInt32: {
+          // int32 to int8 or int16.
+          switch (output->type) {
+          case kTfLiteInt8:
+            Requantize<kGenericOptimized>(
+                GetTensorData<int32_t>(input),
+                MatchingFlatSize(input_shape, output_shape),
+                data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int8_t>(output));
+            break;
+          case kTfLiteInt16:
+            Requantize<kGenericOptimized>(
+                GetTensorData<int32_t>(input),
+                MatchingFlatSize(input_shape, output_shape),
+                data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int16_t>(output));
+            break;
+          default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+          }
+          break;
+        }
+        case kTfLiteInt16: {
+          // int16 to int8 or int16.
+          switch (output->type) {
+          case kTfLiteInt8:
+            Requantize<kGenericOptimized>(
+                GetTensorData<int16_t>(input),
+                MatchingFlatSize(input_shape, output_shape),
+                data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int8_t>(output));
+            break;
+          case kTfLiteInt16:
+            Requantize<kGenericOptimized>(
+                GetTensorData<int16_t>(input),
+                MatchingFlatSize(input_shape, output_shape),
+                data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int16_t>(output));
+            break;
+          case kTfLiteInt32:
+            // This case is not supported by the converter or other TFLite
+            // tools. The only use case is for applications that take quantized
+            // int32 inference outputs.
+            Requantize<kGenericOptimized>(
+                GetTensorData<int16_t>(input),
+                MatchingFlatSize(input_shape, output_shape),
+                data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int32_t>(output));
+            break;
+          default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+          }
+          break;
+        }
+        case kTfLiteInt8: {
+          // int8 to int8, uint8.
+          const int32_t size = MatchingFlatSize(input_shape, output_shape);
+          const int8_t *input_data = GetTensorData<int8_t>(input);
+          switch (output->type) {
+          case kTfLiteInt8:
+            Requantize<kGenericOptimized>(
+                input_data, size, data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int8_t>(output));
+            break;
+          case kTfLiteUInt8:
+            Requantize<kGenericOptimized>(
+                input_data, size, data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<uint8_t>(output));
+            break;
+          default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+          }
+          break;
+        }
+        case kTfLiteUInt8: {
+          // uint8 to int8, uint8.
+          const int32_t size = MatchingFlatSize(input_shape, output_shape);
+          const uint8_t *input_data = GetTensorData<uint8_t>(input);
+          switch (output->type) {
+          case kTfLiteInt8:
+            Requantize<kGenericOptimized>(
+                input_data, size, data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<int8_t>(output));
+            break;
+          case kTfLiteUInt8:
+            Requantize<kGenericOptimized>(
+                input_data, size, data->output_multiplier, data->output_shift,
+                input->params.zero_point, output->params.zero_point,
+                GetTensorData<uint8_t>(output));
+            break;
+          default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+          }
+          break;
+        }
+        default: cout << "Error: " << __LINE__ << endl; return kTfLiteError;
+        }
+      } else if (builtin_code_[i] == kTfLiteBuiltinDequantize) { // DEQUANTIZE
+        DEQUANTIZE_Data *data = reinterpret_cast<DEQUANTIZE_Data *>(opdatas[i]);
+        DequantizeOpContext op_context(context, i, inputs_, outputs_);
+        const TfLiteTensor *input = op_context.input;
+        TfLiteTensor *output = op_context.output;
+        if (tflite::IsConstantTensor(op_context.input) &&
+            data->float_dequantized_weights_initialized) {
+          continue;
+        }
+
+        if (IsQuantizedPerChannel(input)) {
+          const auto *quantization_params =
+              reinterpret_cast<const TfLiteAffineQuantization *>(
+                  input->quantization.params);
+          PerChannelDequantizationParams per_channel_op_params;
+          per_channel_op_params.quantized_dimension =
+              quantization_params->quantized_dimension;
+          per_channel_op_params.scale = quantization_params->scale->data;
+          per_channel_op_params.zero_point =
+              quantization_params->zero_point->data;
+
+          tflite::reference_ops::PerChannelDequantize<int8_t>(
+              per_channel_op_params, GetTensorShape(input),
+              GetTensorData<int8_t>(input), GetTensorShape(output),
+              GetTensorData<float>(output));
+        }
+
+        DequantizationParams op_params;
+        op_params.zero_point = input->params.zero_point;
+        op_params.scale = input->params.scale;
+
+        tflite::optimized_ops::Dequantize(
+            op_params, GetTensorShape(input), GetTensorData<int8_t>(input),
+            GetTensorShape(output), GetTensorData<float>(output));
+
+        if (IsConstantTensor(op_context.input)) {
+          data->float_dequantized_weights_initialized = true;
+        }
       }
+      // =======================================================================
       // End of All Operator Evals
+      // =======================================================================
 
       // =======================================================================
       // Accelerator Offload Code
@@ -1130,20 +1322,19 @@ public:
       dparams.layer++;
       dparams.delegated_nodes--;
       // Save output data to file
-      //   TfLiteTensor *output;
-      //   GetOutputSafe(context, outputs_[i][0], &output);
-      //   int output_size = 1;
-      //   int8_t *output_data = output->data.int8;
-      //   vector<int> odims;
-      //   for (int dims = 0; dims < output->dims->size; dims++)
-      //     output_size *= output->dims->data[dims];
-      //   ofstream out_file;
-      //   out_file.open("aData/omni/output_" + std::to_string(outputs_[i][0]) +
-      //                 "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]]
-      //                 +
-      //                 ".csv");
-      //   for (int i = 0; i < output_size; ++i)
-      //     out_file << static_cast<int>(output_data[i]) << "\n";
+      // TfLiteTensor *output;
+      // GetOutputSafe(context, outputs_[i][0], &output);
+      // int output_size = 1;
+      // int8_t *output_data = output->data.int8;
+      // vector<int> odims;
+      // for (int dims = 0; dims < output->dims->size; dims++)
+      //   output_size *= output->dims->data[dims];
+      // ofstream out_file;
+      // out_file.open("aData/omni/output_" + std::to_string(outputs_[i][0]) +
+      //               "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]] +
+      //               ".csv");
+      // for (int i = 0; i < output_size; ++i)
+      //   out_file << static_cast<int>(output_data[i]) << "\n";
     }
 
     prf_end(0, p_t.delegate_total); // Stop the profiling delegate
@@ -1190,11 +1381,13 @@ public:
     bool isSOFTMAX = IsNode_SOFTMAX_INT8(registration, node, context);
     bool isPAD = IsNode_PAD_INT8(registration, node, context);
     bool isMEAN = IsNode_MEAN_INT8(registration, node, context);
+    bool isQUANTIZE = IsNode_QUANTIZE_INT8(registration, node, context);
+    bool isDEQUANTIZE = IsNode_DEQUANTIZE_INT8(registration, node, context);
 
     // Node will be delegated if inside supported_nodes
-    std::vector<bool> supported_nodes = {isCONV2D, isFC,       isSOFTMAX,
-                                         isSHAPE,  isDWCONV2D, isTCONV,
-                                         isADD,    isPAD,      isMEAN};
+    std::vector<bool> supported_nodes = {
+        isCONV2D, isFC,  isSOFTMAX, isSHAPE, isDWCONV2D,
+        isTCONV,  isADD, isPAD,     isMEAN,  isQUANTIZE};
 
     bool delegated_node = false;
     // Check if the node is supported by the delegate
