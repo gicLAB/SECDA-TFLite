@@ -744,7 +744,7 @@ bool IsNode_QUANTIZE_INT8(const TfLiteRegistration *registration,
 bool IsNode_DEQUANTIZE_INT8(const TfLiteRegistration *registration,
                             const TfLiteNode *node, TfLiteContext *context) {
   // Only supports QUANTIZE ops
-  if (kTfLiteBuiltinQuantize != registration->builtin_code) return false;
+  if (kTfLiteBuiltinDequantize != registration->builtin_code) return false;
   auto &itensor1 = context->tensors[node->inputs->data[0]];
   if (itensor1.type != kTfLiteInt8) return false;
 

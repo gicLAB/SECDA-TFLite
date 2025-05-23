@@ -349,6 +349,8 @@ public:
         op_params.quantized_activation_max = data->output_activation_max;
 
         // CONV2D Implementation algorithm
+        int32_t input_offset = op_params.input_offset;
+        int32_t output_offset = op_params.output_offset;
         int stride_height = params->stride_height;
         int stride_width = params->stride_width;
         int filter_height = filter->dims->data[1];
@@ -357,8 +359,24 @@ public:
         int input_width = input->dims->data[2];
         int input_depth = input->dims->data[3];
         int output_height = output->dims->data[1];
+        int batches = input->dims->data[0];
         int output_width = output->dims->data[2];
         int output_channel = output->dims->data[3];
+        int filter_input_depth = filter->dims->data[3];
+        int groups = input_depth / filter_input_depth;
+        int dilation_width_factor = params->dilation_width_factor;
+        int dilation_height_factor = params->dilation_height_factor;
+        TFLITE_DCHECK_NE(groups, 0);
+        TFLITE_DCHECK_EQ(input_depth % filter_input_depth, 0);
+        int filters_per_group = output_channel / groups;
+        TFLITE_DCHECK_NE(filters_per_group, 0);
+        RuntimeShape input_shape =
+            RuntimeShape(input->dims->size, input->dims->data);
+        RuntimeShape filter_shape =
+            RuntimeShape(filter->dims->size, filter->dims->data);
+
+        int pad_width = data->padding.height;
+        int pad_height = data->padding.width;
         const int8 *input_data = input->data.int8;
         const int8 *filter_data = filter->data.int8;
         int8 *output_data = output->data.int8;
@@ -382,15 +400,20 @@ public:
                           (fh * filter_width * input_depth) +
                           (fw * input_depth) + ic;
 
-                      acc +=
-                          input_data[input_index] * filter_data[filter_index];
+                      int8_t input_val = input_data[input_index];
+                      int8_t filter_val = filter_data[filter_index];
+
+                      acc += (input_data[input_index] + input_offset) *
+                             filter_data[filter_index];
                     }
                   }
                 }
               }
-              int wsum_offset = wt_sum[i][oc] * -input->params.zero_point;
-              if (bias != nullptr) wsum_offset += bias->data.i32[oc];
-              acc += wsum_offset;
+
+              // int wsum_offset = wt_sum[i][oc] * -input->params.zero_point;
+              // if (bias != nullptr) wsum_offset += bias->data.i32[oc];
+              // acc += wsum_offset;
+              if (bias != nullptr) acc += bias->data.i32[oc];
               int out_shift = data->per_channel_output_shift.data()[oc];
               int out_mult = data->per_channel_output_multiplier.data()[oc];
               int out_offset = op_params.output_offset;
@@ -1321,6 +1344,21 @@ public:
       }
       dparams.layer++;
       dparams.delegated_nodes--;
+
+      // Save input data to file
+      // const TfLiteTensor *input;
+      // GetInputSafe(context, inputs_[i][0], &input);
+      // int8_t *input_data = input->data.int8;
+      // int input_size = 1;
+      // for (int dims = 0; dims < input->dims->size; dims++)
+      //   input_size *= input->dims->data[dims];
+      // ofstream in_file;
+      // in_file.open("aData/omni/input_" + std::to_string(inputs_[i][0]) +
+      //              "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]] +
+      //              ".csv");
+      // for (int i = 0; i < input_size; ++i)
+      //   in_file << static_cast<int>(input_data[i]) << "\n";
+
       // Save output data to file
       // TfLiteTensor *output;
       // GetOutputSafe(context, outputs_[i][0], &output);
@@ -1386,8 +1424,8 @@ public:
 
     // Node will be delegated if inside supported_nodes
     std::vector<bool> supported_nodes = {
-        isCONV2D, isFC,  isSOFTMAX, isSHAPE, isDWCONV2D,
-        isTCONV,  isADD, isPAD,     isMEAN,  isQUANTIZE};
+        isCONV2D, isFC,  isSOFTMAX, isSHAPE,    isDWCONV2D,  isTCONV,
+        isADD,    isPAD, isMEAN,    isQUANTIZE, isDEQUANTIZE};
 
     bool delegated_node = false;
     // Check if the node is supported by the delegate
