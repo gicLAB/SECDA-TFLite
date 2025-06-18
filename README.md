@@ -9,7 +9,14 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
   * Note: we use the same source files for HLS, we manually define __SYNTHESIS__ before HLS
  
 
+## 0. Requirements and Recommendations
+- Use a Debian-based linux distro
+- Otherwise, if using Windows:
+   - Install WSL for windows and use Ubuntu 22.04
+   - Install [docker for windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+
 ## 1. Setup repo
+Make sure you are in linux-based workspace environment with git installed.
 ```bash
 git clone git@github.com:judeharis/SECDA-TFLite.git
 cd SECDA-TFLite
