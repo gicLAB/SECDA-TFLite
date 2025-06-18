@@ -72,6 +72,7 @@ Once the environment is created, we recommend using VSCode to immediately start 
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 - Reload the workspace
 - These following popup should appear
+  
 ![alt text](docs/image-1.png)
 - Press Reopen in Container
 - It should take a while to download and install the container.
