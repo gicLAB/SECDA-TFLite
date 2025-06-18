@@ -65,18 +65,18 @@ sudo apt-get -y install gdb
 
 Once the environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
 
-## 2.B Create dev environment via Dockerfile
-Ensure docker is up and running and current user is part of docker group
-``` 
-sudo usermod -aG docker $USER
-```
-Following scripts to build and creates the docker container ready for development:
-```
-./build-docker.sh
-./start-docker.sh
-```
+## 2.B Use VSCode Dev Container for containerized version
+- Ensure docker is up and running and current user is part of docker group
+  - ``` sudo usermod -aG docker $USER ```
 
-Once the container is created, we recommend using VSCode to immediately start developing. You can access the container through [VSCode's attach to container functionality](https://code.visualstudio.com/docs/remote/attach-container)
+- Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
+- Reload the workspace
+- These following popup should appear
+![alt text](docs/image-1.png)
+- Press Reopen in Container
+- It should take a while to download and install the container.
+- Once the container is created it should reopen you into the VSCode with the container active.
+- You can access the container through "Dev Containers: Open Folder in Container" VSCode command.
   
 ## VSCode Instructions
 * Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
