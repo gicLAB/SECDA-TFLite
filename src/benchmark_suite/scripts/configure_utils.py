@@ -431,7 +431,8 @@ def generate_benchmark_configs(
             hw_config = load_config(hw_config_file)
 
             # for model in models:
-            for model, layer in zip(models, layers):
+            # Need to append all the selected layers into layer_list per model
+            for model in models:
                 for thread in threads:
                     hw_list.append(hw_config["acc_name"])
                     model_list.append(model)
@@ -439,7 +440,7 @@ def generate_benchmark_configs(
                     model_path = model_path.replace(sc["models_dirs"][0], "")
                     model_path = model_path[: model_path.rfind("/")]
                     model_path_list.append(model_path)
-                    layer_list.append(layer)
+                    layer_list.append(layers)
                     thread_list.append(thread)
                     num_run_list.append(num_runs)
                     version_list.append(hw_config["version"])
@@ -451,7 +452,7 @@ def generate_benchmark_configs(
                             "hw": hw_config["acc_name"],
                             "model": model,
                             "model_path": model_path,
-                            "layer": layer,
+                            "layer": layers,
                             "thread": thread,
                             "num_runs": num_runs,
                             "version": hw_config["version"],
@@ -1045,7 +1046,7 @@ def process_layer_details(df, run_dict, run_name):
     return run_dict
 
 
-# Reports in microseconds
+# Reports in MICROSECONDS
 def process_layer_details_custom(df, run_dict, acc_layer):
     # runtime is combination of driver, del and hardware
     runtime = (
@@ -1065,15 +1066,22 @@ def process_layer_details_custom(df, run_dict, acc_layer):
         df[df["nodetype"].str.lower().str.contains("del")]["avg_ms"].astype(float).sum()
         * 1000
     )
-    if run_dict["acc_layer"] == 0:
-        run_dict["acc_layer"] = int(
-            df[df["nodetype"].str.lower().str.contains(acc_layer.lower())]["avg_ms"]
+
+    # This for the case where we are running CPU only and no delegate is used  or
+    # when accelerator does not cover all the layers we want to accelerate
+    # if run_dict["acc_layer"] == 0:
+    for layer in acc_layer:
+        run_dict["acc_layer"] += int(
+            df[df["nodetype"].str.lower()==(layer.lower())]["avg_ms"]
             .astype(float)
             .sum()
             * 1000
         )
 
     run_dict["cpu_layers"] = int(run_dict["total_latency"] - run_dict["acc_layer"])
+    
+    # Add a dictionary of all nodetype and their avg_ms
+    run_dict["layer_times"] = dict(zip(df["nodetype"], df["avg_ms"].astype(float) * 1000))
     return run_dict
 
 
@@ -1177,7 +1185,7 @@ def process_run(
     # save dict to json
     os.makedirs(f"results/{board}/{name}", exist_ok=True)
     with open(f"results/{board}/{name}/" + runname + ".json", "w") as fp:
-        json.dump(run_dict, fp)
+        json.dump(run_dict, fp,indent=4)
 
 
 import pandas as pd

@@ -1,0 +1,17 @@
+{
+  "layer_types": [
+    "CONV_2D",
+    "ADD",
+    "DEPTHWISE_CONV_2D",
+    "DEQUANTIZE",
+    "FULLY_CONNECTED",
+    "SOFTMAX",
+    "PAD",
+    "MEAN",
+    "SUB",
+    "DIV",
+    "TRANSPOSE_CONV",
+    "SHAPE",
+    "QUANTIZE"
+  ]
+}
