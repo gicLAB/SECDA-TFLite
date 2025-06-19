@@ -11,6 +11,7 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
 
 ## 0. Requirements and Recommendations
 - Use a Debian-based linux distro
+  - Install [docker for linux](https://docs.docker.com/engine/install/ubuntu/)
 - Otherwise, if using Windows:
    - Install WSL for windows and use Ubuntu 22.04
    - Install [docker for windows](https://docs.docker.com/desktop/setup/install/windows-install/)
