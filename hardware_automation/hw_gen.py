@@ -87,8 +87,21 @@ class hardware_exp:
         self.bconfig = sc["boards"][self.board]
         # self.board = config["board"]
         self.hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
-        self.vp = self.bconfig["vivado_path"]
-        self.vp_hls = self.bconfig["hls_path"]
+        # self.vp = self.bconfig["vivado_path"]
+        # self.vp_hls = self.bconfig["hls_path"]
+        self.vp_hls = self.sc["vivado_2019_path"]
+        self.vp = (self.sc["vivado_2024_path"]
+            if self.bconfig["hlx_version"] == "2024"
+            else self.sc["vivado_2019_path"])
+
+        self.svp_hls = sc["remote_server"]["server_2019_path"]
+        self.svp_hlx = (
+            sc["remote_server"]["server_2024_path"]
+            if self.bconfig["hlx_version"] == "2024"
+            else sc["remote_server"]["server_2019_path"]
+        )
+
+        self.gateway = sc["remote_server"]["gateway"]
 
         # accelerator stuff
         self.acc_name = config["acc_name"]
@@ -104,10 +117,6 @@ class hardware_exp:
         # hardware stuff
         self.fpga_part = self.bconfig["fpga_part"]
         self.top = config["top"]
-        # self.hls_clock = config["hls_clock"] if "hls_clock" in config else "5"
-        # self.axi_bitW = config["axi_bitW"] if "axi_bitW" in config else "32"
-        # self.axi_burstS = config["axi_burstS"] if "axi_burstS" in config else "16"
-        # self.fpga_hz = config["hlx_Mhz"] if "hlx_Mhz" in config else "200"
         self.hls_clock = dict_default(config, "hls_clock", "5")
         self.axi_bitW = dict_default(config, "axi_bitW", "32")
         self.axi_burstS = dict_default(config, "axi_burstS", "16")
@@ -141,7 +150,12 @@ class hardware_exp:
         s += "set_top " + self.top + "\n"
         for file in os.listdir(self.acc_link_folder):
             if file.endswith(".cc") or file.endswith(".h"):
-                s += "add_files " + "src/" + file + f' -cflags "-D__SYNTHESIS__, -D{self.board}"\n'
+                s += (
+                    "add_files "
+                    + "src/"
+                    + file
+                    + f' -cflags "-D__SYNTHESIS__, -D{self.board}"\n'
+                )
         s += 'open_solution "' + self.acc_tag + '"\n'
         s += "set_part " + self.fpga_part + "\n"
         s += "create_clock -period " + self.hls_clock + " -name default\n"
@@ -179,6 +193,15 @@ class hardware_exp:
             "board_port": self.bconfig["board_port"],
             "board_script": self.board_script,
             "hlx_version": self.bconfig["hlx_version"],
+            "svp_hls": self.svp_hls,
+            "svp_hlx": self.svp_hlx,
+            "server_user": self.sc["remote_server"]["server_user"],
+            "server_hostname": self.sc["remote_server"]["server_hostname"],
+            "server_port": self.sc["remote_server"]["server_port"],
+            "server_dir": self.sc["remote_server"]["server_dir"],
+            "gateway": self.gateway,
+            "pb_token": self.sc["push_bullet_token"],
+            "stderr": "2>&1",
         }
         with open(hw_gen_tpl) as f:
             run_script = str(mt(f.read()).substitute(run_dict))
@@ -236,8 +259,6 @@ def process_hw_config(hw_config_file):
     )
     os.system(f"ln -sf {sysc_types_path} {target}")
     os.system(f"ln -sf {sysc_hw_utils_path} {target}")
-
-
 
     ## Creates the hw_exp project
     acc_proj = hardware_exp(hw_config, sc)
