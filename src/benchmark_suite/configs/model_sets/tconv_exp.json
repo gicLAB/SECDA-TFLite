@@ -1,0 +1,18 @@
+{
+    "tconv_exp": {
+        "models": [
+            "dcgan_layer1",
+            "dcgan_layer2",
+            "dcgan_layer3",
+            "dcgan_layer4",
+            "fcn_layer1",
+            "fcn_layer2",
+            "fcn_layer3",
+            "style_transfer_layer1",
+            "style_transfer_layer2",
+            "style_transfer_layer3",
+            "fsrcnn_layer1"
+        ],
+        "layer_type": "TRANSPOSE_CONV"
+    }
+}

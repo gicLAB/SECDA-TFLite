@@ -107,9 +107,6 @@ class hardware_exp:
         self.acc_name = config["acc_name"]
         self.acc_version = config["acc_version"]
         self.acc_sub_version = config["acc_sub_version"]
-        self.acc_test = config["acc_test"]
-        self.acc_test_id = ("_" + self.acc_test_id) if self.acc_test else ""
-        self.acc_test_desc = config["acc_test_desc"]
         self.acc_link_folder = os.path.abspath(
             self.hw_link_dir + config["acc_link_folder"]
         )
@@ -127,7 +124,6 @@ class hardware_exp:
 
         # misc
         self.board_dir = self.bconfig["board_dir"] + "/bitstreams"
-        self.board_script = config["board_script"]
         self.bitstream = (
             config["acc_name"]
             + "_"
@@ -141,7 +137,6 @@ class hardware_exp:
             + str(self.acc_version)
             + "_"
             + str(self.acc_sub_version)
-            + str(self.acc_test_id)
         )
 
     def generate_hls_tcl(self, output_dir):
@@ -191,7 +186,6 @@ class hardware_exp:
             "board_user": self.bconfig["board_user"],
             "board_hostname": self.bconfig["board_hostname"],
             "board_port": self.bconfig["board_port"],
-            "board_script": self.board_script,
             "hlx_version": self.bconfig["hlx_version"],
             "svp_hls": self.svp_hls,
             "svp_hlx": self.svp_hlx,

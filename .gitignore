@@ -48,9 +48,11 @@ __pycache__
 /src/benchmark_suite/tmp
 /src/benchmark_suite/logs
 /src/benchmark_suite/files
+/src/.deprecated
 
 /hardware_automation/architecture.ipynb
 /hardware_automation/architectures/
+/hardware_automation/hlx_templater/generated
 scripts/update_launch.ipynb
 
 

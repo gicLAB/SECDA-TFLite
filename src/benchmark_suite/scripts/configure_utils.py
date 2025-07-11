@@ -443,7 +443,8 @@ def generate_benchmark_configs(
                     layer_list.append(layers)
                     thread_list.append(thread)
                     num_run_list.append(num_runs)
-                    version_list.append(hw_config["version"])
+                    version_str = hw_config["acc_version"].astype(str) + "_" + hw_config["acc_sub_version"].astype(str)
+                    version_list.append(version_str)
                     del_version_list.append(hw_config["del_version"])
                     delegate_list.append(hw_config["del"])
                     config_list.append(hw_config)
@@ -455,7 +456,7 @@ def generate_benchmark_configs(
                             "layer": layers,
                             "thread": thread,
                             "num_runs": num_runs,
-                            "version": hw_config["version"],
+                            "version": version_str,
                             "del_version": hw_config["del_version"],
                             "del": hw_config["del"],
                         }

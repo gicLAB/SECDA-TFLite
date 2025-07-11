@@ -2,6 +2,13 @@ import os
 from os import walk
 import sys
 import json
+import argparse
+
+supported_layers = [
+    "isCONV2D", "isFC", "isSOFTMAX", "isSHAPE", "isDWCONV2D", "isTCONV",
+    "isADD", "isPAD", "isMEAN", "isQUANTIZE", "isDEQUANTIZE"
+]
+
 
 ## Create a new file with new name and if line contains search_text, replace with new_text
 def create_new_file(file_path, new_file_name, replace_dict):
@@ -90,3 +97,23 @@ config = load_config(config_file)
 template = os.path.abspath("templates/temp_delegate")
 output_dir = os.path.abspath(f"generated/{config['temp']}_delegate")
 generate_delegate(template, output_dir, config)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate a delegate from template.")
+    parser.add_argument("target", type=str, help="Target name of the delegate")
+    parser.add_argument("layers", nargs="+", type=str, help="List of layers (strings)")
+    args = parser.parse_args()
+
+    # Prepare config dictionary
+    config = {
+        "temp": args.target,
+        "layers": args.layers
+    }
+
+    template = os.path.abspath("templates/temp_delegate")
+    output_dir = os.path.abspath(f"generated/{config['temp']}_delegate")
+    generate_delegate(template, output_dir, config)
+
+if __name__ == "__main__":
+    main()

@@ -1,4 +1,5 @@
-// FCGEMM Delegate (Sim tested with some errors || FPGA not tested or integrated)
+// FCGEMM Delegate (Sim tested with some errors || FPGA not tested or
+// integrated)
 #include "tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/fcgemm_delegate.h"
 
 #include <fstream>
@@ -60,6 +61,14 @@ public:
       acc = &_acc;
       scs = &scs1;
       std::cout << "Initialised the SystemC Modules" << std::endl;
+      scs->sig_start_acc = 0;
+      scs->sig_done_acc = 0;
+      scs->sig_reset_acc = 0;
+      scs->sig_insn_addr = 0;
+      scs->sig_input_addr = 0;
+      scs->sig_weight_addr = 0;
+      scs->sig_bias_addr = 0;
+      scs->sig_output_addr = 0;
 #else
       dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
       insn_mem = mm_alloc_rw<unsigned long long>(insn_addr, MM_BL);
@@ -78,14 +87,7 @@ public:
       writeMappedReg<int>(dparams.acc, 0x24, 0);
       std::cout << "Memory Mapped Buffers" << std::endl;
 #endif
-      scs->sig_start_acc = 0;
-      scs->sig_done_acc = 0;
-      scs->sig_reset_acc = 0;
-      scs->sig_insn_addr = 0;
-      scs->sig_input_addr = 0;
-      scs->sig_weight_addr = 0;
-      scs->sig_bias_addr = 0;
-      scs->sig_output_addr = 0;
+
       std::cout << "===========================" << std::endl;
       std::cout << "FC_ACC";
 #ifdef ACC_NEON
@@ -310,13 +312,13 @@ public:
       // fc_driver/accelerator needs from the delegate
       struct acc_container drv;
       drv.acc = acc;
-      drv.scs = scs;
       drv.profile = &profile;
       drv.mt_context = &mt_context;
       drv.thread_count = context->recommended_num_threads;
 
 // Accelerator Specific Parameters
 #ifndef SYSC
+      drv.scs = scs;
       drv.insn_mem = insn_mem;
       drv.bias_mem = bias_mem;
 #endif

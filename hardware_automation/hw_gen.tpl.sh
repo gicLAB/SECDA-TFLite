@@ -5,6 +5,7 @@ pushd "$(dirname "$0")"
 run_hls=1
 run_hlx=1
 offload_hls_hlx=0
+copy_bits=0
 
 # Default above, but we can change it based on the first argument
 if [ $# -eq 1 ]; then
@@ -17,13 +18,20 @@ if [ $# -eq 2 ]; then
   run_hlx=$2
 fi
 
-# if there are three arguments, then the second one is the offload flag
+# if there are three arguments, then the third one is the offload flag
 if [ $# -eq 3 ]; then
   run_hls=$1
   run_hlx=$2
   offload_hls_hlx=$3
 fi
 
+# if there are four arguments, then the fourth one is the copy bits flag
+if [ $# -eq 4 ]; then
+  run_hls=$1
+  run_hlx=$2
+  offload_hls_hlx=$3
+  copy_bits=$4
+fi
 
 replace_string_in_files() {
   local directory=$1
@@ -32,19 +40,37 @@ replace_string_in_files() {
   local file_extension=$4
 
   find "$directory" -type f -name "*.${file_extension}" -exec sed -i "s/${search_string}/${replace_string}/g" {} +
-
   if [ $? -eq 0 ]; then
-    echo "Replacement completed successfully."
+    # echo "Replacement completed successfully."
+    # echo "Replaced '${search_string}' with '${replace_string}' in all .${file_extension} files in ${directory}"
+    return 0
   else
     echo "An error occurred during the replacement process."
   fi
+}
+
+updateAXIMM_ports() {
+  local directory=$1
+  echo "Updating AXI-MM ports in VHDL files in directory: $directory"
+  replace_string_in_files "$directory" "USER_datain :  in" "USER_datain :  out" "vhd"
+  replace_string_in_files "$directory" "USER_dataout :  out" "USER_dataout :  in" "vhd"
+
+  replace_string_in_files "$directory" "USER_address :  out" "USER_address :  in" "vhd"
+  replace_string_in_files "$directory" "USER_size :  out" "USER_size :  in" "vhd"
+
+  replace_string_in_files "$directory" "USER_req_din :  out" "USER_req_din :  in" "vhd"
+  replace_string_in_files "$directory" "USER_req_full_n :  in" "USER_req_full_n :  out" "vhd"
+  replace_string_in_files "$directory" "USER_req_write :  out" "USER_req_write :  in" "vhd"
+
+  replace_string_in_files "$directory" "USER_rsp_empty_n :  in" "USER_rsp_empty_n :  out" "vhd"
+  replace_string_in_files "$directory" "USER_rsp_read :  out" "USER_rsp_read :  in" "vhd"
 }
 
 send_pushbullet_notification() {
   local message="$1"
   curl -s -o /dev/null --header 'Access-Token: &{pb_token}' \
     --header 'Content-Type: application/json' \
-    --data-binary "{\"device_iden\": \"ujDnqxJ2S2Csjx4TEjgAtE\",\"body\":\"${message}\",\"title\":\"&{acc_tag}\",\"type\":\"note\"}" \
+    --data-binary "{\"body\":\"${message}\",\"title\":\"&{acc_tag}\",\"type\":\"note\"}" \
     --request POST \
     https://api.pushbullet.com/v2/pushes
   push=$?
@@ -103,7 +129,7 @@ if [ $run_hls == 1 ]; then
     echo "Kria Copy And Replace"
     replace_string_in_files "./&{acc_tag}/&{acc_tag}/impl/ip/" "floating_point_v7_1_9" "floating_point_v7_1_18" "vhd"
   fi
-  
+  updateAXIMM_ports "./&{acc_tag}/&{acc_tag}/impl/ip/"
 fi
 
 
@@ -158,7 +184,11 @@ if [ $run_hlx == 1 ]; then
   fi
   echo "--------------HLX PASSED--------------"
   send_pushbullet_notification "HLX Done"
+  copy_bits=1
+fi
 
+
+if [ $copy_bits == 1 ]; then 
   mkdir -p ./generated_files
   if [ "&{hlx_version}" = "2024" ] ; then
     cp ./&{acc_tag}_hlx/&{acc_tag}_hlx.gen/sources_1/bd/design_1/hw_handoff/design_1.hwh ./generated_files/&{acc_tag}.hwh
@@ -166,12 +196,12 @@ if [ $run_hlx == 1 ]; then
     cp ./&{acc_tag}_hlx/&{acc_tag}_hlx.srcs/sources_1/bd/design_1/hw_handoff/design_1.hwh ./generated_files/&{acc_tag}.hwh
   fi
   cp ./&{acc_tag}_hlx/&{acc_tag}_hlx.runs/impl_1/design_1_wrapper.bit ./generated_files/&{acc_tag}.bit
-  cp ./&{acc_tag}_hlx/utilization_report_impl_full.txt ./generated_files/
-  # cp ./&{acc_tag}_hlx/utilization_report_impl_ip.txt ./generated_files/
-  cp ./&{acc_tag}_hlx/timing_report_impl_full.txt ./generated_files/
-  # cp ./&{acc_tag}_hlx/timing_report_impl_ip.txt ./generated_files/
-  cp ./generated_files/&{acc_tag}.hwh ../../../src/benchmark_suite/bitstreams/&{board}/
-  cp ./generated_files/&{acc_tag}.bit ../../../src/benchmark_suite/bitstreams/&{board}/
+  cp ./&{acc_tag}_hlx/utilization_report_impl_full.txt ./generated_files/  2>/dev/null
+  cp ./&{acc_tag}_hlx/utilization_report_impl_ip.txt ./generated_files/  2>/dev/null
+  cp ./&{acc_tag}_hlx/timing_report_impl_full.txt ./generated_files/  2>/dev/null
+  cp ./&{acc_tag}_hlx/timing_report_impl_ip.txt ./generated_files/  2>/dev/null
+  cp ./generated_files/&{acc_tag}.hwh ../../../hardware_automation/bitstreams/&{board}/
+  cp ./generated_files/&{acc_tag}.bit ../../../hardware_automation/bitstreams/&{board}/
 
  # check board is connected to the network
   timeout --foreground 60 ssh -q -t -p &{board_port} &{board_user}@&{board_hostname} "echo 2>&&1" &&&& board_connected=1 || board_connected=0
@@ -186,7 +216,6 @@ if [ $run_hlx == 1 ]; then
     echo "Board is not connected to the network. Skipping bitstream transfer."
   fi
 fi
-
 
 hls_runtime=$((end_hls-start_hls))
 hlx_runtime=$((end_hlx-start_hlx))

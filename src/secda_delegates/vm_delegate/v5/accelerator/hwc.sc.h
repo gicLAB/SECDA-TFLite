@@ -52,7 +52,7 @@
     name##_so.write(name##_state);                                             \
   }
 
-#else // __SYNTHESIS__
+#else // !__SYNTHESIS__
 #define HWC_CTHREAD(name) void name();
 
 #define HWC_PragGroup(name)
