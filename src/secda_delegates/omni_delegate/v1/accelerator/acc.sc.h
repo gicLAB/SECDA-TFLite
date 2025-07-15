@@ -73,9 +73,11 @@ SC_MODULE(ACCNAME) {
   // ================================================= //
 
 #ifndef __SYNTHESIS__
-  ClockCycles *per_batch_cycles = new ClockCycles("per_batch_cycles", true);
+  ClockCycles *total_cycles = new ClockCycles("total_cycles", true);
   ClockCycles *active_cycles = new ClockCycles("active_cycles", true);
-  std::vector<Metric *> profiling_vars = {per_batch_cycles, active_cycles};
+  SignalTrack *comS = new SignalTrack("T_compute", true);
+  std::vector<Metric *> profiling_vars = {total_cycles, active_cycles,
+                                          comS};
 #endif
   // ================================================= //
 

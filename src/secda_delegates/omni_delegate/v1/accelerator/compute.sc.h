@@ -50,8 +50,10 @@ void ACCNAME::send_parameters_omni_PE(int length, sc_fifo_in<ADATA> *din) {
 void ACCNAME::Simulation_Profiler() {
   wait();
   while (1) {
-    per_batch_cycles->value++;
+    int com1 = computeSS.read();
+    total_cycles->value++;
     if (computeS.read() == 0) active_cycles->value++;
+    comS->increment(com1);
     wait();
   }
 }
@@ -83,8 +85,10 @@ void ACCNAME::Compute() {
     computeSS.write(2);
 
     for (int i = 0; i < length; i++) {
-      omni_pe_array.input_fifo_write(submodule_idx, din1.read().data.to_int());
-      omni_pe_array.input_fifo_write(submodule_idx, din1.read().data.to_int());
+      omni_pe_array.input_fifo_write(submodule_idx,
+                                          din1.read().data.to_int());
+      omni_pe_array.input_fifo_write(submodule_idx,
+                                          din1.read().data.to_int());
       computeS.write(3);
       computeSS.write(3);
       wait();

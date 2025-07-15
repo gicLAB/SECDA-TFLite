@@ -19,7 +19,6 @@
 #include "secda_tools/secda_utils/utils.h"
 #include "tensorflow/lite/builtin_ops.h"
 
-
 #ifdef ACC_NEON
 #include "arm_neon.h"
 #endif
@@ -30,13 +29,21 @@ using namespace std::chrono;
 #define TSCAST duration_cast<nanoseconds>
 
 struct ACC_NAME_times {
-  duration_ns driver_total;
+  duration_ns p_data_copy;
+  duration_ns p_data_send;
+  duration_ns p_compute;
+  duration_ns p_data_store;
+  duration_ns t_driver_total;
   duration_ns delegate_total;
 
   void print() {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
-    prf_out(TSCALE, driver_total);
+    prf_out(TSCALE, p_data_copy);
+    prf_out(TSCALE, p_data_send);
+    prf_out(TSCALE, p_compute);
+    prf_out(TSCALE, p_data_store);
+    prf_out(TSCALE, t_driver_total);
     prf_out(TSCALE, delegate_total);
     cout << "================================================" << endl;
 #endif
@@ -44,7 +51,11 @@ struct ACC_NAME_times {
   void save_prf() {
 #ifdef ACC_PROFILE
     std::ofstream file("prf.csv", std::ios::out);
-    prf_file_out(TSCALE, driver_total, file);
+    prf_file_out(TSCALE, p_data_copy, file);
+    prf_file_out(TSCALE, p_data_send, file);
+    prf_file_out(TSCALE, p_compute, file);
+    prf_file_out(TSCALE, p_data_store, file);
+    prf_file_out(TSCALE, t_driver_total, file);
     prf_file_out(TSCALE, delegate_total, file);
     file.close();
 #endif
