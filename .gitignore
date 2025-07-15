@@ -17,27 +17,15 @@ hardware_automation/acc_srcs
 scripts/experiment_prep/generated
 src/secda_delegates/secda_vm_delegate/driver/gemm_driver_v1_03.h
 
-
 src/secda_apps/imagenet_image_classification/ILSVRC2012_devkit
 src/secda_apps/imagenet_image_classification
 scripts/hardwareFilesGeneration
-/src/secda_benchmark_suite/tmp
-/src/secda_benchmark_suite/scrips/tmp
-/src/secda_benchmark_suite/generated
-/src/secda_benchmark_suite/results
-/src/secda_benchmark_suite/model_gen/models
 /src/secda_delegates/mm2im_delegate_v2
 /src/secda_delegates/mm2im_delegate_v2_1
 /src/secda_delegates/mm2im_delegate_v2_2
 /src/secda_delegates/vm_delegate/accelerator_4
 /src/secda_delegates/vm_delegate/accelerator_old
-# src/secda_benchmark_suite/scripts/__pycache__
 __pycache__
-/src/secda_benchmark_suite/power/files
-/src/secda_benchmark_suite/files
-/src/secda_apps_evaluation_suite/generated
-/src/secda_apps_evaluation_suite/tmp
-/src/secda_benchmark_suite_old/
 
 /src/benchmark_suite/results
 /src/benchmark_suite/generated
@@ -50,20 +38,25 @@ __pycache__
 /src/benchmark_suite/files
 /src/.deprecated
 
+/src/experimental/secda_benchmark_suite/tmp
+/src/experimental/secda_benchmark_suite/scrips/tmp
+/src/experimental/secda_benchmark_suite/generated
+/src/experimental/secda_benchmark_suite/results
+/src/experimental/secda_benchmark_suite/model_gen/models
+/src/experimental/secda_benchmark_suite/power/files
+/src/experimental/secda_benchmark_suite/files
+/src/experimental/secda_benchmark_suite/scripts/__pycache__
+
+/src/experimental/secda_apps_evaluation_suite/generated
+/src/experimental/secda_apps_evaluation_suite/tmp
+
 /hardware_automation/architecture.ipynb
 /hardware_automation/architectures/
 /hardware_automation/hlx_templater/generated
 scripts/update_launch.ipynb
 
-
-
-
-
-
 /data/
 /bitstreams/
-
-
 
 ## rpp add
 /analysis/*

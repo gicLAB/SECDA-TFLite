@@ -1,14 +1,21 @@
 {
-  "Temp": "Omni",
-  "temp": "omni",
-  "TEMP": "OMNI",
-  "secda_tflite_path": "tensorflow/lite/delegates/utils/secda_tflite",
+  "delegate_name": "omni",
+  "acc_name": "omni_acc",
+  "hw_submodule": "omni_pe",
+  "driver_name": "omni_driver",
   "secda_delegates_path": "tensorflow/lite/delegates/utils/secda_delegates",
   "secda_apps_path": "tensorflow/lite/examples/secda_apps",
-  "acc_name": "OMNI_ACC",
-  "ACC_NAME": "OMNI_ACC",
-  "hw_submodule": "omni_pe",
-  "HW_SUBMODULE": "omni_PE",
-  "driver_name": "omni_driver",
-  "driver_name_caps": "OMNI_DRIVER"
+  "supported_layers": [
+    "CONV2D",
+    "DWCONV2D",
+    "ADD",
+    "FULLY_CONNECTED",
+    "TCONV",
+    "SHAPE",
+    "SOFTMAX",
+    "PAD",
+    "MEAN",
+    "QUANTIZE",
+    "DEQUANTIZE"
+  ]
 }

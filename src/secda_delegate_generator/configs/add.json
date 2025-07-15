@@ -1,14 +1,11 @@
 {
-  "Temp": "Add",
-  "temp": "add",
-  "TEMP": "ADD",
-  "secda_tflite_path": "tensorflow/lite/delegates/utils/secda_tflite",
+  "delegate_name": "add",
+  "acc_name": "add_acc",
+  "hw_submodule": "add_pe",
+  "driver_name": "add_driver",
   "secda_delegates_path": "tensorflow/lite/delegates/utils/secda_delegates",
   "secda_apps_path": "tensorflow/lite/examples/secda_apps",
-  "acc_name": "TOYADD_ACC",
-  "ACC_NAME": "TOYADD_ACC",
-  "hw_submodule": "add_pe",
-  "HW_SUBMODULE": "ADD_PE",
-  "driver_name": "toyadd_driver",
-  "driver_name_caps": "TOYADD_DRIVER"
+  "supported_layers": [
+    "ADD"
+  ]
 }

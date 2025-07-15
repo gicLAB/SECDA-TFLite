@@ -41,7 +41,7 @@
 #define MAX8 127
 #define MIN8 -128
 
-#define omni_PE_COUNT 2
+#define OMNI_PE_COUNT 2
 
 // DMA Parameters
 #define s_mdma multi_dma<AXI_DWIDTH, 0>

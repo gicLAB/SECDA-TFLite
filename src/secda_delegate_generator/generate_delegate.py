@@ -4,10 +4,19 @@ import sys
 import json
 import argparse
 
-supported_layers = [
-    "isCONV2D", "isFC", "isSOFTMAX", "isSHAPE", "isDWCONV2D", "isTCONV",
-    "isADD", "isPAD", "isMEAN", "isQUANTIZE", "isDEQUANTIZE"
-]
+supported_layers = {
+    "CONV2D": "isCONV2D",
+    "DWCONV2D": "isDWCONV2D",
+    "ADD": "isADD",
+    "FULLY_CONNECTED": "isFC",
+    "TCONV": "isTCONV",
+    "SHAPE": "isSHAPE",
+    "SOFTMAX": "isSOFTMAX",
+    "PAD": "isPAD",
+    "MEAN": "isMEAN",
+    "QUANTIZE": "isQUANTIZE",
+    "DEQUANTIZE": "isDEQUANTIZE",
+}
 
 
 ## Create a new file with new name and if line contains search_text, replace with new_text
@@ -65,7 +74,34 @@ def create_new_dir(dir_path, new_dir_name, replace_dict):
 
 
 ## take a template directory and create a new directory with new name and new files
-def generate_delegate(template_dir_path, new_dir_name, replace_dict):
+def generate_delegate(template_dir_path, new_dir_name, config, layers):
+    layer_sup = ""
+    for idx, layer in enumerate(layers):
+        if layer not in supported_layers.keys():
+            print(f"Layer {layer} is not supported.")
+            sys.exit(1)
+        if idx == len(layers) - 1:
+            layer_sup += f"{supported_layers.get(layer)}"
+        else:
+            layer_sup += f"{supported_layers.get(layer)},"
+
+    replace_dict = {
+        "Tempdel": config["delegate_name"].capitalize(),
+        "tempdel": config["delegate_name"].lower(),
+        "TEMPDEL": config["delegate_name"].upper(),
+        "Acc_name": config["acc_name"].capitalize(),
+        "acc_name": config["acc_name"].lower(),
+        "ACC_NAME": config["acc_name"].upper(),
+        "Hw_submodule": config["hw_submodule"].capitalize(),
+        "hw_submodule": config["hw_submodule"].lower(),
+        "HW_SUBMODULE": config["hw_submodule"].upper(),
+        "Driver_name": config["driver_name"].capitalize(),
+        "driver_name": config["driver_name"].lower(),
+        "DRIVER_NAME": config["driver_name"].upper(),
+        "secda_delegates_path": config["secda_delegates_path"],
+        "secda_apps_path": config["secda_apps_path"],
+        "layer_sup": layer_sup,
+    }
     create_new_dir(
         dir_path=template_dir_path,
         new_dir_name=new_dir_name,
@@ -75,45 +111,32 @@ def generate_delegate(template_dir_path, new_dir_name, replace_dict):
     print("We recommend you to move this folder to /src/secda_delegates folder")
 
 
-if len(sys.argv) != 2:
-    print("Usage: python generate_delegate.py <config>")
-    sys.exit(1)
-
-args = sys.argv[1:]
-config_file = args[0]
-
-
 ## load config from json file
-def load_config(hw):
+def load_config(template_config):
     try:
-        with open(f"configs/{hw}.json") as f:
+        with open(f"configs/{template_config}.json") as f:
             config = json.load(f)
         return config
     except:
         print("Config not found")
         sys.exit(1)
-    
-config = load_config(config_file)
-template = os.path.abspath("templates/temp_delegate")
-output_dir = os.path.abspath(f"generated/{config['temp']}_delegate")
-generate_delegate(template, output_dir, config)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a delegate from template.")
-    parser.add_argument("target", type=str, help="Target name of the delegate")
-    parser.add_argument("layers", nargs="+", type=str, help="List of layers (strings)")
+    parser.add_argument(
+        "config_file", type=str, help="Name of the config file (without .json)"
+    )
     args = parser.parse_args()
 
     # Prepare config dictionary
-    config = {
-        "temp": args.target,
-        "layers": args.layers
-    }
+    config = load_config(args.config_file)
+    delegate_name = config["delegate_name"]
+    layers = config["supported_layers"]
+    template = os.path.abspath("templates/tempdel_delegate")
+    output_dir = os.path.abspath(f"generated/{delegate_name}_delegate")
+    generate_delegate(template, output_dir, config, layers)
 
-    template = os.path.abspath("templates/temp_delegate")
-    output_dir = os.path.abspath(f"generated/{config['temp']}_delegate")
-    generate_delegate(template, output_dir, config)
 
 if __name__ == "__main__":
     main()

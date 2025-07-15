@@ -12,36 +12,6 @@ package(
 common_copts = ["-Wall"] + tflite_copts()
 
 
-# cc_library(
-#     name = "omni_driver_sysc",
-#     srcs = [
-#         "systemc_binding.h",
-#         "acc_container.h",
-#         "omni_driver.h",
-#         ],
-#     copts = common_copts,
-#     deps = [
-#         "@systemc//:systemc",
-#         "//tensorflow/lite/delegates/utils/secda_delegates/omni_delegate/accelerator:omni_accelerator",
-#         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
-#     ],
-# )
-
-# cc_library(
-#     name = "omni_driver",
-#     srcs = [
-#         "acc_container.h",
-#         "omni_driver.h",
-#         ],
-#     copts = common_copts,
-#     deps = [
-#         "//tensorflow/lite/delegates/utils/secda_delegates/omni_delegate/accelerator:omni_accelerator_config",
-#         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite",
-#     ],
-# )
-
-
-
 cc_library(
     name = "omni_driver",
     srcs = [

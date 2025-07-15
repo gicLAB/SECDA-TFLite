@@ -9,10 +9,18 @@ SC_MODULE(ACCNAME) {
   sc_in<bool> clock;
   sc_in<bool> reset;
 
+  // ================================================= //
+  // Global ports
+  // ================================================= //
+
+  // Data ports
   sc_fifo_in<ADATA> din1;
   sc_fifo_out<ADATA> dout1;
+  sc_out<int> computeSS;
 
-  // GEMM 1 Inputs
+  // ================================================= //
+  // Global variables
+  // ================================================= //
   int lshift;
   int in1_off;
   int in1_sv;
@@ -26,34 +34,50 @@ SC_MODULE(ACCNAME) {
   int qa_max;
   int qa_min;
 
-  struct omni_pe_var_array omni_pe_array;
+  // ================================================= //
+  // Global buffers
+  // ================================================= //
 
-#ifndef __SYNTHESIS__
-  sc_signal<int, SC_MANY_WRITERS> computeS;
-#else
-  sc_signal<int> computeS;
-#endif
+  // ================================================= //
+  // Global signals
+  // ================================================= //
+  DEFINE_SC_SIGNAL(int, computeS);
 
-  sc_out<int> computeSS;
-
-  // Profiling variable
-#ifndef __SYNTHESIS__
-  ClockCycles *per_batch_cycles = new ClockCycles("per_batch_cycles", true);
-  ClockCycles *active_cycles = new ClockCycles("active_cycles", true);
-  std::vector<Metric *> profiling_vars = {per_batch_cycles, active_cycles};
-#endif
+  // ================================================= //
+  // Functions
+  // ================================================= //
 
   // Functions
   ACC_DTYPE<32> Clamp_Combine(int, int, int, int, int, int);
 
   void send_parameters_omni_PE(int, sc_fifo_in<ADATA> *);
 
+  // ================================================= //
   // HW Threads
+  // ================================================= //
+
   void Compute();
 
 #ifndef __SYNTHESIS__
-  void Counter();
+  void Simulation_Profiler();
 #endif
+
+  // ================================================= //
+  // Submodules
+  // ================================================= //
+
+  struct omni_pe_var_array omni_pe_array;
+
+  // ================================================= //
+  // Profiling variable
+  // ================================================= //
+
+#ifndef __SYNTHESIS__
+  ClockCycles *per_batch_cycles = new ClockCycles("per_batch_cycles", true);
+  ClockCycles *active_cycles = new ClockCycles("active_cycles", true);
+  std::vector<Metric *> profiling_vars = {per_batch_cycles, active_cycles};
+#endif
+  // ================================================= //
 
   SC_HAS_PROCESS(ACCNAME);
 
@@ -66,16 +90,13 @@ SC_MODULE(ACCNAME) {
     reset_signal_is(reset, true);
 
 #ifndef __SYNTHESIS__
-    SC_CTHREAD(Counter, clock);
+    SC_CTHREAD(Simulation_Profiler, clock);
     reset_signal_is(reset, true);
 #endif
 
-#pragma HLS RESOURCE variable = din1 core = AXI4Stream metadata =              \
-    "-bus_bundle S_AXIS_DATA1" port_map = {                                    \
-      {din1_0 TDATA } {                                                        \
-        din1_1 TLAST } }
-#pragma HLS RESOURCE variable = dout1 core = AXI4Stream metadata =             \
-    "-bus_bundle M_AXIS_DATA1" port_map = {{dout1_0 TDATA } {dout1_1 TLAST } }
+    SLV_Prag(computeSS);
+    AXI4S_In_Prag(din1);
+    AXI4S_Out_Prag(dout1);
   }
 };
 

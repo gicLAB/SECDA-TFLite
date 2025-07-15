@@ -30,7 +30,7 @@ void ACCNAME::send_parameters_omni_PE(int length, sc_fifo_in<ADATA> *din) {
   int out1_sv = din->read().data;
   int out1_mul = din->read().data;
 
-  for (int i = 0; i < omni_PE_COUNT; i++) {
+  for (int i = 0; i < OMNI_PE_COUNT; i++) {
 #pragma HLS unroll
     omni_pe_array[i].length = length;
     omni_pe_array[i].lshift = lshift;
@@ -47,20 +47,17 @@ void ACCNAME::send_parameters_omni_PE(int length, sc_fifo_in<ADATA> *din) {
 };
 
 #ifndef __SYNTHESIS__
-void ACCNAME::Counter() {
+void ACCNAME::Simulation_Profiler() {
   wait();
   while (1) {
     per_batch_cycles->value++;
-    if (computeS.read() == 1) active_cycles->value++;
+    if (computeS.read() == 0) active_cycles->value++;
     wait();
   }
 }
 #endif
 
 void ACCNAME::Compute() {
-
-#pragma HLS resource core = AXI4LiteS metadata = "-bus_bundle slv0" variable = \
-    computeSS
 
   ADATA d;
   int f_out[4];
@@ -86,10 +83,8 @@ void ACCNAME::Compute() {
     computeSS.write(2);
 
     for (int i = 0; i < length; i++) {
-      omni_pe_array.input_fifo_write(submodule_idx,
-                                          din1.read().data.to_int());
-      omni_pe_array.input_fifo_write(submodule_idx,
-                                          din1.read().data.to_int());
+      omni_pe_array.input_fifo_write(submodule_idx, din1.read().data.to_int());
+      omni_pe_array.input_fifo_write(submodule_idx, din1.read().data.to_int());
       computeS.write(3);
       computeSS.write(3);
       wait();
@@ -102,7 +97,7 @@ void ACCNAME::Compute() {
       if (i + 1 == length) d.tlast = true;
       else d.tlast = false;
       dout1.write(d);
-      submodule_idx = (submodule_idx + 1) % omni_PE_COUNT;
+      submodule_idx = (submodule_idx + 1) % OMNI_PE_COUNT;
     }
     DWAIT();
   }

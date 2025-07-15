@@ -200,8 +200,8 @@ if [ $copy_bits == 1 ]; then
   cp ./&{acc_tag}_hlx/utilization_report_impl_ip.txt ./generated_files/  2>/dev/null
   cp ./&{acc_tag}_hlx/timing_report_impl_full.txt ./generated_files/  2>/dev/null
   cp ./&{acc_tag}_hlx/timing_report_impl_ip.txt ./generated_files/  2>/dev/null
-  cp ./generated_files/&{acc_tag}.hwh ../../../hardware_automation/bitstreams/&{board}/
-  cp ./generated_files/&{acc_tag}.bit ../../../hardware_automation/bitstreams/&{board}/
+  cp ./generated_files/&{acc_tag}.hwh ../../../src/benchmark_suite/bitstreams/&{board}/
+  cp ./generated_files/&{acc_tag}.bit ../../../src/benchmark_suite/bitstreams/&{board}/
 
  # check board is connected to the network
   timeout --foreground 60 ssh -q -t -p &{board_port} &{board_user}@&{board_hostname} "echo 2>&&1" &&&& board_connected=1 || board_connected=0

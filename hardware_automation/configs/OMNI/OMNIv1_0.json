@@ -1,0 +1,16 @@
+{
+  "acc_name": "OMNI",
+  "acc_version": 1,
+  "acc_sub_version": 0,
+  "acc_src": "omni_delegate/v1/accelerator",
+  "acc_link_folder": "omni_src_v1",
+  "hlx_tcl_script": "mdma_axilite_hlx_reconfig_1_xfull.tcl",
+  "top": "OMNI_ACC",
+  "del": "omni_delegate",
+  "del_version": "1",
+  "hls_clock": "5",
+  "hlx_Mhz": "200",
+  "axi_bitW": "32",
+  "axi_burstS": "32",
+  "board": "Z1"
+}

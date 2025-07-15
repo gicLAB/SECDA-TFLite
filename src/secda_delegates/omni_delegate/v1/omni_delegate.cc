@@ -7,8 +7,8 @@
 #include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
 #include "accelerator/driver/omni_driver.h"
-#include "omni_delegate.h"
 #include "secda_tools/secda_profiler/profiler.h"
+#include "omni_delegate.h"
 #include "util.h"
 #include "util_prep.h"
 
@@ -16,6 +16,9 @@
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include "tensorflow/lite/kernels/internal/quantization_util.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
+
+#define DELEGATE_NAME "OMNI"
+#define DELEGATE_VERSION 1
 
 // Some variables needs to be defined across multiple instances of the delegate
 unsigned int dma_addrs[1] = {dma_addr0};
@@ -83,7 +86,7 @@ public:
     is_global_output.resize(params->nodes_to_replace->size);
     output_dependencies.resize(params->nodes_to_replace->size);
     node_output_needed.resize(params->nodes_to_replace->size);
-    temp_tensor_ids.resize(params->nodes_to_replace->size);
+    omni_tensor_ids.resize(params->nodes_to_replace->size);
 
     int conv2d_count = 0;
     int fc_count = 0;
@@ -125,7 +128,7 @@ public:
       if (builtin_code_[i] == kTfLiteBuiltinMean) mean_count++;
     }
     wt_sum.resize(params->nodes_to_replace->size);
-    temp_im2col.resize(params->nodes_to_replace->size);
+    omni_im2col.resize(params->nodes_to_replace->size);
     return kTfLiteOk;
   }
 
@@ -163,7 +166,7 @@ public:
       } else if (builtin_code_[i] == kTfLiteBuiltinConv2d) {
         Prepare_CONV2D_INT8(context, node, i, layers_params[i], opdatas[i],
                             inputs_, outputs_, out_tid, wt_sum[i],
-                            temp_im2col[i]);
+                            omni_im2col[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) {
         Prepare_FC_INT8(context, node, i, layers_params[i], opdatas[i], inputs_,
                         outputs_, out_tid, wt_sum[i]);
@@ -184,13 +187,13 @@ public:
                          inputs_, outputs_, out_tid);
       } else if (builtin_code_[i] == kTfLiteBuiltinMean) {
         Prepare_MEAN_INT8(context, node, i, layers_params[i], opdatas[i],
-                          inputs_, outputs_, out_tid, temp_tensor_ids[i]);
+                          inputs_, outputs_, out_tid, omni_tensor_ids[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinQuantize) {
         Prepare_QUANTIZE_INT8(context, node, i, layers_params[i], opdatas[i],
-                              inputs_, outputs_, out_tid, temp_tensor_ids[i]);
+                              inputs_, outputs_, out_tid, omni_tensor_ids[i]);
       } else if (builtin_code_[i] == kTfLiteBuiltinDequantize) {
         Prepare_DEQUANTIZE_INT8(context, node, i, layers_params[i], opdatas[i],
-                                inputs_, outputs_, out_tid, temp_tensor_ids[i]);
+                                inputs_, outputs_, out_tid, omni_tensor_ids[i]);
       }
     }
     return kTfLiteOk;
@@ -287,37 +290,47 @@ public:
           output_data[i] = static_cast<int8>(clamped_output);
         }
 
-        // Need to fix the accelerator for Add
-        // Prepare Inputs for Driver/Accelerator
-        // Accelerator Specific Parameters
-        // drv.input_A = input1_data;
-        // drv.input_B = input2_data;
-        // drv.output_C = output_data;
-        // int padded_size = roundUp(size, 4);
-        // int8_t padded_input_A[padded_size];
-        // int8_t padded_input_B[padded_size];
-        // if (padded_size > size) {
-        //   memcpy(padded_input_A, input1_data, size);
-        //   memset(padded_input_A + size, 0, padded_size - size);
-        //   memcpy(padded_input_B, input2_data, size);
-        //   memset(padded_input_B + size, 0, padded_size - size);
-        //   drv.input_A = padded_input_A;
-        //   drv.input_B = padded_input_B;
-        // }
-        // drv.padded_size = padded_size;
-        // drv.size = size;
-        // drv.lshift = op_params.left_shift;
-        // drv.in1_off = op_params.input1_offset;
-        // drv.in1_sv = op_params.input1_shift;
-        // drv.in1_mul = op_params.input1_multiplier;
-        // drv.in2_off = op_params.input2_offset;
-        // drv.in2_sv = op_params.input2_shift;
-        // drv.in2_mul = op_params.input2_multiplier;
-        // drv.out1_off = op_params.output_offset;
-        // drv.out1_sv = op_params.output_shift;
-        // drv.out1_mul = op_params.output_multiplier;
-        // drv.qa_max = op_params.quantized_activation_max;
-        // drv.qa_min = op_params.quantized_activation_min;
+        // =========================================================
+        // Accelerator Enabled Implementation
+        // =========================================================
+        // The following is an example of how to prepare an acc_container for
+        // the driver/accelerator before calling the driver to offload the
+        // current operation.
+
+        drv.input_A = input1_data;
+        drv.input_B = input2_data;
+        drv.output_C = output_data;
+        int padded_size = roundUp(size, 4);
+        int8_t padded_input_A[padded_size];
+        int8_t padded_input_B[padded_size];
+        if (padded_size > size) {
+          memcpy(padded_input_A, input1_data, size);
+          memset(padded_input_A + size, 0, padded_size - size);
+          memcpy(padded_input_B, input2_data, size);
+          memset(padded_input_B + size, 0, padded_size - size);
+          drv.input_A = padded_input_A;
+          drv.input_B = padded_input_B;
+        }
+        drv.padded_size = padded_size;
+        drv.size = size;
+        drv.lshift = op_params.left_shift;
+        drv.in1_off = op_params.input1_offset;
+        drv.in1_sv = op_params.input1_shift;
+        drv.in1_mul = op_params.input1_multiplier;
+        drv.in2_off = op_params.input2_offset;
+        drv.in2_sv = op_params.input2_shift;
+        drv.in2_mul = op_params.input2_multiplier;
+        drv.out1_off = op_params.output_offset;
+        drv.out1_sv = op_params.output_shift;
+        drv.out1_mul = op_params.output_multiplier;
+        drv.qa_max = op_params.quantized_activation_max;
+        drv.qa_min = op_params.quantized_activation_min;
+        drv.t.layer = dparams.layer;
+
+        // Call the driver to execute the operation
+        drv.p_t = p_t;
+        omni_driver_space::Entry(drv);
+        p_t = drv.p_t;
 
       } else if (builtin_code_[i] == kTfLiteBuiltinConv2d) { // CONV2D
         TfLiteConvParams *params =
@@ -334,7 +347,7 @@ public:
         GetInputSafe(context, inputs_[i][2], &bias);
         GetOutputSafe(context, outputs_[i][0], &output);
 
-        int8 *im2col_data = data->need_im2col ? &temp_im2col[i][0] : nullptr;
+        int8 *im2col_data = data->need_im2col ? &omni_im2col[i][0] : nullptr;
 
         ConvParams op_params;
         op_params.input_offset = -input->params.zero_point;
@@ -876,7 +889,6 @@ public:
           output_data += last_dim;
         }
       } else if (builtin_code_[i] == kTfLiteBuiltinPad) { // PAD
-
         PadContext op_context(context, i, inputs_, outputs_);
         if (op_context.constant_values != nullptr) {
           // Ensure that constant_values is a scalar.
@@ -1030,26 +1042,25 @@ public:
         }
 
       } else if (builtin_code_[i] == kTfLiteBuiltinMean) { // MEAN
-
         REDUCE_Data *data = reinterpret_cast<REDUCE_Data *>(opdatas[i]);
         TfLiteReducerParams *params =
             reinterpret_cast<TfLiteReducerParams *>(layers_params[i]);
         ReduceOpContext op_context(context, params, i, inputs_, outputs_);
 
         int num_axis = static_cast<int>(NumElements(op_context.axis));
-        TfLiteTensor *temp_index;
+        TfLiteTensor *omni_index;
         TfLiteTensor *resolved_axis;
-        TfLiteTensor *temp_sum;
+        TfLiteTensor *omni_sum;
         TfLiteTensor *normalized_dims;
 
-        int scratch_index = get<0>(temp_tensor_ids[i][0]);
-        int resolved_axis_index = get<0>(temp_tensor_ids[i][1]);
-        int temp_accum_index = get<0>(temp_tensor_ids[i][2]);
-        int normalized_dims_index = get<0>(temp_tensor_ids[i][3]);
+        int scratch_index = get<0>(omni_tensor_ids[i][0]);
+        int resolved_axis_index = get<0>(omni_tensor_ids[i][1]);
+        int omni_accum_index = get<0>(omni_tensor_ids[i][2]);
+        int normalized_dims_index = get<0>(omni_tensor_ids[i][3]);
 
-        GetTemporarySafe(context, node, scratch_index, &temp_index);
+        GetTemporarySafe(context, node, scratch_index, &omni_index);
         GetTemporarySafe(context, node, resolved_axis_index, &resolved_axis);
-        GetTemporarySafe(context, node, temp_accum_index, &temp_sum);
+        GetTemporarySafe(context, node, omni_accum_index, &omni_sum);
         GetTemporarySafe(context, node, normalized_dims_index,
                          &normalized_dims);
 
@@ -1059,7 +1070,7 @@ public:
               context, ResizeTempAxis(context, &op_context, resolved_axis));
           TF_LITE_ENSURE_OK(context, ResizeOutputTensor(context, &op_context));
           TF_LITE_ENSURE_OK(context,
-                            ResizeTempAccum(context, &op_context, temp_sum));
+                            ResizeTempAccum(context, &op_context, omni_sum));
         }
 
         if (IsDynamicTensor(normalized_dims)) {
@@ -1084,13 +1095,12 @@ public:
             data->shift, output->params.zero_point, output->dims->data,
             output->dims->size, tflite::GetTensorData<int>(op_context.axis),
             num_axis, op_context.params->keep_dims,
-            tflite::GetTensorData<int>(temp_index),
+            tflite::GetTensorData<int>(omni_index),
             tflite::GetTensorData<int>(resolved_axis),
-            tflite::GetTensorData<int32_t>(temp_sum),
+            tflite::GetTensorData<int32_t>(omni_sum),
             /*compute_sum=*/false);
 
       } else if (builtin_code_[i] == kTfLiteBuiltinQuantize) { // QUANTIZE
-
         QUANTIZE_Data *data = reinterpret_cast<QUANTIZE_Data *>(opdatas[i]);
         TfLiteTensor *output;
         const TfLiteTensor *input;
@@ -1312,18 +1322,6 @@ public:
       // =======================================================================
 
       // =======================================================================
-      // Accelerator Offload Code
-      // =======================================================================
-      drv.t.layer = dparams.layer;
-      drv.p_t = p_t;
-
-      // Enter the driver code
-      // if (builtin_code_[i] == kTfLiteBuiltinAdd) {
-      //   tflite_omnisim::Entry(drv);
-      // }
-      p_t = drv.p_t;
-
-      // =======================================================================
       // Delegate Management Code
       // =======================================================================
       // Pops output dependencies
@@ -1345,6 +1343,9 @@ public:
       dparams.layer++;
       dparams.delegated_nodes--;
 
+      // =======================================================================
+      // Debug Code To Print Data
+      // =======================================================================
       // Save input data to file
       // const TfLiteTensor *input;
       // GetInputSafe(context, inputs_[i][0], &input);
@@ -1387,11 +1388,11 @@ public:
   std::vector<std::vector<int>> output_dependencies;
   std::vector<bool> node_output_needed;
   std::vector<bool> is_global_output;
-  std::vector<std::vector<std::tuple<int, int>>> temp_tensor_ids;
+  std::vector<std::vector<std::tuple<int, int>>> omni_tensor_ids;
 
   // Convolution specific variables
   std::vector<std::vector<int>> wt_sum;
-  std::vector<std::vector<int8_t>> temp_im2col;
+  std::vector<std::vector<int8_t>> omni_im2col;
 
   // Add specific variables
 
@@ -1423,9 +1424,7 @@ public:
     bool isDEQUANTIZE = IsNode_DEQUANTIZE_INT8(registration, node, context);
 
     // Node will be delegated if inside supported_nodes
-    std::vector<bool> supported_nodes = {
-        isCONV2D, isFC,  isSOFTMAX, isSHAPE,    isDWCONV2D,  isTCONV,
-        isADD,    isPAD, isMEAN,    isQUANTIZE, isDEQUANTIZE};
+    std::vector<bool> supported_nodes = {isCONV2D,isDWCONV2D,isADD,isFC,isTCONV,isSHAPE,isSOFTMAX,isPAD,isMEAN,isQUANTIZE,isDEQUANTIZE};
 
     bool delegated_node = false;
     // Check if the node is supported by the delegate
@@ -1492,6 +1491,16 @@ TfLiteDelegate *TfLiteOmniDelegateCreate(const OmniDelegateOptions *options) {
 // Destroys a delegate created with `TfLiteOmniDelegateCreate` call.
 void TfLiteOmniDelegateDelete(TfLiteDelegate *delegate) {
   SYSC_ON(profile.saveProfile(acc->profiling_vars));
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  std::string date =
+      std::to_string(1900 + ltm->tm_year) + "-" +
+      std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +
+      "-" + std::to_string(ltm->tm_hour) + "-" + std::to_string(ltm->tm_min) +
+      "-" + std::to_string(ltm->tm_sec);
+  SYSC_ON(profile.saveCSVRecords(".data/" + std::string(DELEGATE_NAME) + "_" +
+                                 std::to_string(DELEGATE_VERSION) + "_" +
+                                 date));
 #ifndef SYSC
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
@@ -1509,37 +1518,3 @@ void TfLiteOmniDelegateDelete(TfLiteDelegate *delegate) {
   std::cout << "===========================" << std::endl;
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }
-
-// if (outputs_[i][0] == 117) {
-//   ofstream out_file;
-//   out_file.open("aData/output_del_" + std::to_string(outputs_[i][0])
-//   +
-//                 ".csv");
-//   for (int i = 0; i < output_size; ++i) {
-//     int sdim = 1;
-//     for (int dim : odims) {
-//       sdim *= dim;
-//       if (i % sdim == 0) out_file << "[";
-//     }
-//     out_file << static_cast<int>(output_data[i]) << " ";
-//     sdim = 1;
-//     for (int dim : odims) {
-//       sdim *= dim;
-//       if ((i + 1) % sdim == 0) out_file << "]\n";
-//     }
-//   }
-// }
-
-// // Save input data to file
-// const TfLiteTensor *input;
-// GetInputSafe(context, inputs_[i][0], &input);
-// int8_t *input_data = input->data.int8;
-// int input_size = 1;
-// for (int dims = 0; dims < input->dims->size; dims++)
-//   input_size *= input->dims->data[dims];
-// ofstream in_file;
-// in_file.open("aData/omni/input_" + std::to_string(inputs_[i][0]) +
-//              "_del_" + EnumNamesBuiltinOperator()[builtin_code_[i]] +
-//              ".csv");
-// for (int i = 0; i < input_size; ++i)
-//   in_file << static_cast<int>(input_data[i]) << "\n";

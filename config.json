@@ -2,7 +2,7 @@
   "secda_tflite_path": "/home/jude/Workspace/SECDA-TFLite_v1.2",
   "bitstream_dir": "/home/jude/Workspace/SECDA-TFLite_v1.2/bitstreams",
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
-  "secda_tools_path": "/home/jude/Workspace/SECDA-TFLite_v1.2/src/secda_tflite",
+  "secda_tools_path": "/home/jude/Workspace/SECDA/secda_tools/secda_tools",
   "conda_path": "/home/jude/miniconda3/bin",
   "hw_configs": "hardware_automation/configs",
   "hlx_scripts": "hardware_automation/hlx_scripts",
