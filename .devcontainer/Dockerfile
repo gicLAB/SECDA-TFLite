@@ -90,7 +90,7 @@ RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
 
 # Print welcome message
 RUN echo "cd /working_dir" >> ~/.bashrc && \
-	echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+    echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
     echo "echo ' '" >> ~/.bashrc && \
     echo "echo 'NOTE:'" >> ~/.bashrc && \
     echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
