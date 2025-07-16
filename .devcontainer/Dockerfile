@@ -1,5 +1,5 @@
 # ==============================================================================
-FROM ubuntu:22.04 as builder
+FROM ubuntu:22.04 AS builder
 
 # Development Tools
 RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo jq
@@ -48,84 +48,11 @@ RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
     make install
 
 
-RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
-    echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
-    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
-
-ENV SYSTEMC_HOME=/opt/systemc/systemc-2.3.3
-ENV CXX=/usr/bin/clang++ 
-ENV CC=/usr/bin/clang 
-
-# ENV PATH="/root/miniconda3/bin:${PATH}"
-# ARG PATH="/root/miniconda3/bin:${PATH}"
-
-# # Install Conda
-# RUN apt-get update && \
-#     apt-get install -y wget && \
-#     apt-get clean && \
-#     rm -rf /var/lib/apt/lists/*
-
-# RUN arch=$(uname -m) && \
-#     if [ "$arch" = "x86_64" ]; then \
-#     MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
-#     elif [ "$arch" = "aarch64" ]; then \
-#     MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
-#     else \
-#     echo "Unsupported architecture: $arch"; \
-#     exit 1; \
-#     fi && \
-#     wget $MINICONDA_URL -O miniconda.sh && \
-#     mkdir -p /root/.conda && \
-#     bash miniconda.sh -b -p /root/miniconda3 && \
-#     rm -f miniconda.sh
-
-# RUN conda --version    
-# RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
-
-# RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
-# RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
-
-# # Install Code Server and C++ extensions
-# RUN curl -fsSL https://code-server.dev/install.sh | sh
-# RUN code-server --install-extension ms-vscode.cpptools \
-#                 --install-extension ms-vscode.cpptools-extension-pack
-
-RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
-# Select clang compiler and set SystemC home
-RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
-    echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
-    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
-
-# Print welcome message
-WORKDIR /working_dir
-RUN echo "cd /working_dir" >> ~/.bashrc && \
-    echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
-    echo "echo ' '" >> ~/.bashrc && \
-    echo "echo 'NOTE:'" >> ~/.bashrc && \
-    echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
-    echo "echo ' '" >> ~/.bashrc 
-
-
 
 # ============================================================================
 FROM builder AS dev-user
-# Add dev user with matching UID of the user who build the image
-ARG USER_ID
-ARG GROUP_ID
-# RUN useradd -m --uid $USER_ID developer && \
-#     echo "developer:devpasswd" | chpasswd && \
-#     usermod -aG dialout developer && \
-#     usermod -aG sudo developer
 
-# USER developer
 WORKDIR /working_dir
-
-# RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
-# RUN { echo "yes"; echo "yes"; echo ""; echo "yes"; echo "yes"; } | bash ./Miniconda3-latest-Linux-x86_64.sh
-# RUN /bin/bash -c '/home/developer/miniconda3/bin/conda install numpy -y'
-
 
 ENV PATH="/root/miniconda3/bin:${PATH}"
 
@@ -150,14 +77,11 @@ RUN arch=$(uname -m) && \
     rm -f miniconda.sh
 
 RUN conda --version    
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
-# RUN /bin/bash -c '/root/miniconda3/bin/conda config --set auto_activate_base false'
-# RUN /bin/bash -c '/root/miniconda3/bin/conda create -n secda-tflite python -y'
-# RUN /bin/bash -c '/root/miniconda3/bin/conda activate secda-tflite'
-# RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
 
-
-RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> .bashrc
+RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
 
 # Select clang compiler and set SystemC home
 RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
@@ -165,8 +89,8 @@ RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
     echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
 
 # Print welcome message
-WORKDIR /home/developer
-RUN echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+RUN echo "cd /working_dir" >> ~/.bashrc && \
+	echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
     echo "echo ' '" >> ~/.bashrc && \
     echo "echo 'NOTE:'" >> ~/.bashrc && \
     echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
