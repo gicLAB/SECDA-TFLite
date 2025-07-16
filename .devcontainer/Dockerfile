@@ -5,21 +5,20 @@ FROM ubuntu:22.04 AS builder
 RUN apt update && apt install -y curl wget tree less git vim tmux htop parallel unzip rsync sudo jq
 
 # Compilers
-RUN apt update && apt install -y clang-14 lld-14 clang-format-14 && \
-  ln -s /usr/bin/clang-14 /usr/bin/clang && \
-  ln -s /usr/bin/clang++-14 /usr/bin/clang++  && \
-  ln -s //usr/bin/clang-format-14 /usr/bin/clang-format
+RUN apt install -y clang-14 lld-14 clang-format-14 && \
+    ln -s /usr/bin/clang-14 /usr/bin/clang && \
+    ln -s /usr/bin/clang++-14 /usr/bin/clang++  && \
+    ln -s //usr/bin/clang-format-14 /usr/bin/clang-format
 
-RUN apt update && apt install -y crossbuild-essential-armhf libz-dev
-RUN apt update && apt install -y crossbuild-essential-arm64
-RUN apt update &&  apt-get install gdb -y
-RUN apt install software-properties-common -y
-RUN apt update && apt install -y python3.10 python3-pip python3-venv python3-dev
+RUN apt install -y crossbuild-essential-armhf crossbuild-essential-arm64 libz-dev
+RUN apt install -y gdb
+RUN apt install -y software-properties-common
+RUN apt install -y python3.10 python3-pip python3-venv python3-dev
 
 # Install Bazel
 RUN apt install apt-transport-https curl gnupg -y && \
-curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg && \
-mv bazel-archive-keyring.gpg /usr/share/keyrings && \
+    curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg && \
+    mv bazel-archive-keyring.gpg /usr/share/keyrings && \
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
 
 RUN apt update && apt install bazel-6.1.0 -y && \
@@ -64,19 +63,19 @@ RUN apt-get update && \
 
 RUN arch=$(uname -m) && \
     if [ "$arch" = "x86_64" ]; then \
-    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
     elif [ "$arch" = "aarch64" ]; then \
-    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
     else \
-    echo "Unsupported architecture: $arch"; \
-    exit 1; \
+        echo "Unsupported architecture: $arch"; \
+        exit 1; \
     fi && \
     wget $MINICONDA_URL -O miniconda.sh && \
     mkdir -p /root/.conda && \
     bash miniconda.sh -b -p /root/miniconda3 && \
     rm -f miniconda.sh
 
-RUN conda --version    
+RUN conda --version
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
