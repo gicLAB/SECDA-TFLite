@@ -78,7 +78,9 @@ RUN arch=$(uname -m) && \
 RUN conda --version
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
+# RUN /bin/bash -c '/root/miniconda3/bin/conda install numpy -y'
+RUN /root/miniconda3/bin/conda create -y -n secda_tflitev2 python=3.9.19 && \
+    /root/miniconda3/bin/conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
 

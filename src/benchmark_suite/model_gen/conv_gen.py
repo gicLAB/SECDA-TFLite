@@ -25,7 +25,6 @@ def build_conv_model(params, mdir):
     out1 = in1 + 1 - kernel_size
     out2 = in2 + 1 - kernel_size
 
-
     if padding_val == "same":
         out1 = in1 // stride_x + (1 if stride_x > 1 else 0)
         out2 = in2 // stride_y + (1 if stride_y > 1 else 0)
@@ -58,19 +57,12 @@ def build_conv_model(params, mdir):
     )(inputs)
     conv = tf.keras.Model(inputs, x)
     conv.compile(optimizer="sgd", loss="mse")
-    # conv.fit(
-    #     np.random.rand(1, in1, in2, in3),
-    #     np.random.rand(1, out1, out2, out3),
-    #     batch_size=1,
-    #     epochs=1,
-    # )
-    os.makedirs(mdir + "tf", exist_ok=True)
-    conv.save(mdir + "tf")
+    os.makedirs(os.path.join(mdir), exist_ok=True)
 
     lamyield = lambda: [
         [np.random.rand(1, in1, in2, in3).astype(np.float32)] for x in range(15)
     ]
-    converter = tf.lite.TFLiteConverter.from_saved_model(mdir + "tf")
+    converter = tf.lite.TFLiteConverter.from_keras_model(conv)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     converter.representative_dataset = lamyield
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
@@ -84,7 +76,6 @@ def build_conv_model(params, mdir):
 
 
 def generate_python_list(params, filename, name):
-    # create a json with list of all the models to be used in the benchmarking script
     f = open(filename, "w+")
     f.write("{\n")
     f.write("{}\n".format(f'"{name}" : ['))
@@ -99,50 +90,57 @@ def generate_python_list(params, filename, name):
     f.close()
 
 
-params = []
-fs = [16,32,64]
-ks = [3, 5, 7]
-inh = [7, 9, 11]
-# ic = [32, 64, 128]
-strides = [1]
+def generate_json_file(layers, filename, name, layer_type):
+    """
+    Generates a JSON file with the model configurations.
+    """
+    data = {name: {"layers": [layer[8] for layer in layers], "type": layer_type}}
+    with open(filename, "w") as f:
+        import json
+
+        json.dump(data, f, indent=4)
 
 
-params = []
-fs = [16,32,64]
-ks = [3, 5, 7]
-inh = [7, 9, 11]
-ic = [16]
-strides = [1]
+def main():
+    params = []
+    # Define the parameters for the convolutional models permutations
+    fs = [16, 32, 64]
+    ks = [3, 5, 7]
+    inh = [7, 9, 11]
+    ic = [16]
+    strides = [1]
 
-# fs = [196]
-# ks = [1]
-# inh = [16]
-# ic = [528]
-# strides = [1]
+    for s in strides:
+        for f in fs:
+            for k in ks:
+                for i in inh:
+                    for o in ic:
+                        params.append(
+                            [
+                                s,
+                                s,
+                                f,
+                                k,
+                                i,
+                                i,
+                                o,
+                                "same",
+                                f"conv_{s}_{s}_{f}_{k}_{i}_{i}_{o}",
+                            ]
+                        )
+
+    mdir = "models/conv/"
+    name = "conv_models"
+
+    for param in params:
+        build_conv_model(param, mdir)
+
+    # generate_python_list(params, f"configs/{name}.json", name)
+    generate_json_file(params, f"configs/{name}.json", name, "CONVOLUTION")
+
+    print(f"Generated {len(params)} models")
+    print(f"Saved to ./configs/{name}.json")
 
 
-# fs = [16]
-# ks = [7]
-# inh = [7]
-# ic = [256]
-# strides = [1]
-
-
-for s in strides:
-    for f in fs:
-        for k in ks:
-            for i in inh:
-                for o in ic:
-                    params.append([s, s, f, k, i, i, o, "same"])
-
-
-mdir = "models/conv/"
-name = "conv_models"
-
-for param in params:
-    build_conv_model(param, mdir)
-generate_python_list(params, f"configs/{name}.json", name)
-
-
-print(f"Generated {len(params)} models")
-print(f"Saved to ./configs/{name}.json")
+if __name__ == "__main__":
+    main()
