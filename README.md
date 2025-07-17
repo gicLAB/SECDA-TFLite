@@ -3,25 +3,33 @@
 The SECDA-TFLite toolkit leverages the TFLite delegate system to provide a robust and extensible set of utilities for integrating DNN accelerators for any DNN operation supported by TFLite.
 Ultimately, this increases hardware accelerator developers' productivity, as they can begin developing and refining their design more quickly.
 
+## Table of Contents
 
-# Internal Developer Info
-* Accelerator Design source code can be found inside the respective simulation delegate
-  * Note: we use the same source files for HLS, we manually define __SYNTHESIS__ before HLS
- 
 
-## 0. Requirements and Recommendations
+
+## Installation
+
+
+### 0. Requirements and Recommendations
+---
 - Use a Debian-based linux distro
   - Install [docker for linux](https://docs.docker.com/engine/install/ubuntu/)
 - Otherwise, if using Windows:
    - Install WSL for windows and use Ubuntu 22.04
    - Install [docker for windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+- Install [VSCode](https://code.visualstudio.com/download)
+   - Install [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+ - Vivado 2019.2 (required for SystemC HLS)
+ - Vitis 2024.2 (for logic synthesis for KV260)
 
-## 1. Setup repo
+
+### 1. Setup repo #TODO: Update paths
+---
 Make sure you are in linux-based workspace environment with git installed.
 ```bash
 git clone git@github.com:judeharis/SECDA-TFLite.git
 cd SECDA-TFLite
-git checkout v1.2
+git checkout v1.3
 git submodule init
 git submodule update
 cd scripts
@@ -30,6 +38,9 @@ cd ../tensorflow
 git checkout secda-tflite-v1_tf_r2.15
 sudo apt install -y jq
 ```
+
+
+
 
 You can now setup the dev environment natively (2.A) or via docker (2.B).
  
@@ -94,6 +105,12 @@ Once the environment is created, we recommend using VSCode to immediately start 
 * These configurations are stored within '/tensorflow/.vscode/launch.json' (to launch) and /tensorflow/.vscode/task.json (to compile), you can edit these to change the parameters to compile and launch the the end to end simulation.
 * There are some configurations already prepared to run the VM,SA and FC-GEMM accelerator with the simulation delegates
 
+
+
+# Internal Developer Info
+* Accelerator Design source code can be found inside the respective simulation delegate
+  * Note: we use the same source files for HLS, we manually define __SYNTHESIS__ before HLS
+ 
 
 
 
