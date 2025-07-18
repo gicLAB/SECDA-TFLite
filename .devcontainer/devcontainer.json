@@ -11,7 +11,11 @@
         "ms-vscode.cpptools",
       ]
     }
-  }
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/working_dir,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": "conda run -n secda_tflitev2 pip install -r requirements.txt"
 
 
 }

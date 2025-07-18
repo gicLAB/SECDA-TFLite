@@ -317,8 +317,9 @@ public:
       drv.thread_count = context->recommended_num_threads;
 
 // Accelerator Specific Parameters
-#ifndef SYSC
+#ifdef SYSC
       drv.scs = scs;
+#else
       drv.insn_mem = insn_mem;
       drv.bias_mem = bias_mem;
 #endif

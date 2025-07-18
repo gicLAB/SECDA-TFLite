@@ -392,6 +392,16 @@ def find_models_in_path(model, paths):
                 return os.path.join(root, f"{model}.tflite")
     return None
 
+def find_relpath_for_model_from_models_dir(model, paths):
+    for path in paths:
+        for root, dirs, files in os.walk(path):
+            if f"{model}.tflite" in files:
+                model_path = os.path.relpath(root, start=path)
+                model_path = "" if model_path == "." else model_path
+                log_out(f"Found {model}.tflite in {root}")
+                return model_path
+    return None
+
 
 def generate_benchmark_configs(
     sc, boards, models, layers, hardware, threads, num_runs, hardware_config, time_out
@@ -436,9 +446,7 @@ def generate_benchmark_configs(
                 for thread in threads:
                     hw_list.append(hw_config["acc_name"])
                     model_list.append(model)
-                    model_path = find_models_in_path(model, sc["models_dirs"])
-                    model_path = model_path.replace(sc["models_dirs"][0], "")
-                    model_path = model_path[: model_path.rfind("/")]
+                    model_path = find_relpath_for_model_from_models_dir(model, [d.rstrip("/") for d in sc["models_dirs"]])
                     model_path_list.append(model_path)
                     layer_list.append(layers)
                     thread_list.append(thread)
@@ -463,7 +471,7 @@ def generate_benchmark_configs(
                     )
         uniq_model_list = list(set(model_list))
         for model in uniq_model_list:
-            model_path = find_models_in_path(model, sc["models_dirs"])
+            model_path = find_models_in_path(model, [d.rstrip("/") for d in sc["models_dirs"]])
             if model_path:
                 model_paths[model] = model_path
                 # log_out(f"Model {model} found in {model_path}")
@@ -727,15 +735,24 @@ def ping_board(board_hostname, board_port):
 
 
 def send_models_to_board(
-    board, board_hostname, board_port, board_user, bench_dir, board_dir
-):
-    result = subprocess.run(
-        f"rsync -r -avz -e 'ssh -p {board_port}' ./model_gen/models {board_user}@{board_hostname}:{bench_dir}/",
-        shell=True,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    sc, board, board_hostname, board_port, board_user, bench_dir, board_dir
+):  
+    models_dir = [d.rstrip("/") for d in sc["models_dirs"]]
+    resout = ""
+    reserr = ""
+    resbool = 0
+    for model_dir in models_dir:
+        result = subprocess.run(
+            f"rsync --include='*.tflite' -r -avz -e 'ssh -p {board_port}' {model_dir}/ {board_user}@{board_hostname}:{bench_dir}/models/",
+            shell=True,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        resout += result.stdout
+        reserr += result.stderr
+        resbool = result.returncode or resbool
+
     if result.returncode != 0:
         log_out("-----------------------------------------------------------")
         log_out("Error in Transferring Models")
@@ -745,7 +762,7 @@ def send_models_to_board(
         log.close()
 
 
-def create_dir(board, board_hostname, board_port, board_user, bench_dir, board_dir):
+def create_dir(sc, board, board_hostname, board_port, board_user, bench_dir, board_dir):
     resout = ""
     reserr = ""
     resbool = 0
@@ -759,17 +776,9 @@ def create_dir(board, board_hostname, board_port, board_user, bench_dir, board_d
     resout += result.stdout
     reserr += result.stderr
     resbool = result.returncode or resbool
-
-    result = subprocess.run(
-        f"rsync -r -avz -e 'ssh -p {board_port}' ./model_gen/models {board_user}@{board_hostname}:{bench_dir}/",
-        shell=True,
-        check=False,
-        capture_output=True,
-        text=True,
+    send_models_to_board(
+        sc, board, board_hostname, board_port, board_user, bench_dir, board_dir
     )
-    resout += result.stdout
-    reserr += result.stderr
-    resbool = result.returncode or resbool
 
     result = subprocess.run(
         f"rsync -r -avz -e 'ssh -p {board_port}' ./bitstreams/{board}/ {board_user}@{board_hostname}:{board_dir}/bitstreams/",
@@ -821,7 +830,7 @@ def init_boards(sc, selected_boards):
         board_port = board_info["board_port"]
         bench_dir = board_info["bench_dir"]
         board_dir = board_info["board_dir"]
-        create_dir(board, board_hostname, board_port, board_user, bench_dir, board_dir)
+        create_dir(sc, board, board_hostname, board_port, board_user, bench_dir, board_dir)
 
 
 def transfer_exp_configs(sc, board):
@@ -1395,7 +1404,7 @@ def run_benchmarking_suite(
                 board_user = board_info["board_user"]
                 bench_dir = board_info["bench_dir"]
                 board_dir = board_info["board_dir"]
-                send_models_to_board(
+                send_models_to_board(sc,
                     board, board_hostname, board_port, board_user, bench_dir, board_dir
                 )
 
@@ -1442,7 +1451,6 @@ def run_benchmarking_suite(
                     script_file.write("#!/bin/bash\n")
                     script_file.write(f"name=" + name + "\n")
                     script_file.write(f"pushd {sc['secda_tflite_path']}/src/benchmark_suite\n")
-                    script_file.write(f"source {sc['conda_path']}/activate tf\n")
 
                 os.chmod(script_path, 0o775)
 

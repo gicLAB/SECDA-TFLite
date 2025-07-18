@@ -80,7 +80,7 @@ sudo apt install -y jq
 
 
 
-You can now set up the dev environment natively (2.A) or via docker (2.B).
+You can now set up the dev environment using docker container (recommended) or natively.
 
 ## 2.A: Using VSCode Dev Container
 - Ensure docker is up and running and current user is part of docker group
@@ -113,14 +113,14 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 source ~/.bashrc
 conda config --set auto_activate_base false
-conda create -n secda-tflite python -y
-conda activate secda-tflite
-pip3 install numpy
+conda create -n secda-tflitev2 python -y
+conda activate secda-tflitev2
+pip install -r requirements.txt
 ```
 
-###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflite environment)
+###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflitev2 environment)
 ```bash
-conda activate secda-tflite
+conda activate secda-tflitev2
 cd tensorflow
 # make sure to set python path to /home/your_user/miniconda3/bin/python3
 ./configure # make sure say no to clang as the default compiler
@@ -137,8 +137,15 @@ sudo apt-get -y install gdb
 Once the environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
 
 
+## 3. Post Installation Setup
+
+* To enable all the tools of SECDA-TFLite has access to correct paths, you need to configure the [config.json](./config.json) file.
+* This file contains the paths to the various directories and files used by the SECDA-TFLite toolkit.
+* You have to update the paths in the `config.json` file to point to the correct directories in your system.
+* Please refer to the [config.md](./docs/config.md) file for more information on how to configure the `config.json` file.
   
-## VSCode Instructions
+
+## 4. VSCode Instructions
 * Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
 
 * Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.

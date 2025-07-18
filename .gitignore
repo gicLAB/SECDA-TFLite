@@ -1,62 +1,65 @@
-old_data
 *.code-workspace
-acc_testing
 *.csv
 *.data
 *.vscode
-clone_test
-ramulator_integration
-src/sync_backwards.bat
-
-src/secda_delegate_generator/generated
-scripts/results/*
-scripts/filesForFPGA/*
-hardware_automation/generated
-hardware_automation/acc_srcs
-scripts/experiment_prep/generated
-
-src/secda_delegates/.deprecated
+*__pycache__
 
 .deprecated/
 
+hardware_automation/generated
+hardware_automation/acc_srcs
+hardware_automation/hlx_templater/generated
 
-src/secda_apps/imagenet_image_classification/ILSVRC2012_devkit
-src/secda_apps/imagenet_image_classification
-scripts/hardwareFilesGeneration
+src/.deprecated
 
-__pycache__
+src/benchmark_suite/results
+src/benchmark_suite/generated
+src/benchmark_suite/model_gen/models
+src/benchmark_suite/model_gen/saved_models
+src/benchmark_suite/scripts/__pycache__
+src/benchmark_suite/scripts/tmp
+src/benchmark_suite/tmp
+src/benchmark_suite/logs
+src/benchmark_suite/files
 
-/src/benchmark_suite/results
-/src/benchmark_suite/generated
-/src/benchmark_suite/model_gen/models
-/src/benchmark_suite/model_gen/saved_models
-/src/benchmark_suite/scripts/__pycache__
-/src/benchmark_suite/scripts/tmp
-/src/benchmark_suite/tmp
-/src/benchmark_suite/logs
-/src/benchmark_suite/files
-/src/.deprecated
+src/experimental/secda_benchmark_suite/tmp
+src/experimental/secda_benchmark_suite/scripts/tmp
+src/experimental/secda_benchmark_suite/generated
+src/experimental/secda_benchmark_suite/results
+src/experimental/secda_benchmark_suite/model_gen/models
+src/experimental/secda_benchmark_suite/power/files
+src/experimental/secda_benchmark_suite/files
+src/experimental/secda_benchmark_suite/scripts/__pycache__
 
-/src/experimental/secda_benchmark_suite/tmp
-/src/experimental/secda_benchmark_suite/scrips/tmp
-/src/experimental/secda_benchmark_suite/generated
-/src/experimental/secda_benchmark_suite/results
-/src/experimental/secda_benchmark_suite/model_gen/models
-/src/experimental/secda_benchmark_suite/power/files
-/src/experimental/secda_benchmark_suite/files
-/src/experimental/secda_benchmark_suite/scripts/__pycache__
+src/secda_delegate_generator/generated
+
+src/secda_delegates/.deprecated
+src/secda_delegates/add_delegate/v1
+src/secda_delegates/mm2im_delegate/v1
+src/secda_delegates/mm2im_delegate/v2
+src/secda_delegates/mm2im_delegate/v3
+src/secda_delegates/mm2im_delegate/v4
+src/secda_delegates/mm2im_delegate/v5
+src/secda_delegates/mm2im_delegate/v6
+src/secda_delegates/mm2im_delegate/v7
+src/secda_delegates/mm2im_delegate/v8
+src/secda_delegates/mm2im_delegate/v9
+src/secda_delegates/mm2im_delegate/v10
+src/secda_delegates/mm2im_delegate/v11
+src/secda_delegates/sa_delegate/v3
+src/secda_delegates/vm_delegate/v3
+src/secda_delegates/vm_delegate/v4
+
+
+
 
 /src/experimental/secda_apps_evaluation_suite/generated
 /src/experimental/secda_apps_evaluation_suite/tmp
 
-/hardware_automation/architecture.ipynb
-/hardware_automation/architectures/
-/hardware_automation/hlx_templater/generated
+
+
 scripts/update_launch.ipynb
 
 
-/bitstreams/
 
-## rpp add
-/analysis/*
-/src/data/*
+
