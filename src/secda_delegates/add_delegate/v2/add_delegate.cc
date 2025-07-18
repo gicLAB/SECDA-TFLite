@@ -6,9 +6,9 @@
 #ifdef SYSC
 #include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
-#include "secda_tools/secda_profiler/profiler.h"
-#include "accelerator/driver/toyadd_driver.h"
+#include "accelerator/driver/add_driver.h"
 #include "add_delegate.h"
+#include "secda_tools/secda_profiler/profiler.h"
 #include "util.h"
 
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
@@ -21,7 +21,7 @@
 unsigned int dma_addrs[1] = {dma_addr0};
 unsigned int dma_addrs_in[1] = {dma_in0};
 unsigned int dma_addrs_out[1] = {dma_out0};
-struct TOYADD_ACC_times p_t;
+struct ADD_ACC_times p_t;
 struct del_params dparams;
 static struct Profile profile;
 struct MultiThreadContext mt_context;
@@ -52,18 +52,18 @@ public:
       std::cout << "===========================" << std::endl;
 #ifdef SYSC
       static struct sysC_sigs scs1(1);
-      static ACCNAME _acc("TOYADD_ACC");
+      static ACCNAME _acc("ADD_ACC");
       sysC_init();
       sysC_binder(&_acc, &mdma, &scs1);
       acc = &_acc;
       scs = &scs1;
       std::cout << "Initialised the SystemC Modules" << std::endl;
 #else
-      dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
+      dparams.acc = getAccBaseAddress<int>(acc_ctrl_address, 65536);
       acc = dparams.acc;
       std::cout << "Initialised the DMA" << std::endl;
 #endif
-      std::cout << "TOYADD_ACC Accelerator";
+      std::cout << "ADD_ACC Accelerator";
 #ifdef ACC_NEON
       std::cout << " with Neon";
 #endif
@@ -98,7 +98,7 @@ public:
       associated_nodes.push_back(node_index);
       TfLiteAddParams *cparam =
           reinterpret_cast<TfLiteAddParams *>(delegated_node->builtin_data);
-      OpData *opdata = reinterpret_cast<OpData *>(delegated_node->user_data);
+      ADD_Data *opdata = reinterpret_cast<ADD_Data *>(delegated_node->user_data);
       cparams[i] = cparam;
       opdatas[i] = opdata;
     }
@@ -115,7 +115,7 @@ public:
     int out_tid = 0;
     for (int i = 0; i < node_count; i++) {
       TfLiteAddParams *params = cparams[i];
-      OpData *data = opdatas[i];
+      ADD_Data *data = reinterpret_cast<ADD_Data *>(opdatas[i]);
 
       const TfLiteTensor *input1;
       const TfLiteTensor *input2;
@@ -169,7 +169,7 @@ public:
 
   // Runs once per node during inference/invoke()
   // This function executes the operations required by node by offloading the
-  // computation to the toyadd_driver For more info look into
+  // computation to the add_driver For more info look into
   // "tensorflow/lite/kernels/add.cc" for the default implementation for Add
   // Nodes
   TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
@@ -177,7 +177,7 @@ public:
     int node_count = inputs_.size();
     for (int i = 0; i < node_count; i++) {
       auto *params = cparams[i];
-      OpData *data = opdatas[i];
+      ADD_Data *data = reinterpret_cast<ADD_Data *>(opdatas[i]);
       const TfLiteTensor *input1;
       const TfLiteTensor *input2;
       TfLiteTensor *output;
@@ -236,10 +236,12 @@ public:
       drv.t.layer = dparams.layer;
       drv.p_t = p_t;
 #ifdef DELEGATE_VERBOSE
-      cout << "===========================" << endl;
+      cout << "======================================================" << endl;
       cout << "Layer: " << dparams.layer
-           << "      Node: " << associated_nodes[i] << endl;
-      cout << "===========================" << endl;
+           << "      Node: " << associated_nodes[i]
+           << "      Type: " << EnumNamesBuiltinOperator()[builtin_code_[i]]
+           << endl;
+      cout << "======================================================" << endl;
 #endif
 
       // Enter the driver code
@@ -255,7 +257,7 @@ public:
 
   std::vector<std::vector<int>> inputs_, outputs_;
   std::vector<int> builtin_code_, associated_nodes;
-  std::vector<OpData *> opdatas;
+  std::vector<ADD_Data *> opdatas;
   std::vector<TfLiteAddParams *> cparams;
 
   std::vector<std::vector<int>> wgt_sum;

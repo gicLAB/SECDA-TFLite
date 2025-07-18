@@ -15,59 +15,7 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-# config_setting(
-#     name = "linux_aarch64",
-#     values = {"cpu": "aarch64"},
-#     visibility = ["//visibility:public"],
-# )
-
-
 common_copts = ["-Wall"] + tflite_copts()
-
-# cc_library(
-#     name = "accelerator_config",
-#     srcs = [
-#         "acc_config.sc.h",
-#         ],
-#     copts = common_copts,
-#     deps = select({
-#         ":linux_armhf": [],
-#         # ":linux_aarch64": [],
-#         "//conditions:default": ["@systemc"],
-#     }) + [
-#         "//third_party:secdav5",
-#     ],
-# )
-
-
-
-# cc_library(
-#     name = "accelerator",
-#     srcs = [
-#         "acc.sc.cc",
-#         ],
-#     hdrs = [
-#         "acc_config.sc.h",
-#         "acc.sc.h",
-#         "data_in.sc.h",
-#         "mapper.sc.h",
-#         "input_loader.sc.h",
-#         "in.sc.h",
-#         "out.sc.h",
-#         "pe_control.sc.h",
-#         "pe_module.sc.h",
-#         "pe_compute.sc.h",
-#         "pe_output.sc.h",
-#         "scheduler.sc.h",
-#         "counter.sc.h",
-#     ],
-#     copts = common_copts,
-#     # linkopts = ["-Wl,-z,stack-size=4194304"]
-#     deps = [
-#         ":accelerator_config",
-#     ],
-# )
-
 
 
 cc_library(

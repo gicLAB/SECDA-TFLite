@@ -18,7 +18,7 @@ ACC_DTYPE<32> ACCNAME::Clamp_Combine(int i1, int i2, int i3, int i4, int qa_max,
   return d;
 }
 
-void ACCNAME::send_parameters_ADD_PE(int length, sc_fifo_in<ADATA> *din) {
+void ACCNAME::send_parameters_ADD_PE(int length, sc_fifo_in<ADATA>* din) {
   int lshift = (1 << din->read().data);
   int in1_off = din->read().data;
   int in1_sv = din->read().data;
@@ -32,33 +32,34 @@ void ACCNAME::send_parameters_ADD_PE(int length, sc_fifo_in<ADATA> *din) {
 
   for (int i = 0; i < ADD_PE_COUNT; i++) {
 #pragma HLS unroll
-    add_pe_array[i].vars.length = length;
-    add_pe_array[i].vars.lshift = lshift;
-    add_pe_array[i].vars.in1_off = in1_off;
-    add_pe_array[i].vars.in1_sv = in1_sv;
-    add_pe_array[i].vars.in1_mul = in1_mul;
-    add_pe_array[i].vars.in2_off = in2_off;
-    add_pe_array[i].vars.in2_sv = in2_sv;
-    add_pe_array[i].vars.in2_mul = in2_mul;
-    add_pe_array[i].vars.out1_off = out1_off;
-    add_pe_array[i].vars.out1_sv = out1_sv;
-    add_pe_array[i].vars.out1_mul = out1_mul;
+    add_pe_array[i].length = length;
+    add_pe_array[i].lshift = lshift;
+    add_pe_array[i].in1_off = in1_off;
+    add_pe_array[i].in1_sv = in1_sv;
+    add_pe_array[i].in1_mul = in1_mul;
+    add_pe_array[i].in2_off = in2_off;
+    add_pe_array[i].in2_sv = in2_sv;
+    add_pe_array[i].in2_mul = in2_mul;
+    add_pe_array[i].out1_off = out1_off;
+    add_pe_array[i].out1_sv = out1_sv;
+    add_pe_array[i].out1_mul = out1_mul;
   }
 };
 
 #ifndef __SYNTHESIS__
-void ACCNAME::Counter() {
+void ACCNAME::Simulation_Profiler() {
   wait();
   while (1) {
-    per_batch_cycles->value++;
-    if (computeS.read() == 1) active_cycles->value++;
+    int com1 = computeSS.read();
+    total_cycles->value++;
+    if (computeS.read() == 0) active_cycles->value++;
+    comS->increment(com1);
     wait();
   }
 }
 #endif
 
 void ACCNAME::Compute() {
-
 #pragma HLS resource core = AXI4LiteS metadata = "-bus_bundle slv0" variable = \
     computeSS
 
@@ -66,7 +67,7 @@ void ACCNAME::Compute() {
   int f_out[4];
   computeS.write(0);
   computeSS.write(0);
-  add_pe_array[0].vars.start.write(0);
+  add_pe_array[0].start.write(0);
   int submodule_idx = 0;
   wait();
   while (1) {
@@ -86,28 +87,21 @@ void ACCNAME::Compute() {
     computeSS.write(2);
 
     for (int i = 0; i < length; i++) {
-      // add_pe_array.input_fifo_write(submodule_idx,
-      //                                     din1.read().data.to_int());
-      // add_pe_array.input_fifo_write(submodule_idx,
-      //                                     din1.read().data.to_int());
-      add_pe_array[submodule_idx].vars.input_fifo.write(din1.read().data.to_int());
-      add_pe_array[submodule_idx].vars.input_fifo.write(din1.read().data.to_int());
+      add_pe_array.input_fifo_write(submodule_idx, din1.read().data.to_int());
+      add_pe_array.input_fifo_write(submodule_idx, din1.read().data.to_int());
       computeS.write(3);
       computeSS.write(3);
       wait();
-      // f_out[0] = add_pe_array.output_fifo_read(submodule_idx);
-      // f_out[1] = add_pe_array.output_fifo_read(submodule_idx);
-      // f_out[2] = add_pe_array.output_fifo_read(submodule_idx);
-      // f_out[3] = add_pe_array.output_fifo_read(submodule_idx);
-      f_out[0] = add_pe_array[submodule_idx].vars.output_fifo.read();
-      f_out[1] = add_pe_array[submodule_idx].vars.output_fifo.read();
-      f_out[2] = add_pe_array[submodule_idx].vars.output_fifo.read();
-      f_out[3] = add_pe_array[submodule_idx].vars.output_fifo.read();
-
+      f_out[0] = add_pe_array.output_fifo_read(submodule_idx);
+      f_out[1] = add_pe_array.output_fifo_read(submodule_idx);
+      f_out[2] = add_pe_array.output_fifo_read(submodule_idx);
+      f_out[3] = add_pe_array.output_fifo_read(submodule_idx);
       d.data =
           Clamp_Combine(f_out[0], f_out[1], f_out[2], f_out[3], qa_max, qa_min);
-      if (i + 1 == length) d.tlast = true;
-      else d.tlast = false;
+      if (i + 1 == length)
+        d.tlast = true;
+      else
+        d.tlast = false;
       dout1.write(d);
       submodule_idx = (submodule_idx + 1) % ADD_PE_COUNT;
     }

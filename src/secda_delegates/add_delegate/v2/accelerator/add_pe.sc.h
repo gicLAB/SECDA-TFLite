@@ -73,7 +73,6 @@ SC_MODULE(SUBMODULENAME) {
     ACC_DTYPE<32> i2;
     done.write(0);
     while (true) {
-      // while (!start) wait();
       i1 = input_fifo.read();
       i2 = input_fifo.read();
       i1mem[0] = i1.range(7, 0);
@@ -112,16 +111,12 @@ SC_MODULE(SUBMODULENAME) {
       output_fifo.write(f_out[1]);
       output_fifo.write(f_out[2]);
       output_fifo.write(f_out[3]);
-      // done.write(1);
-      // while (start) wait();
-      // done.write(0);
       wait();
     }
   };
 
   // This binds the submodule ports to the accelerator signals to the submodule
-  void init(sc_in<bool> & clock, sc_in<bool> & reset,
-            add_pe_vars & vars) {
+  void init(sc_in<bool> & clock, sc_in<bool> & reset, add_pe_vars & vars) {
     this->clock(clock);
     this->reset(reset);
 
@@ -155,31 +150,48 @@ SC_MODULE(SUBMODULENAME) {
 
 // This initializes the submodule array
 // It provides HLS support methods to interact with the submodules
-typedef struct add_pe_var_array {
-  add_pe_vars vars;
+struct add_pe_var_array {
+  add_pe_vars vars_0;
+  add_pe_vars vars_1;
   SUBMODULENAME HW0;
+  SUBMODULENAME HW1;
+
 #ifndef __SYNTHESIS__
-  add_pe_var_array()
-      : vars(16, 0), HW0("HW0"){}
+  add_pe_var_array() : vars_0(16, 0), vars_1(16, 1), HW0("HW0"), HW1("HW1") {}
 #else
-  add_pe_var_array() : vars(16), HW0("HW0") {}
+  add_pe_var_array() : vars_0(16), vars_1(16), HW0("HW0"), HW1("HW1") {}
 #endif
 
-  add_pe_vars &operator[](int i) {
-    return vars;
+  add_pe_vars& operator[](int i) {
+    if (i == 0)
+      return vars_0;
+    else if (i == 1)
+      return vars_1;
+    else
+      return vars_0;
   }
 
-  void init(sc_in<bool> &clock, sc_in<bool> &reset) {
-    HW0.init(clock, reset, vars);
+  void init(sc_in<bool>& clock, sc_in<bool>& reset) {
+    HW0.init(clock, reset, vars_0);
+    HW1.init(clock, reset, vars_1);
   }
 
-  void input_fifo_write(int val) {
-    vars.input_fifo.write(val);
+  void input_fifo_write(int i, int val) {
+    if (i == 0)
+      vars_0.input_fifo.write(val);
+    else if (i == 1)
+      vars_1.input_fifo.write(val);
+    else
+      vars_0.input_fifo.write(val);
   }
 
   int output_fifo_read(int i) {
-    return vars.output_fifo.read();
+    if (i == 0)
+      return vars_0.output_fifo.read();
+    else if (i == 1)
+      return vars_1.output_fifo.read();
+    else
+      return vars_0.output_fifo.read();
   }
-} pe_container;
-
-#endif // ADD_PE_H
+};
+#endif  // ADD_PE_H

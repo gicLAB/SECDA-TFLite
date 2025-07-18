@@ -51,7 +51,7 @@ We explain the options available in the Benchmark Suite in more detail below.
 
 - The "Experiment Configuration" section allows you to configure the experiment you want to run.
 - There are many options to configure the experiment:
-  - ** Experiment Name**: This is the name of the experiment. It will be used to create a directory for the experiment results. The directory will be created in the [tmp](./tmp/) directory.
+  - **Experiment Name**: This is the name of the experiment. It will be used to create a directory for the experiment results. The directory will be created in the `tmp` directory.
 
   - **Number of Runs**: This is the number of times you want to run the experiment. The results will be averaged over the number of runs. This is useful to get a more accurate measurement of the performance.
 

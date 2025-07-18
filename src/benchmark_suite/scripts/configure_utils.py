@@ -662,8 +662,7 @@ def generate_bazel_build_scripts(sc, boards, hardware, hardware_config):
 # ============================================================
 
 
-def run_simulations(sc, selected_models, selected_delegated):
-    path_to_tf = sc["secda_tflite_path"] + "/tensorflow"
+def run_simulations(sc, selected_models, selected_delegated,name, gen_script=False):
     benchmark_suite_path = f"{sc['secda_tflite_path']}/src/benchmark_suite"
     bin_path = f"{benchmark_suite_path}/{sc['out_dir']}/bins/"
     out_dir = f"{benchmark_suite_path}/results/SIM/"
@@ -671,13 +670,33 @@ def run_simulations(sc, selected_models, selected_delegated):
     total_runs = len(selected_models) * sum(
         [len(vers) for vers in selected_delegated.values()]
     )
-    models_folder = f"{path_to_tf}/models"
-    current_run = 0
+    os.makedirs(".data", exist_ok=True)
+
+    if gen_script:
+        log_out("-----------------------------------------------------------")
+        log_out("Generating Run Script")
+        log_out("-----------------------------------------------------------")
+        script_path = f"./generated/run_exp.sh"
+        os.makedirs(os.path.dirname(script_path), exist_ok=True)
+        with open(script_path, "w") as script_file:
+            script_file.write("#!/bin/bash\n")
+            script_file.write(f"name=" + name + "\n")
+            script_file.write(f"pushd {sc['secda_tflite_path']}/src/benchmark_suite\n")
+            script_file.write(f"mkdir -p {out_dir}\n")
+            script_file.write(f"mkdir -p .data\n")
+
+        os.chmod(script_path, 0o775)
+    else:
+        log_out("-----------------------------------------------------------")
+        log_out("Running Simulation")
+        log_out("-----------------------------------------------------------")
+
+    current_run = 1
     for model in selected_models:
+        model_path = find_models_in_path(model, [d.rstrip("/") for d in sc["models_dirs"]])
         for delegate, vers in selected_delegated.items():
             for ver in vers:
                 sn = "bm"
-                tool = "benchmark_model"
                 sim_name = f"{sn}_{delegate}_{ver}"
                 sim_bin = f"{bin_path}/{sim_name}"
                 if not os.path.exists(sim_bin):
@@ -687,24 +706,61 @@ def run_simulations(sc, selected_models, selected_delegated):
 
                 command = (
                     f"{sim_bin} --use_gpu=false --num_threads=1 "
-                    f"--enable_op_profiling=true --graph={models_folder}/{model}.tflite "
+                    f"--enable_op_profiling=true --graph={model_path} "
                     f"--num_runs=1 --warmup_runs=0 --warmup_min_secs=0 "
                     f"--use_{delegate}=true --print_postinvoke_state=true "
                 )
-                log_out(
-                    "========================================================================"
-                )
-                log_out(f"{sim_name} {current_run}/{total_runs}")
-                log_out(
-                    "========================================================================"
-                )
-                subprocess.run(
-                    f"{command} > {sim_out} 2>&1",
-                    shell=True,
-                    executable="/bin/bash",
-                    # f"{command} 2>&1 | tee {sim_out}", shell=True, executable="/bin/bash"
-                )
+                if gen_script:
+                    with open(script_path, "a") as script_file:
+                        script_file.write(f"{command} > {sim_out} 2>&1\n")
+                else:
+                    log_out(
+                        "========================================================================"
+                    )
+                    log_out(f"{sim_name} {current_run}/{total_runs}")
+                    log_out(
+                        "========================================================================"
+                    )
+                    result = subprocess.run(
+                        f"{command} > {sim_out} 2>&1",
+                        shell=True,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        executable="/bin/bash",
+                        # f"{command} 2>&1 | tee {sim_out}", shell=True, executable="/bin/bash"
+                    )
+                    log_out(f"Command: {command}")
+                    if result.returncode != 0:
+                        log_out(
+                            "-----------------------------------------------------------"
+                        )
+                        log_out(f"Error in Simulation: {sim_name}")
+                        log_out(f"Command: {command}")
+                        log_out(
+                            "-----------------------------------------------------------"
+                        )
+                        log.close()
+                        return 1
+                
                 current_run += 1
+    if gen_script:
+        with open(script_path, "a") as script_file:
+            script_file.write("if [ -f prf.csv ]; then rm -f prf.csv; fi\n")
+            script_file.write("if [ -f runtime.txt ]; then rm -f runtime.txt; fi\n")
+        log_out("-----------------------------------------------------------")
+        log_out("Saved Experiment to the run_exp.sh script")
+        log_out("-----------------------------------------------------------")
+        log_out(f"Run the following command to execute the experiments:")
+        log_out(f"./generated/run_exp.sh")
+        log_out("-----------------------------------------------------------")
+    else:
+        log_out("-----------------------------------------------------------")
+        log_out("Simulation Completed")
+        log_out("-----------------------------------------------------------")
+        log_out(f"Results saved in {out_dir}")
+        log_out("-----------------------------------------------------------")
+
     if os.path.exists(f"prf.csv"):
         os.remove(f"prf.csv")
     if os.path.exists(f"runtime.txt"):
@@ -1296,12 +1352,16 @@ def run_benchmarking_suite(
     time_out = exp_config["time_out"]
     test_run = exp_config["test_run"]
     sim_mode = exp_config["sim_mode"]
+
     name = f"run_{now}" if exp_config["name"] == "" else exp_config["name"]
     log_file_name = f"logs/{name}.log"
     # make sure the logs directory exists and file is created
     os.makedirs("logs", exist_ok=True)
     global log
     log = open(log_file_name, "w")
+    if sim_mode:
+        time_out = 5 * 60  # 5 minutes in seconds
+
 
     log_out("-----------------------------------------------------------")
     log_out("-- SECDA-TFLite Benchmark Suite --")
@@ -1325,7 +1385,7 @@ def run_benchmarking_suite(
     log_out(f"Skip Bench: {skip_bench}")
     log_out(f"Bin Gen: {bin_gen}")
     log_out(f"Skip Inf Diff: {skip_inf_diff}")
-    log_out(f"Collect Power: {collect_power}")
+    # log_out(f"Collect Power: {collect_power}")
     log_out(f"Generate Run Script: {gen_script}")
     log_out(f"Test Run: {test_run}")
     log_out(f"Time Out: {time_out}")
@@ -1361,13 +1421,9 @@ def run_benchmarking_suite(
 
             log_out("-----------------------------------------------------------")
 
-        log_out("-----------------------------------------------------------")
-        log_out("Running Simulation")
-        log_out("-----------------------------------------------------------")
-        run_simulations(sc, selected_models, selected_delegated)
-        log_out("-----------------------------------------------------------")
-        log_out("Finished Running Simulation")
-        log_out("-----------------------------------------------------------")
+
+        run_simulations(sc, selected_models, selected_delegated, name, gen_script)
+
 
     else:
         log_out("-----------------------------------------------------------")

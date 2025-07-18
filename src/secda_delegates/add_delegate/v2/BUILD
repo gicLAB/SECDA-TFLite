@@ -23,6 +23,7 @@ cc_library(
     hdrs = [
         "add_delegate.h",
         "util.h",
+        "util_prep.h",
     ],
     deps = [
         "//tensorflow/lite/c:common",
@@ -30,10 +31,12 @@ cc_library(
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels/internal:types",
-    ] + select({
-        ":linux_armhf": ["//tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v2/accelerator/driver:toyadd_driver"],
-        "//conditions:default": ["//tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v2/accelerator/driver:toyadd_driver_sysc"],
-    }),
+        "//tensorflow/lite/kernels/internal:tensor",
+        "//tensorflow/lite/kernels/internal:common",
+        "//tensorflow/lite/kernels/internal:optimized_base",
+        "//tensorflow/lite/kernels/internal:optimized_4bit",
+        "//tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v2/accelerator/driver:add_driver",
+    ]
 )
 
 cc_binary(

@@ -47,7 +47,6 @@ SC_MODULE(ACCNAME) {
   // Functions
   // ================================================= //
 
-  // Functions
   ACC_DTYPE<32> Clamp_Combine(int, int, int, int, int, int);
 
   void send_parameters_omni_PE(int, sc_fifo_in<ADATA> *);
@@ -76,9 +75,12 @@ SC_MODULE(ACCNAME) {
   ClockCycles *total_cycles = new ClockCycles("total_cycles", true);
   ClockCycles *active_cycles = new ClockCycles("active_cycles", true);
   SignalTrack *comS = new SignalTrack("T_compute", true);
-  std::vector<Metric *> profiling_vars = {total_cycles, active_cycles,
-                                          comS};
+  std::vector<Metric *> profiling_vars = {total_cycles, active_cycles, comS};
 #endif
+  // ================================================= //
+
+  // ================================================= //
+  // HWC
   // ================================================= //
 
   SC_HAS_PROCESS(ACCNAME);

@@ -1,6 +1,6 @@
-# Delegate Generation
+# SECDA Generator
 
-Use generate_delegate.py to generate new boilerplate delegates.
+Use generate_delegate.py to generate new boilerplate delegates with a template accelerator.
 - The default output directory is with in ```/generated```.
 - The default template delegate is located within ```templates/temp_delegate```.
 - You can also customise/create new template for future use within ```templates/```.

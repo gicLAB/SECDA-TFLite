@@ -33,7 +33,7 @@ src/experimental/secda_benchmark_suite/power/files
 src/experimental/secda_benchmark_suite/files
 src/experimental/secda_benchmark_suite/scripts/__pycache__
 
-src/secda_delegate_generator/generated
+src/secda_generator/generated
 
 src/secda_delegates/.deprecated
 src/secda_delegates/add_delegate/v1

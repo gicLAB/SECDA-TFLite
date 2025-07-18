@@ -62,7 +62,7 @@ public:
       scs = &scs1;
       std::cout << "Initialised the SystemC Modules" << std::endl;
 #else
-      dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
+      dparams.acc = getAccBaseAddress<int>(acc_ctrl_address, 65536);
       acc = dparams.acc;
       std::cout << "Initialised the DMA" << std::endl;
 #endif

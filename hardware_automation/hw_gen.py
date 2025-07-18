@@ -249,7 +249,7 @@ def process_hw_config(hw_config_file):
     target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
     sysc_types_path = f"{sc['secda_tflite_path']}/src/utils/sysc_types.h"
     sysc_hw_utils_path = (
-        f"{sc['secda_tflite_path']}/src/utils/sysc_hw_utils.sc.h"
+        f"{sc['secda_tflite_path']}/src/utils/secda_hw_utils.sc.h"
     )
     os.system(f"ln -sf {sysc_types_path} {target}")
     os.system(f"ln -sf {sysc_hw_utils_path} {target}")

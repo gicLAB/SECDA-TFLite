@@ -60,7 +60,7 @@ echo "Configurations"
 echo "--------------"
 echo "process_on_fpga=${process_on_fpga}"
 echo "skip_inf_diff=${skip_inf_diff}"
-echo "collect_power=${collect_power}"
+# echo "collect_power=${collect_power}"
 echo "test_run=${test_run}"
 echo "-----------------------------------------------------------"
 

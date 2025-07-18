@@ -28,7 +28,7 @@ using namespace std::chrono;
 #define TSCALE microseconds
 #define TSCAST duration_cast<nanoseconds>
 
-struct TOYADD_ACC_times {
+struct ADD_ACC_times {
   duration_ns driver_total;
   duration_ns delegate_total;
 
@@ -92,7 +92,7 @@ struct acc_container {
 
   // Debugging
   struct layer_details t;
-  struct TOYADD_ACC_times p_t;
+  struct ADD_ACC_times p_t;
 };
 
 #endif // ACC_CONTAINER

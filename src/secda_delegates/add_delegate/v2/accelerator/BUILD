@@ -18,31 +18,21 @@ config_setting(
 common_copts = ["-Wall"] + tflite_copts()
 
 cc_library(
-    name = "add_accelerator_config",
+    name = "accelerator",
     srcs = [
         "acc_config.sc.h",
-        ],
-    copts = common_copts,
-    deps = select({
-        ":linux_armhf": [],
+    ] + select({
+        "@secda_tools//:sysc": ["acc.sc.cc"],
         "//conditions:default": [],
-    }) + [
-        "//third_party:secdav5"
-    ],
-)
-
-cc_library(
-    name = "add_accelerator",
-    srcs = [
-        "acc.sc.cc",
-    ],
-    hdrs = [
-        "acc.sc.h",
-        "compute.sc.h",
-        "add_pe.sc.h"
-    ],
+    }),
+    hdrs = select({
+        "@secda_tools//:sysc": [
+            "acc.sc.h",
+            "compute.sc.h",
+            "add_pe.sc.h"
+        ],
+        "//conditions:default": [],
+    }),
     copts = common_copts,
-    deps = [
-        ":add_accelerator_config",
-    ],
+    deps = ["//third_party:secdav5"],
 )
