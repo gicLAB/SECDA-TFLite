@@ -10,7 +10,7 @@ ACC_DTYPE<32> ACCNAME::mul_s8(ACC_DTYPE<8> a, ACC_DTYPE<8> b) {
 void ACCNAME::Output_Handler() {
   bool ready = false;
   bool resetted = true;
-  DATA last = {5000, 1};
+  ADATA last = {5000, 1};
   wait();
   while (1) {
     while (out_check.read() && !ready && resetted) {

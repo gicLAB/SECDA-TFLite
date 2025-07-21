@@ -60,7 +60,7 @@ void ACCNAME::Post1() {
   ACC_DTYPE<32> ind[256];
   ACC_DTYPE<8> pram[256];
   ACC_DTYPE<8> r1[256];
-  DATA ot[4][16];
+  ADATA ot[4][16];
 
 #pragma HLS array_partition variable = yoff cyclic factor = 4
 #pragma HLS array_partition variable = xoff cyclic factor = 4
@@ -179,14 +179,23 @@ void ACCNAME::Post1() {
         sc_int<64> rf4 = pcrf[mi4];
 
 #ifndef __SYNTHESIS__
-        int ret_accum1 = Quantised_Multiplier_gemmlowp(
-            aa1, pcrf[mi1], pls[mi1], prs[mi1], msks[mi1], sms[mi1]);
-        int ret_accum2 = Quantised_Multiplier_gemmlowp(
-            aa2, pcrf[mi2], pls[mi2], prs[mi2], msks[mi2], sms[mi2]);
-        int ret_accum3 = Quantised_Multiplier_gemmlowp(
-            aa3, pcrf[mi3], pls[mi3], prs[mi3], msks[mi3], sms[mi3]);
-        int ret_accum4 = Quantised_Multiplier_gemmlowp(
-            aa4, pcrf[mi4], pls[mi4], prs[mi4], msks[mi4], sms[mi4]);
+        // int ret_accum1 = Quantised_Multiplier_gemmlowp(
+        //     aa1, pcrf[mi1], pls[mi1], prs[mi1], msks[mi1], sms[mi1]);
+        // int ret_accum2 = Quantised_Multiplier_gemmlowp(
+        //     aa2, pcrf[mi2], pls[mi2], prs[mi2], msks[mi2], sms[mi2]);
+        // int ret_accum3 = Quantised_Multiplier_gemmlowp(
+        //     aa3, pcrf[mi3], pls[mi3], prs[mi3], msks[mi3], sms[mi3]);
+        // int ret_accum4 = Quantised_Multiplier_gemmlowp(
+        //     aa4, pcrf[mi4], pls[mi4], prs[mi4], msks[mi4], sms[mi4]);
+        int ret_accum1 =
+            Quantised_Multiplier_ruy_reference(aa1, pcrf[mi1], pex[mi1]);
+        int ret_accum2 =
+            Quantised_Multiplier_ruy_reference(aa2, pcrf[mi2], pex[mi2]);
+        int ret_accum3 =
+            Quantised_Multiplier_ruy_reference(aa3, pcrf[mi3], pex[mi3]);
+        int ret_accum4 =
+            Quantised_Multiplier_ruy_reference(aa4, pcrf[mi4], pex[mi4]);
+
 #else
 #ifndef KRIA
         int ret_accum1 =

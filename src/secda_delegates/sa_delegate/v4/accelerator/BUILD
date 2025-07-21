@@ -17,38 +17,28 @@ config_setting(
 
 common_copts = ["-Wall"] + tflite_copts()
 
-cc_library(
-    name = "accelerator_config",
-    srcs = [
-        "acc_config.sc.h",
-        ],
-    copts = common_copts,
-    deps = select({
-        ":linux_armhf": [],
-        "//conditions:default": ["@systemc//:systemc"],
-    }),
-)
-
 
 cc_library(
     name = "accelerator",
     srcs = [
-        "acc.cc",
+        "acc_config.sc.h",
+    ] + select({
+        "@secda_tools//:sysc": ["acc.sc.cc"],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "@secda_tools//:sysc": [
+            "acc.sc.h",
+            "in.sc.h",
+            "data_in.sc.h",
+            "scheduler.sc.h",
+            "w1.sc.h",
+            "post1.sc.h",
+            "out.sc.h",
+            "counter.sc.h",
         ],
-    hdrs = [
-        "acc.sc.h",
-        "in.sc.h",
-        "data_in.sc.h",
-        "scheduler.sc.h",
-        "w1.sc.h",
-        "post1.sc.h",
-        "out.sc.h",
-        "counter.sc.h",
-    ],
+        "//conditions:default": [],
+    }),
     copts = common_copts,
-    deps = [
-        ":accelerator_config",
-        "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
-    ],
+    deps = ["//third_party:secdav5"],
 )
-

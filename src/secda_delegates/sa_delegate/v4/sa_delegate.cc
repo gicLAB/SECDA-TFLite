@@ -1,20 +1,13 @@
-// Jude: New Systolic Array Delegate
-// Tested on TFLite v2.15, only simulation and mobilenetv1
-// Hardware synthesis needs to be tested
-// FPGA runtime needs to be tested
-
-#include "sa_delegate.h"
-#include "accelerator/driver/gemm_driver.h"
-#include "util.h"
-#include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include <utility>
 
 #ifdef SYSC
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
-
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
+#include "accelerator/driver/gemm_driver.h"
+#include "sa_delegate.h"
+#include "secda_tools/secda_profiler/profiler.h"
+#include "tensorflow/lite/delegates/utils/simple_delegate.h"
+#include "util.h"
 
 #define DMA_BC 1
 #define DELEGATE_NAME "SA"
@@ -27,8 +20,8 @@ struct sa_times sa_t;
 
 #ifdef SYSC
 #define SYSC_DMA_BL 563840 * 2
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
-                             SYSC_DMA_BL);
+static struct s_mdma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
+                          SYSC_DMA_BL);
 ACCNAME *acc;
 struct dma_buffer_set dfs[4] = {
     {DMA_BC, (SYSC_DMA_BL / DMA_BC), dma_in0},
@@ -38,7 +31,7 @@ struct dma_buffer_set dfs[4] = {
 };
 int recv_len = (SYSC_DMA_BL / DMA_BC);
 #else
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
+static struct s_mdma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
 int *acc;
 struct dma_buffer_set dfs[4] = {
     {DMA_BC, (DMA_BL / DMA_BC), dma_in0},
@@ -52,6 +45,7 @@ int recv_len = (DMA_BL / DMA_BC);
 struct store_params st_params[DMA_BC];
 struct del_params dparams;
 static struct Profile profile;
+struct MultiThreadContext mt_context;
 
 namespace tflite {
 namespace sa_test {
@@ -75,7 +69,7 @@ public:
       acc = &_acc;
       std::cout << "Initialised the SystemC Modules" << std::endl;
 #else
-      dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
+      dparams.acc = getAccBaseAddress<int>(acc_ctrl_address, 65536);
       acc = dparams.acc;
       std::cout << "Initialised the DMA" << std::endl;
 #endif
@@ -417,7 +411,7 @@ public:
       drv.profile = &profile;
       drv.st_params = st_params;
       drv.dfs = dfs;
-      drv.mt_context = &dparams.mt_context;
+      drv.mt_context = &mt_context;
       drv.thread_count = context->recommended_num_threads;
       drv.in_id = 0;
       int *inb_0 = reinterpret_cast<int *>(inb0);
@@ -442,7 +436,7 @@ public:
       drv.cols = filter_rows;
       drv.depth = filter_cols;
 
-      prf_end(1, sa_t.ipack);
+      prf_end(1, sa_t.p_ipack);
       // Calls the gemm_driver to offload the CONV2D operation
       drv.t2 = sa_t;
       tflite_sa::Entry(drv, output_data);
@@ -460,14 +454,14 @@ public:
       // saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
       //                   "_inp_acc.csv",
       //               gemm_input_data, gemm_input_cols, gemm_input_rows);
-      saveMatrixCSV("aData/conv/" + std::to_string(associated_nodes[i]) +
-                        "_out_acc.csv",
-                    output_data, gemm_input_cols, filter_rows);
+      // saveMatrixCSV(
+      //     "aData/conv/" + std::to_string(associated_nodes[i]) +
+      //     "_out_acc.csv", output_data, gemm_input_cols, filter_rows);
 
       dparams.layer++;
       dparams.delegated_nodes--;
     }
-    prf_end(0, sa_t.conv_total);
+    prf_end(0, sa_t.t_conv_total);
     return kTfLiteOk;
   }
 
@@ -496,8 +490,7 @@ private:
 // This holds the Delegate capabilities.
 class SADelegate : public SimpleDelegateInterface {
 public:
-  explicit SADelegate(const SADelegateOptions &options)
-      : options_(options) {}
+  explicit SADelegate(const SADelegateOptions &options) : options_(options) {}
 
   bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
                                  const TfLiteNode *node,
@@ -556,13 +549,11 @@ SADelegateOptions TfLiteSADelegateOptionsDefault() {
 // Creates a new delegate instance that need to be destroyed with
 // `TfLiteSADelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate *
-TfLiteSADelegateCreate(const SADelegateOptions *options) {
+TfLiteDelegate *TfLiteSADelegateCreate(const SADelegateOptions *options) {
   std::unique_ptr<tflite::sa_test::SADelegate> sa(
       new tflite::sa_test::SADelegate(
           options ? *options : TfLiteSADelegateOptionsDefault()));
-  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
-      std::move(sa));
+  return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(std::move(sa));
 }
 
 // Destroys a delegate created with `TfLiteSADelegateCreate` call.

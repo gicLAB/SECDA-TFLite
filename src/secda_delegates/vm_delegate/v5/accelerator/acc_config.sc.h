@@ -5,10 +5,22 @@
 // Name of the accelerator
 #define ACCNAME VM_INT8_V5_0
 
+//==============================================================================
+// Hardware Constants
+//==============================================================================
+// Define any Hardware specific constants for the accelerator
+// These constants will be accessible in the driver
+// These constants will be used to generate the hardware
+
+//==============================================================================
+// Address mapping for the accelerator and DMA
+//==============================================================================
 #ifdef KRIA
 // KRIA
 // Pre-Defined Address for Accelerator
-#define acc_address 0x00A0000000
+#define acc_ctrl_address 0x00A0000000
+#define acc_hwc_address 0x00A0010000
+
 #define dma_addr0 0x00A0010000
 #define dma_addr1 0x00A0020000
 #define dma_addr2 0x00A0030000
@@ -21,16 +33,6 @@
 #define DMA_RANGE_SIZE 0x0000000040000000 // 1GB
 #define DMA_IN_BUF_SIZE 0x20000000        // 32MB
 #define DMA_OUT_BUF_SIZE 0x20000000       // 32MB
-
-// #define dma_in0 DMA_RANGE_START + DMA_RANGE_OFFSET
-// #define dma_in1 dma_in0 + DMA_IN_BUF_SIZE
-// #define dma_in2 dma_in1 + DMA_IN_BUF_SIZE
-// #define dma_in3 dma_in2 + DMA_IN_BUF_SIZE
-
-// #define dma_out0 dma_in3 + DMA_IN_BUF_SIZE
-// #define dma_out1 dma_out0 + DMA_OUT_BUF_SIZE
-// #define dma_out2 dma_out1 + DMA_OUT_BUF_SIZE
-// #define dma_out3 dma_out2 + DMA_OUT_BUF_SIZE
 
 #define dma_in0 0x38000000
 #define dma_in1 0x3A000000
@@ -45,7 +47,9 @@
 #else
 // Z1
 // Pre-Defined Address for Accelerator
-#define acc_address 0x43C00000
+#define acc_ctrl_address 0x43C00000
+#define acc_hwc_address 0x43C10000
+
 #define dma_addr0 0x40400000
 #define dma_addr1 0x40410000
 #define dma_addr2 0x40420000
@@ -64,18 +68,38 @@
 #define DMA_RANGE_START 0x18000000
 #define DMA_RANGE_END 0x1fffffff
 #define DMA_RANGE_SIZE 0x8000000
+#endif // KRIA
+
+// AXIMM Constants
+#ifdef KRIA
+#define MM_BL 0x100000 // 1MB
+#define in_addr 0x38000000
+#define out_addr 0x39000000
+#else
+// Z1
+#define MM_BL 0x100000 // 1MB
+#define in_addr 0x18000000
+#define out_addr 0x19000000
 #endif
 
-// Accelerator Parameters
-#define VMM_COUNT 4
-
+//==============================================================================
 // Data types
+//==============================================================================
 #define ACC_DTYPE sc_int
 #define ACC_C_DTYPE int
 #define AXI_DWIDTH 32
 #define AXI_DWIDTH_4 (32 / 4)
-
 #define AXI_TYPE sc_uint
+#define s_mdma multi_dma<AXI_DWIDTH, 0>
+#define mm_buf mm_buffer<unsigned long long>
+#define a_ctrl acc_ctrl<int>
+
+//==============================================================================
+// ACC Specific Constants
+//==============================================================================
+
+// Accelerator Parameters
+#define VMM_COUNT 4
 
 // Buffer Sizes
 #define WGT_BUF_LEN 2048
@@ -91,9 +115,6 @@
 #define OPCODE_COMPUTE 0x4
 #define OPCODE_CONFIG 0x8
 
-// DMA Parameters
-#define s_mdma multi_dma<AXI_DWIDTH, 0>
-
 //==============================================================================
 // SystemC Specfic SIM/HW Configurations
 //==============================================================================
@@ -105,6 +126,7 @@
 #include "secda_tools/secda_integrator/sysc_types.h"
 #include "secda_tools/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
+#define DPROF(x) x
 
 #ifdef VERBOSE_ACC
 #define ALOG(x) std::cout << x << std::endl
@@ -113,10 +135,8 @@
 #endif
 
 typedef _BDATA<AXI_DWIDTH, AXI_TYPE> ADATA;
-#define acc_dt sc_int<32>
 
-#else
-
+#else // __SYNTHESIS__
 #include "sysc_types.h"
 #define ALOG(x)
 
@@ -138,8 +158,13 @@ struct _NDATA {
 
 typedef _NDATA ADATA;
 
-#define acc_dt sc_int<32>
+#define DWAIT(x)
+#define DPROF(x)
 #endif
+
+//==============================================================================
+// HW Structs
+//==============================================================================
 
 // PPU Scalers
 #define MAX 2147483647
@@ -254,13 +279,18 @@ typedef struct byteToUF {
     cout << "data&colon; " << v.data;
     return os;
   }
-  void unpack(acc_dt a1[], acc_dt a2[], acc_dt a3[], acc_dt a4[], int idx) {
+  void unpack(sc_int<32> a1[], sc_int<32> a2[], sc_int<32> a3[],
+              sc_int<32> a4[], int idx) {
     a1[idx] = data.range(31, 0);
     a2[idx] = data.range(63, 32);
     a3[idx] = data.range(95, 64);
     a4[idx] = data.range(127, 96);
   }
 } bUF;
+
+//==============================================================================
+// HW Submodule Construction SIM/HW Structs
+//==============================================================================
 
 struct VMM_vars {
 #ifndef __SYNTHESIS__

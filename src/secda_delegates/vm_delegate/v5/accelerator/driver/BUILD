@@ -12,31 +12,15 @@ package(
 common_copts = ["-Wall"] + tflite_copts()
 
 cc_library(
-    name = "driver_sysc",
+    name = "vm_driver",
     srcs = [
+        "systemc_binding.h",
         "acc_container.h",
         "gemm_driver.h",
         "gemm_mt.h",
-        "systemc_binding.h"
-        ],
+    ],
     copts = common_copts,
     deps = [
         "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/accelerator:accelerator",
     ],
 )
-
-
-cc_library(
-    name = "driver",
-    srcs = [
-        "acc_container.h",
-        "gemm_driver.h",
-        "gemm_mt.h",
-        ],
-    copts = common_copts,
-    deps = [
-        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/accelerator:accelerator_config"
-    ],
-)
-
-

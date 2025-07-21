@@ -72,7 +72,7 @@ public:
       acc = &_acc;
       std::cout << "Initialised the SystemC Modules" << std::endl;
 #else
-      dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
+      dparams.acc = getAccBaseAddress<int>(acc_ctrl_address, 65536);
       acc = dparams.acc;
 #ifdef KRIA
       std::cout << "Initialised the Kria DMA" << std::endl;

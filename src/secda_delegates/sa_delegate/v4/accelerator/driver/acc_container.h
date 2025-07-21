@@ -8,10 +8,12 @@
 #endif
 
 #include "../acc_config.sc.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/multi_threading.h"
+#include "secda_tools/axi_support/v5/axi_api_v5.h"
+#include "secda_tools/secda_profiler/profiler.h"
+#include "secda_tools/secda_utils/acc_helpers.h"
+#include "secda_tools/secda_utils/multi_threading.h"
+#include "secda_tools/secda_utils/utils.h"
+
 #include <chrono>
 #include <fcntl.h>
 #include <fstream>
@@ -20,7 +22,6 @@
 #include <typeinfo>
 #include <unistd.h>
 #include <vector>
-
 
 #ifdef ACC_NEON
 #include "arm_neon.h"
@@ -41,22 +42,22 @@ struct store_params {
 };
 
 struct sa_times {
-  duration_ns load_inputs;
-  duration_ns load_weights;
-  duration_ns sa_acc;
-  duration_ns store;
-  duration_ns ipack;
-  duration_ns conv_total;
+  duration_ns p_load_inputs;
+  duration_ns p_load_weights;
+  duration_ns p_sa_acc;
+  duration_ns p_store;
+  duration_ns p_ipack;
+  duration_ns t_conv_total;
 
   void print() {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
-    prf_out(TSCALE, load_inputs);
-    prf_out(TSCALE, load_weights);
-    prf_out(TSCALE, store);
-    prf_out(TSCALE, sa_acc);
-    prf_out(TSCALE, ipack);
-    prf_out(TSCALE, conv_total);
+    prf_out(TSCALE, p_load_inputs);
+    prf_out(TSCALE, p_load_weights);
+    prf_out(TSCALE, p_store);
+    prf_out(TSCALE, p_sa_acc);
+    prf_out(TSCALE, p_ipack);
+    prf_out(TSCALE, t_conv_total);
     cout << "================================================" << endl;
 #endif
   }
@@ -64,12 +65,12 @@ struct sa_times {
   void save_prf() {
 #ifdef ACC_PROFILE
     std::ofstream file("prf.csv", std::ios::out);
-    prf_file_out(TSCALE, load_inputs, file);
-    prf_file_out(TSCALE, load_weights, file);
-    prf_file_out(TSCALE, store, file);
-    prf_file_out(TSCALE, sa_acc, file);
-    prf_file_out(TSCALE, ipack, file);
-    prf_file_out(TSCALE, conv_total, file);
+    prf_file_out(TSCALE, p_load_inputs, file);
+    prf_file_out(TSCALE, p_load_weights, file);
+    prf_file_out(TSCALE, p_store, file);
+    prf_file_out(TSCALE, p_sa_acc, file);
+    prf_file_out(TSCALE, p_ipack, file);
+    prf_file_out(TSCALE, t_conv_total, file);
     file.close();
 #endif
   }
@@ -97,7 +98,7 @@ struct acc_container {
 
   Profile *profile;
   // DMAs Pointer
-  struct multi_dma *mdma;
+  struct s_mdma *mdma;
 
   // Temporary Weight non-MMapped Padded Buffers
   int *wb_0;

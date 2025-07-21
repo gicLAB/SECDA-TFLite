@@ -2,7 +2,7 @@
 #define GEMM_DRIVER
 
 #include "acc_container.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
+#include "secda_tools/secda_utils/utils.h"
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -133,7 +133,7 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   drv.wgt_start = true;
 
   // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
-  prf_end(1, drv.t2.load_inputs);
+  prf_end(1, drv.t2.p_load_inputs);
 }
 
 void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
@@ -221,7 +221,7 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
   drv.dsr.dID++;
 
   // SYSC_ON(drv.profile->saveProfile(drv.acc->profiling_vars));
-  prf_end(1, drv.t2.load_weights);
+  prf_end(1, drv.t2.p_load_weights);
 }
 
 void Start_Compute(acc_container &drv, int inp_block, int wgt_block) {
@@ -446,7 +446,7 @@ void Store_Results(acc_container &drv) {
     if (i % 4 == 2) out2 = outs;
     if (i % 4 == 3) out3 = outs;
   }
-  prf_end(1, drv.t2.store);
+  prf_end(1, drv.t2.p_store);
 }
 
 void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
@@ -504,7 +504,7 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
     drv.mdma->multi_dma_change_start_4(0);
     drv.t.layer_input_tile++;
   }
-  prf_end(1, drv.t2.sa_acc);
+  prf_end(1, drv.t2.p_sa_acc);
 }
 
 void Entry(acc_container &drv, int8_t *dst) {

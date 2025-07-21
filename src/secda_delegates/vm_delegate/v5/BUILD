@@ -34,12 +34,13 @@ cc_library(
         "//tensorflow/lite/delegates/utils:simple_delegate",
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
-        "//tensorflow/lite/kernels/internal:types"
-    ] + select({
-        ":linux_armhf": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/accelerator/driver:driver"],
-        ":linux_aarch64": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/accelerator/driver:driver"],
-        "//conditions:default": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/accelerator/driver:driver_sysc"],
-    }),
+        "//tensorflow/lite/kernels/internal:types",
+        "//tensorflow/lite/kernels/internal:tensor",
+        "//tensorflow/lite/kernels/internal:common",
+        "//tensorflow/lite/kernels/internal:optimized_base",
+        "//tensorflow/lite/kernels/internal:optimized_4bit",
+        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/accelerator/driver:vm_driver",
+    ]
 )
 
 

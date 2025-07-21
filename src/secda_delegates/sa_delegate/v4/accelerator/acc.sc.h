@@ -8,15 +8,15 @@ SC_MODULE(ACCNAME) {
   sc_in<bool> clock;
   sc_in<bool> reset;
 
-  sc_fifo_in<DATA> din1;
-  sc_fifo_in<DATA> din2;
-  sc_fifo_in<DATA> din3;
-  sc_fifo_in<DATA> din4;
+  sc_fifo_in<ADATA> din1;
+  sc_fifo_in<ADATA> din2;
+  sc_fifo_in<ADATA> din3;
+  sc_fifo_in<ADATA> din4;
 
-  sc_fifo_out<DATA> dout1;
-  sc_fifo_out<DATA> dout2;
-  sc_fifo_out<DATA> dout3;
-  sc_fifo_out<DATA> dout4;
+  sc_fifo_out<ADATA> dout1;
+  sc_fifo_out<ADATA> dout2;
+  sc_fifo_out<ADATA> dout3;
+  sc_fifo_out<ADATA> dout4;
 
   unsigned int depth;
   unsigned int wgt_block;

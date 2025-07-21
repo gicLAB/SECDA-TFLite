@@ -9,6 +9,7 @@
 hardware_automation/generated
 hardware_automation/acc_srcs
 hardware_automation/hlx_templater/generated
+hardware_automation/configs/MM2IM
 
 src/.deprecated
 
@@ -48,6 +49,8 @@ src/secda_delegates/mm2im_delegate/v8
 src/secda_delegates/mm2im_delegate/v9
 src/secda_delegates/mm2im_delegate/v10
 src/secda_delegates/mm2im_delegate/v11
+src/secda_delegates/mm2im_delegate/v12
+
 src/secda_delegates/sa_delegate/v3
 src/secda_delegates/vm_delegate/v3
 src/secda_delegates/vm_delegate/v4
