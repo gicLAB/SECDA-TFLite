@@ -1,5 +1,5 @@
 {
-  "secda_tflite_path": "/mnt/Crucial/WorkspaceB/SECDA/SECDA-TFLitev2/SECDA-TFLite",
+  "secda_tflite_path": "/home/jude/Workspace/SECDA-TFLite_v1.2",
   "vivado_2019_path": "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/",
   "vivado_2024_path": "/mnt/Crucial/Xilinx2024/Vivado/2024.1/bin/",
   "models_dirs": [

@@ -3,35 +3,12 @@
 The SECDA-TFLite toolkit leverages the TFLite delegate system to provide a robust and extensible set of utilities for integrating DNN accelerators for any DNN operation supported by TFLite.
 Ultimately, this increases hardware accelerator developers' productivity, as they can begin developing and refining their design more quickly.
 
-## Repo Structure
-Overview of the repo structure with the important directories presented below:
-```
-SECDA-TFLite_v1.2/
-├── LICENSE
-├── README.md
-├── WORKSPACE
-├── config.json
-├── data/
-│   ├── inputs/
-│   └── models/
-├── docs/
-├── hardware_automation/
-├── scripts/
-├── src/
-│   ├── benchmark_suite/
-│   ├── experimental/
-│   ├── secda_apps/
-│   ├── secda_generator/
-│   ├── secda_delegates/
-│   ├── secda_profilier/
-│   ├── secda_tflite/
-├── tensorflow/
-```
+
 
 # Installation
 
-## 0. Requirements and Recommendations
----
+## 0. Requirements
+
 - Debian-based linux distro (highlighy recommended)
   - Install [docker for linux](https://docs.docker.com/engine/install/ubuntu/)
   - Install git: ```sudo apt install git```
@@ -57,12 +34,15 @@ git submodule update
 sudo apt install -y jq ssh rsync
 ```
 
-### Configure the SECDA-TFLite paths
-To enable all the tools of SECDA-TFLite has access to correct paths, you need to configure the [config.json](./config.json) file. This file contains the paths to the various directories and files used by the SECDA-TFLite toolkit. You **MUST** update the paths in the `config.json` file to point to the correct directories in your system. Please refer to the [config.md](./docs/config.md) file for more information on how to configure the `config.json` file.
+### Configuring SECDA-TFLite
+To enable all the tools of SECDA-TFLite has access to correct paths, you need to configure the [config.json](./config.json) file. This file contains the paths to the various directories and files used by the SECDA-TFLite toolkit. You **MUST** update the paths in the `config.json` file to point to the correct directories in your system. 
 
+Additionally, for enabling remote hardware automation and also connecting to your target board, you need to update the `boards` section in the `config.json` file with the correct ip address, username, etc. Make sure you are able to SSH into the target board from your local machine.
+
+Please refer to the [config.md](./docs/config.md) file for more information on how to configure the `config.json`  and also ensure SSH configuration is set up correctly for SECDA-TFLite to run smoothly.
 
 ### Run the setup script
-Once you have configured the `config.json` file, you can run the setup script and checkout to the correct submodule branch of the tensorflow repo:
+Once you have configured the `config.json` file, you can run the setup script and checkout to the correct submodule branch of the Tensorflow repo:
 ```bash
 cd scripts
 ./setup.sh # you might have to make this script executable "chmod +x ./setup.sh
@@ -139,7 +119,30 @@ Once the environment is created, we recommend using VSCode to immediately start 
 * There are some configurations already prepared to run the VM,SA and FC-GEMM accelerator with the simulation delegates
 
 
-
+## Repo Structure
+Overview of the repo structure with the important directories presented below:
+```
+SECDA-TFLite_v1.2/
+├── LICENSE
+├── README.md
+├── WORKSPACE
+├── config.json
+├── data/
+│   ├── inputs/
+│   └── models/
+├── docs/
+├── hardware_automation/
+├── scripts/
+├── src/
+│   ├── benchmark_suite/
+│   ├── experimental/
+│   ├── secda_apps/
+│   ├── secda_generator/
+│   ├── secda_delegates/
+│   ├── secda_profilier/
+│   ├── secda_tflite/
+├── tensorflow/
+```
 
 
 

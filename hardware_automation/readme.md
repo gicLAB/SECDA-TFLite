@@ -2,6 +2,10 @@
 
 ## Purpose
 The hardware automation toolkit automates the process of running High Level Synthesis (HLS) and logic synthesis for hardware designs created within SECDA-TFLite. It provides utilities for hardware generation using json-based configuration files and TCL scripts.
+
+**NOTE**: The HLS and logic synthesis scripts needs to run outside the VSCode dev container to work properly with Vivado/Vitis.
+
+
 ## Table of Contents
 - [Hardware Automation](#hardware-automation)
   - [Purpose](#purpose)
@@ -58,15 +62,15 @@ The options available in the configuration files include:
 ### Example Configuration File
 ```json
 {
-  "acc_name": "TOYADD_ACC",
-  "acc_version": 1,
+  "acc_name": "ADD_ACC",
+  "acc_version": 2,
   "acc_sub_version": 0,
-  "acc_src": "add_delegate/v1/accelerator",
-  "acc_link_folder": "add_src_v1",
+  "acc_src": "add_delegate/v2/accelerator",
+  "acc_link_folder": "add_src_v2",
   "hlx_tcl_script": "mdma_axilite_hlx_reconfig_1_xfull.tcl",
-  "top": "TOYADD_ACC",
+  "top": "ADD_ACC",
   "del" : "add_delegate",
-  "del_version": "1",
+  "del_version": "2",
   "hls_clock" : "5",
   "hlx_Mhz": "200",
   "axi_bitW": "32",
@@ -88,7 +92,7 @@ The script will create a new hardware project in `generated/` which will contain
 
 ## Hardware Generation
 Once the hardware project is generated, you can automate the process of running High Level Synthesis (HLS) and logic synthesis and copying files to the target board using the `run.sh` script generated in the `generated/[acc_name]` directory.
-To run the hardware generation workflow, execute the following command:
+To run the hardware generation workflow, first exit the VSCode dev container if you are using it, then navigate to the generated hardware project directory and execute the following command:
 ```bash
 cd generated/[acc_name]
 ./run.sh [run_hls] [run_hlx] [run_remote] [transfer_bitstream]
@@ -102,7 +106,7 @@ Where:
 
 Example:
 ```bash
-cd generated/TOYADD_ACC
+cd generated/ADD_ACC
 ./run.sh 1 1 0 1 # This will run HLS and HLX synthesis locally and transfer the bitstream to the target board
 ```
 
