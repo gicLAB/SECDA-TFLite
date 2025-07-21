@@ -77,6 +77,13 @@ send_pushbullet_notification() {
   echo "Pushbullet response: $push"
 }
 
+
+if [ ! -z "$CONTAINERIZED" ]; then
+  echo "Script is running in a containerized environment. Please run it outside the container."
+  exit 0
+fi
+
+
 if [ $run_hls == 1 ]; then 
   rm -rf ./vivado_hls*
   rm -rf ./&{acc_tag}

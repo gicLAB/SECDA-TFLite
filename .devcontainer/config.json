@@ -1,11 +1,11 @@
 {
-  "secda_tflite_path": "/mnt/Crucial/WorkspaceB/SECDA/SECDA-TFLitev2/SECDA-TFLite",
-  "vivado_2019_path": "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/",
-  "vivado_2024_path": "/mnt/Crucial/Xilinx2024/Vivado/2024.1/bin/",
+  "secda_tflite_path": "/working_dir/SECDA-TFLite/",
+  "vivado_2019_path": "/working_dir/Vivado_2019/2019.2/bin/",
+  "vivado_2024_path": "/working_dir/Vivado_2024/2024.1/bin/",
   "models_dirs": [
-    "/home/jude/Workspace/SECDA-TFLite_v1.2/data/models",
-    "/home/jude/Workspace/SECDA-TFLite_v1.2/src/benchmark_suite/model_gen/models",
-    "/home/jude/Workspace/SECDA-TFLite_v1.2/tensorflow/models"
+    "/working_dir/SECDA-TFLite/data/models",
+    "/working_dir/SECDA-TFLite/src/benchmark_suite/model_gen/models",
+    "/working_dir/SECDA-TFLite/tensorflow/models"
   ],
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "hw_configs": "hardware_automation/configs",

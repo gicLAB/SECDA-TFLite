@@ -54,7 +54,7 @@ cd SECDA-TFLite
 git checkout v1.3
 git submodule init
 git submodule update
-sudo apt install -y jq
+sudo apt install -y jq ssh rsync
 ```
 
 ### Configure the SECDA-TFLite paths
@@ -78,14 +78,17 @@ Now you have the SECDA-TFLite repo downloaded and the basic dependencies install
 - Open VSCode in the repo ``` code .```
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 - Open the `devC` VSCode workspace, this will reload the window and enter you into the workspace. 
-- These following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
+- The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
 
 ![alt text](docs/image-1.png)
 - Press `Reopen in Container`
 - It should take a while to download and install the container.
 - Once the container is created it should reopen you into the VSCode with the container active.
 - You can access the container through "Dev Containers: Open Folder in Container" VSCode command.
-  
+
+Note 1: Hardware Automation Projects can only be configured inside the dev container. To use Vivado/Vitis you need to run your hardware project `run.sh` script outside the container. Refer to the [hardware automation](./hardware_automation/README.md) for more information on how to use the hardware automation scripts.
+
+Note 2: The dev container creates a conda environment called `secda-tflitev2` with all the required dependencies installed. You can activate this environment by running `conda activate secda-tflitev2` in the terminal. This environment is used to run the TensorFlow build process and other Python scripts.
 
 ## 2.B: Create development environment on natively
 ### Setup Bazel & GDB
@@ -109,7 +112,9 @@ conda create -n secda-tflitev2 python -y
 conda activate secda-tflitev2
 pip install -r ./devcontainer/requirements.txt
 ```
+- Note: Within jupyter notebooks, you need to select the `secda-tflitev2` kernel to run the notebooks. 
 
+```bash
 ###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflitev2 environment)
 ```bash
 conda activate secda-tflitev2

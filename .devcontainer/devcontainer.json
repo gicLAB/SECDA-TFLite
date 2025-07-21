@@ -1,4 +1,4 @@
-{ 
+{
   "name": "secda-tflite",
   "build": {
     "dockerfile": "Dockerfile",
@@ -9,17 +9,16 @@
       "extensions": [
         "ms-vscode.cmake-tools",
         "ms-vscode.cpptools",
+        "ms-python.python",
+        "ms-toolsai.jupyter"
       ]
     }
   },
   "mounts": [
-    "source=${localWorkspaceFolder},target=/working_dir,type=bind,consistency=cached",
-    "source=${localEnv:vivado_2019_path},target=/working_dir/Vivado_2019,type=bind,consistency=cached",
-    "source=${localEnv:vivado_2024_path},target=/working_dir/Vivado_2024,type=bind,consistency=cached"
-
-
+    "source=${localWorkspaceFolder},target=/working_dir/SECDA-TFLite/,type=bind,consistency=cached",
+    // "source=VIVADO_2019_PATH,target=/working_dir/Vivado_2019/,type=bind,consistency=cached",
+    // "source=VIVADO_2024_PATH,target=/working_dir/Vivado_2024/,type=bind,consistency=cached"
   ],
-  "postCreateCommand": "conda run -n secda_tflitev2 pip install -r requirements.txt"
-
-
+  "workspaceFolder": "/working_dir/SECDA-TFLite",
+  "postCreateCommand": "cd scripts && python3 ./update_config.py"
 }

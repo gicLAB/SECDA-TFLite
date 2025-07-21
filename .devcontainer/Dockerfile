@@ -51,6 +51,7 @@ RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
 # ============================================================================
 FROM builder AS dev-user
 
+COPY .devcontainer/requirements.txt /working_dir/requirements.txt
 WORKDIR /working_dir
 
 ENV PATH="/root/miniconda3/bin:${PATH}"
@@ -63,12 +64,12 @@ RUN apt-get update && \
 
 RUN arch=$(uname -m) && \
     if [ "$arch" = "x86_64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
+    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
     elif [ "$arch" = "aarch64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
+    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
     else \
-        echo "Unsupported architecture: $arch"; \
-        exit 1; \
+    echo "Unsupported architecture: $arch"; \
+    exit 1; \
     fi && \
     wget $MINICONDA_URL -O miniconda.sh && \
     mkdir -p /root/.conda && \
@@ -80,6 +81,7 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
 RUN conda create -y -n secda_tflitev2 python=3.9.19
+RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
 
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
@@ -87,12 +89,20 @@ RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;3
 # Select clang compiler and set SystemC home
 RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
     echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
-    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc
+    echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc && \
+    echo "export CONTAINERIZED=1" >> ~/.bashrc
+
 
 # Print welcome message
-RUN echo "cd /working_dir" >> ~/.bashrc && \
-    echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+# RUN echo "cd /working_dir" >> ~/.bashrc && \
+#     echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+#     echo "echo ' '" >> ~/.bashrc && \
+#     echo "echo 'NOTE:'" >> ~/.bashrc && \
+#     echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
+#     echo "echo ' '" >> ~/.bashrc 
+
+RUN echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
     echo "echo ' '" >> ~/.bashrc && \
-    echo "echo 'NOTE:'" >> ~/.bashrc && \
-    echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
-    echo "echo ' '" >> ~/.bashrc 
+    echo "echo 'NOTE: Important folders are volume mounted to /working_dir '" >> ~/.bashrc 
+
+RUN echo "conda activate secda_tflitev2" >> ~/.bashrc
