@@ -19,7 +19,6 @@
 // Pre-Defined Address for Accelerator
 #define acc_ctrl_address 0x00A0000000
 #define acc_hwc_address 0x00A0010000
-#define acc_reg 0x00A0000000
 
 #define dma_addr0 0x00A0010000
 #define dma_addr1 0x00A0020000
@@ -49,7 +48,6 @@
 // Pre-Defined Address for Accelerator
 #define acc_ctrl_address 0x43C00000
 #define acc_hwc_address 0x43C10000
-#define acc_reg 0x43C00000
 
 #define dma_addr0 0x40400000
 #define dma_addr1 0x40410000
@@ -127,6 +125,7 @@
 #include "secda_tools/secda_integrator/sysc_types.h"
 #include "secda_tools/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
+#define DPROF(x) x
 
 #ifdef VERBOSE_ACC
 #define ALOG(x) std::cout << x << std::endl
@@ -150,6 +149,9 @@ struct _NDATA {
 };
 
 typedef _NDATA ADATA;
+
+#define DWAIT(x)
+#define DPROF(x)
 #endif
 
 //==============================================================================

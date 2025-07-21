@@ -1,5 +1,5 @@
-#ifndef TENSORFLOW_LITE_DELEGATES_UTILS_TEMPDEL_DELEGATE_TEMPDEL_DELEGATE_UTIL_H_
-#define TENSORFLOW_LITE_DELEGATES_UTILS_TEMPDEL_DELEGATE_TEMPDEL_DELEGATE_UTIL_H_
+#ifndef TENSORFLOW_LITE_DELEGATES_UTILS_FCGEMM_DELEGATE_FCGEMM_DELEGATE_UTIL_H_
+#define TENSORFLOW_LITE_DELEGATES_UTILS_FCGEMM_DELEGATE_FCGEMM_DELEGATE_UTIL_H_
 
 #include "tensorflow/lite/builtin_ops.h"
 #include "tensorflow/lite/c/common.h"
@@ -757,6 +757,36 @@ bool IsNode_DEQUANTIZE_INT8(const TfLiteRegistration *registration,
   if (otensor.type != kTfLiteFloat32) return false;
 
   return true;
+}
+
+static TfLiteStatus AllocateTemporaryTensorsIfRequired(
+    TfLiteContext *context, TfLiteNode *node, bool req_temp_out,
+    int temp_out_tid, int &temp_out_id, int input_tid, int filter_tid) {
+
+  TF_LITE_ENSURE(context, node->inputs->size >= 2);
+  const TfLiteTensor *input;
+  const TfLiteTensor *filter;
+
+  GetInputSafe(context, input_tid, &input);
+  GetInputSafe(context, filter_tid, &filter);
+  int temporaries_count = node->temporaries->size;
+
+  if (req_temp_out) {
+    temp_out_id = temporaries_count;
+    if (temp_out_tid == kTensorNotAllocated) {
+      context->AddTensors(context, 1, &temp_out_tid);
+    }
+    ++temporaries_count;
+  }
+
+  auto temp_array = TfLiteIntArrayCreate(temporaries_count);
+  for (int i = 0; i < node->temporaries->size; i++)
+    temp_array->data[i] = node->temporaries->data[i];
+
+  TfLiteIntArrayFree(node->temporaries);
+  node->temporaries = temp_array;
+
+  return kTfLiteOk;
 }
 
 #endif

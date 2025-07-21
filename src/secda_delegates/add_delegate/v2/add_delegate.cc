@@ -10,6 +10,8 @@
 #include "add_delegate.h"
 #include "secda_tools/secda_profiler/profiler.h"
 #include "util.h"
+#include "util_prep.h"
+
 
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include "tensorflow/lite/kernels/internal/quantization_util.h"

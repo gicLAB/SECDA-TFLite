@@ -327,7 +327,7 @@ struct FC_Data {
   // uint8_t these would be 0 and 255.
   int32_t output_activation_min;
   int32_t output_activation_max;
-  // The index of the omniorary tensor where the quantized inputs are cached.
+  // The index of the temporary tensor where the quantized inputs are cached.
   int scratch_tensor_index;
   bool compute_row_sums = false;
   // Only used for sparse hybrid fully connected kernels.
@@ -353,7 +353,7 @@ struct DWCONV2D_Data {
   std::vector<int32_t> per_channel_output_multiplier;
   std::vector<int> per_channel_output_shift;
 
-  // Hybrid per channel omniorary tensors.
+  // Hybrid per channel temporary tensors.
   int input_quantized_id = kTensorNotAllocated;
   int scaling_factors_id = kTensorNotAllocated;
   int input_offset_id = kTensorNotAllocated;
@@ -370,12 +370,12 @@ struct TCONV_Data {
   int transposed_weights_id = kTensorNotAllocated;
   int scratch_tensor_id = kTensorNotAllocated;
 
-  // col2im is the omniorary tensor allocated and used in optimized path for
+  // col2im is the temporary tensor allocated and used in optimized path for
   // storing col2im data:gemm result for input_matrix x filter_matrix.
   int32_t col2im_index;
 
   // TfLiteConverter will transpose weights from HWOI to OHWI order.
-  // In optimized path, we will transpose them back to HWOI, this omniorary
+  // In optimized path, we will transpose them back to HWOI, this temporary
   // tensor is allocated for storing transposed weights.
   int32_t transposed_weights_index;
 
@@ -425,7 +425,7 @@ struct SOFTMAX_Data {
 struct REDUCE_Data {
   int32_t multiplier;
   int shift;
-  // The index of the omniorary tensor where the quantized inputs are cached.
+  // The index of the temporary tensor where the quantized inputs are cached.
   int scratch_tensor_index;
   // Indicates that 'Eval' is a noop as the output as written during 'Prepare'.
   bool noop;

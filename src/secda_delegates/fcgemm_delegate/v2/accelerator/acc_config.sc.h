@@ -47,7 +47,6 @@
 // Pre-Defined Address for Accelerator
 #define acc_ctrl_address 0x43C00000
 #define acc_hwc_address 0x43C10000
-#define acc_reg 0x43C00000
 
 #define dma_addr0 0x40400000
 #define dma_addr1 0x40410000
@@ -75,16 +74,16 @@
 #define insn_address 0x38000000
 #define in_address 0x39000000
 #define wgt_address 0x3a000000
-#define out_address 0x3b000000
-#define bias_address 0x3c000000
+#define bias_address 0x3b000000
+#define out_address 0x3c000000
 #else
 // Z1
 #define MM_BL 4194304 // 32MB
 #define insn_address 0x18000000
 #define in_address 0x19000000
 #define wgt_address 0x1a000000
-#define out_address 0x1b000000
-#define bias_address 0x1c000000
+#define bias_address 0x1b000000
+#define out_address 0x1c000000
 #endif
 
 //==============================================================================
@@ -96,6 +95,7 @@
 #define AXI_TYPE sc_uint
 #define s_mdma multi_dma<AXI_DWIDTH, 0>
 #define mm_buf mm_buffer<unsigned long long>
+#define mm_buf2 mm_buffer<unsigned int>
 #define a_ctrl acc_ctrl<int>
 
 //==============================================================================
@@ -125,8 +125,7 @@
 #define DIVMAX 2147483648
 #define POS 1073741824
 #define NEG -1073741823
-#define DPROF(x) x
-#define DPROF(x)
+
 //==============================================================================
 // SystemC Specfic SIM/HW Configurations
 //==============================================================================

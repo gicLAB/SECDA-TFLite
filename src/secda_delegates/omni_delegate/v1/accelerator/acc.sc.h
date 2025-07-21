@@ -83,6 +83,8 @@ SC_MODULE(ACCNAME) {
   // HWC
   // ================================================= //
 
+  // ================================================= //
+
   SC_HAS_PROCESS(ACCNAME);
 
   ACCNAME(sc_module_name name_) : sc_module(name_) {

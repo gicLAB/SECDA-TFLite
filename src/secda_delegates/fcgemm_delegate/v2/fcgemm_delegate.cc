@@ -1,6 +1,6 @@
 // FCGEMM Delegate (Sim tested with some errors || FPGA not tested or
 // integrated)
-#include "tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/fcgemm_delegate.h"
+#include "tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2/fcgemm_delegate.h"
 
 #include <fstream>
 #include <iostream>
@@ -12,11 +12,11 @@
 #include "accelerator/driver/fc_driver.h"
 #include "fcgemm_delegate.h"
 #include "secda_tools/secda_profiler/profiler.h"
-#include "util.h"
-
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include "tensorflow/lite/kernels/internal/quantization_util.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
+#include "util.h"
+#include "util_prep.h"
 
 #define DELEGATE_NAME "FCGEMM"
 #define DELEGATE_VERSION 1
@@ -27,65 +27,66 @@ static struct Profile profile;
 struct MultiThreadContext mt_context;
 
 #ifdef SYSC
-ACCNAME *acc;
-struct sysC_sigs *scs;
+ACCNAME* acc;
+struct sysC_sigs* scs;
+static struct mm_buf insn_mem(0, MM_BL);
+static struct mm_buf inp_mem(0, MM_BL);
+static struct mm_buf wgt_mem(0, MM_BL);
+static struct mm_buf bias_mem(0, MM_BL);
+static struct mm_buf2 out_mem(0, MM_BL);
+
 #else
-int *acc;
-unsigned long long *insn_mem;
-unsigned long long *inp_mem;
-unsigned long long *wgt_mem;
-unsigned long long *bias_mem;
-unsigned int *out_mem;
+int* acc;
+static struct mm_buf insn_mem(insn_address, MM_BL);
+static struct mm_buf inp_mem(in_address, MM_BL);
+static struct mm_buf wgt_mem(wgt_address, MM_BL);
+static struct mm_buf bias_mem(bias_address, MM_BL);
+static struct mm_buf2 out_mem(out_address, MM_BL);
 #endif
+
+struct a_ctrl* ctrl;
 
 namespace tflite {
 namespace fcgemm_test {
 
 // FCGEMM delegate kernel.
 class FCGEMMDelegateKernel : public SimpleDelegateKernelInterface {
-public:
-  explicit FCGEMMDelegateKernel(const FCGEMMDelegateOptions &options)
+ public:
+  explicit FCGEMMDelegateKernel(const FCGEMMDelegateOptions& options)
       : options_(options) {}
 
-  TfLiteStatus Init(TfLiteContext *context,
-                    const TfLiteDelegateParams *params) override {
-
+  TfLiteStatus Init(TfLiteContext* context,
+                    const TfLiteDelegateParams* params) override {
     // Init SystemC Modules & Profilier
     if (!dparams.init) {
       std::cout << "===========================" << std::endl;
 #ifdef SYSC
-      static struct sysC_sigs scs1(1);
       static ACCNAME _acc("FCGEMM_ACC");
+      static struct sysC_sigs scs1(1);
+      static struct a_ctrl ctrl1;
       sysC_init();
-      sysC_binder(&_acc, &scs1);
+      sysC_binder(&_acc, &scs1, &ctrl1, &insn_mem, &inp_mem, &wgt_mem,
+                  &bias_mem, &out_mem);
       acc = &_acc;
       scs = &scs1;
+      ctrl = &ctrl1;
       std::cout << "Initialised the SystemC Modules" << std::endl;
-      scs->sig_start_acc = 0;
-      scs->sig_done_acc = 0;
-      scs->sig_reset_acc = 0;
       scs->sig_insn_addr = 0;
       scs->sig_input_addr = 0;
       scs->sig_weight_addr = 0;
       scs->sig_bias_addr = 0;
       scs->sig_output_addr = 0;
 #else
-      dparams.acc = getAccBaseAddress<int>(acc_ctrl_address, 65536);
-      insn_mem = mm_alloc_rw<unsigned long long>(insn_addr, MM_BL);
-      inp_mem = mm_alloc_rw<unsigned long long>(in_addr, MM_BL);
-      wgt_mem = mm_alloc_rw<unsigned long long>(wgt_addr, MM_BL * 4);
-      bias_mem = mm_alloc_rw<unsigned long long>(bias_addr, MM_BL * 4);
-      out_mem = mm_alloc_r<unsigned int>(out_addr, MM_BL * 4);
-      // Update as required
-      writeMappedReg<int>(dparams.acc, 0x14, 0);
-      writeMappedReg<int>(dparams.acc, 0x24, 1);
-      writeMappedReg<int>(dparams.acc, 0x34, insn_address / 8);
-      writeMappedReg<int>(dparams.acc, 0x3c, in_address / 8);
-      writeMappedReg<int>(dparams.acc, 0x44, wgt_address / 8);
-      writeMappedReg<int>(dparams.acc, 0x4c, bias_address / 8);
-      writeMappedReg<int>(dparams.acc, 0x54, out_address / 4);
-      writeMappedReg<int>(dparams.acc, 0x24, 0);
-      std::cout << "Memory Mapped Buffers" << std::endl;
+      acc = getAccBaseAddress<int>(acc_ctrl_address, 65536);
+      int* acc_ctrl_base = getAccBaseAddress<int>(acc_ctrl_address, 65536);
+      static struct a_ctrl acc_ctrl1(acc_ctrl_base);
+      ctrl = &acc_ctrl1;
+      ctrl->write_reg(0x24, insn_address / 8);  // Set the input address
+      ctrl->write_reg(0x2c, in_address / 8);    // Set the output address
+      ctrl->write_reg(0x34, wgt_address / 8);   // Set the weight address
+      ctrl->write_reg(0x3c, bias_address / 8);  // Set the bias address
+      ctrl->write_reg(0x44, out_address / 4);   // Set the output address
+      std::cout << "Initialised the DMA" << std::endl;
 #endif
 
       std::cout << "===========================" << std::endl;
@@ -109,8 +110,8 @@ public:
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
       // Get this node information.
-      TfLiteNode *delegated_node = nullptr;
-      TfLiteRegistration *delegated_node_registration = nullptr;
+      TfLiteNode* delegated_node = nullptr;
+      TfLiteRegistration* delegated_node_registration = nullptr;
       TF_LITE_ENSURE_EQ(
           context,
           context->GetNodeAndRegistration(context, node_index, &delegated_node,
@@ -123,10 +124,10 @@ public:
       builtin_code_[i] = delegated_node_registration->builtin_code;
       associated_nodes.push_back(node_index);
 
-      TfLiteFullyConnectedParams *cparam =
-          reinterpret_cast<TfLiteFullyConnectedParams *>(
+      TfLiteFullyConnectedParams* cparam =
+          reinterpret_cast<TfLiteFullyConnectedParams*>(
               delegated_node->builtin_data);
-      OpData *opdata = reinterpret_cast<OpData *>(delegated_node->user_data);
+      FC_Data* opdata = reinterpret_cast<FC_Data*>(delegated_node->user_data);
       cparams[i] = cparam;
       opdatas[i] = opdata;
     }
@@ -134,18 +135,18 @@ public:
     return kTfLiteOk;
   }
 
-  TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) override {
+  TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) override {
     int node_count = inputs_.size();
     int out_tid = 0;
 
     for (int i = 0; i < node_count; i++) {
-      TfLiteFullyConnectedParams *params = cparams[i];
-      OpData *data = opdatas[i];
+      TfLiteFullyConnectedParams* params = cparams[i];
+      FC_Data* data = opdatas[i];
 
-      TfLiteTensor *output;
-      const TfLiteTensor *input;
-      const TfLiteTensor *filter;
-      const TfLiteTensor *bias;
+      TfLiteTensor* output;
+      const TfLiteTensor* input;
+      const TfLiteTensor* filter;
+      const TfLiteTensor* bias;
 
       GetOutputSafe(context, outputs_[i][0], &output);
       GetInputSafe(context, inputs_[i][0], &input);
@@ -182,7 +183,7 @@ public:
 
       const int out_dim1 = batch_size;
       const int out_dim2 = num_units;
-      TfLiteIntArray *output_size = TfLiteIntArrayCreate(2);
+      TfLiteIntArray* output_size = TfLiteIntArrayCreate(2);
       output_size->data[0] = out_dim1;
       output_size->data[1] = out_dim2;
       auto output_status = context->ResizeTensor(context, output, output_size);
@@ -198,11 +199,11 @@ public:
 
       if (req_temp_out) {
         node->temporaries->data[temp_out_id] = outputs_[i][0];
-        TfLiteIntArray *temp_out_tensor_size = TfLiteIntArrayCreate(2);
+        TfLiteIntArray* temp_out_tensor_size = TfLiteIntArrayCreate(2);
         temp_out_tensor_size->data[0] = output_size->data[0];
         temp_out_tensor_size->data[1] = output_size->data[1];
 
-        TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
+        TfLiteTensor* temp_out_tensor = &context->tensors[outputs_[i][0]];
         temp_out_tensor->type = kTfLiteInt8;
         temp_out_tensor->allocation_type = kTfLiteArenaRw;
         auto temp_out_tensor_status = context->ResizeTensor(
@@ -221,29 +222,31 @@ public:
     return kTfLiteOk;
   }
 
-  TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
+  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) override {
     prf_start(0);
     int node_count = inputs_.size();
     for (int i = 0; i < node_count; i++) {
-      auto *params = cparams[i];
-      OpData *data = opdatas[i];
-      const TfLiteTensor *input;
-      const TfLiteTensor *filter;
-      TfLiteTensor *output;
+      auto* params = cparams[i];
+      FC_Data* data = opdatas[i];
+      const TfLiteTensor* input;
+      const TfLiteTensor* filter;
+      TfLiteTensor* output;
       GetInputSafe(context, inputs_[i][0], &input);
       GetInputSafe(context, inputs_[i][1], &filter);
       GetOutputSafe(context, outputs_[i][0], &output);
 
-      const TfLiteTensor *bias;
+      const TfLiteTensor* bias;
       bool isBias = (inputs_[i].size() == 3 && inputs_[i][2] >= 0);
-      if (isBias) GetInputSafe(context, inputs_[i][2], &bias);
-      else bias = nullptr;
+      if (isBias)
+        GetInputSafe(context, inputs_[i][2], &bias);
+      else
+        bias = nullptr;
 
-      const int8 *input_data = input->data.int8;
-      const int8 *filter_data = filter->data.int8;
-      int8 *output_data = output->data.int8;
-      const int32_t *bias_data =
-          (bias != nullptr ? reinterpret_cast<int32_t *>(bias->data.raw)
+      const int8* input_data = input->data.int8;
+      const int8* filter_data = filter->data.int8;
+      int8* output_data = output->data.int8;
+      const int32_t* bias_data =
+          (bias != nullptr ? reinterpret_cast<int32_t*>(bias->data.raw)
                            : nullptr);
 
       FullyConnectedParams op_params;
@@ -290,18 +293,12 @@ public:
 
       std::vector<int> in_sum;
       std::vector<int> wt_sum;
-      int *idims = input->dims->data;
-      int *wdims = filter->dims->data;
+      int* idims = input->dims->data;
+      int* wdims = filter->dims->data;
 
-#ifdef SYSC
-      int8_t *padded_input = new int8_t[pN * pK];
-      int8_t *padded_weights = new int8_t[pM * pK];
-      int8_t *padded_output = new int8_t[pM * pN];
-#else
-      int8_t *padded_input = (int8_t *)&inp_mem[0];
-      int8_t *padded_weights = (int8_t *)&wgt_mem[0];
-      int8_t *padded_output = (int8_t *)&out_mem[0];
-#endif
+      int8_t* padded_input = reinterpret_cast<int8_t*>(inp_mem.get_buffer());
+      int8_t* padded_weights = reinterpret_cast<int8_t*>(wgt_mem.get_buffer());
+      int8_t* padded_output = reinterpret_cast<int8_t*>(out_mem.get_buffer());
 
       prf_start(1);
       precal_sum_load_pad(input->data.int8, N, K, padded_input, in_sum);
@@ -311,18 +308,23 @@ public:
       // acc_container is used to wrap all the paramters the
       // fc_driver/accelerator needs from the delegate
       struct acc_container drv;
+#ifdef SYSC
+      drv.scs = scs;
+#endif
       drv.acc = acc;
+      drv.ctrl = ctrl;
+
       drv.profile = &profile;
       drv.mt_context = &mt_context;
       drv.thread_count = context->recommended_num_threads;
 
-// Accelerator Specific Parameters
-#ifdef SYSC
-      drv.scs = scs;
-#else
-      drv.insn_mem = insn_mem;
-      drv.bias_mem = bias_mem;
-#endif
+      // Accelerator Specific Parameters
+      drv.insn_mem = &insn_mem;
+      drv.inp_mem = &inp_mem;
+      drv.wgt_mem = &wgt_mem;
+      drv.bias_mem = &bias_mem;
+      drv.out_mem = &out_mem;
+
       drv.pN = pN;
       drv.pM = pM;
       drv.pK = pK;
@@ -346,16 +348,16 @@ public:
       drv.t.layer = dparams.layer;
       drv.t2 = fc_t;
 #ifdef DELEGATE_VERBOSE
-      cout << "===========================" << endl;
+      cout << "======================================================" << endl;
       cout << "Layer: " << dparams.layer
-           << "      Node: " << associated_nodes[i] << endl;
-      cout << "===========================" << endl;
+           << "      Node: " << associated_nodes[i]
+           << "      Type: " << EnumNamesBuiltinOperator()[builtin_code_[i]]
+           << endl;
+      cout << "======================================================" << endl;
 #endif
 
       // Enter the driver code
-      drv.start_count = dparams.start_count;
       tflite_fcgemm::Entry(drv);
-      dparams.start_count = drv.start_count;
       fc_t = drv.t2;
 
       // Calls the fc_driver unpack/unpad result to TFLite tensor
@@ -370,25 +372,25 @@ public:
   std::vector<std::vector<int>> inputs_, outputs_;
   std::vector<int> builtin_code_, associated_nodes;
 
-  std::vector<OpData *> opdatas;
-  std::vector<TfLiteFullyConnectedParams *> cparams;
-  std::vector<int *> biases;
+  std::vector<FC_Data*> opdatas;
+  std::vector<TfLiteFullyConnectedParams*> cparams;
+  std::vector<int*> biases;
   std::vector<std::vector<int>> biases_d;
 
-private:
+ private:
   const FCGEMMDelegateOptions options_;
-}; // namespace fcgemm_test
+};  // namespace fcgemm_test
 
 // FCGEMMDelegate implements the interface of SimpleDelegateInterface.
 // This holds the Delegate capabilities.
 class FCGEMMDelegate : public SimpleDelegateInterface {
-public:
-  explicit FCGEMMDelegate(const FCGEMMDelegateOptions &options)
+ public:
+  explicit FCGEMMDelegate(const FCGEMMDelegateOptions& options)
       : options_(options) {}
 
-  bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
-                                 const TfLiteNode *node,
-                                 TfLiteContext *context) const override {
+  bool IsNodeSupportedByDelegate(const TfLiteRegistration* registration,
+                                 const TfLiteNode* node,
+                                 TfLiteContext* context) const override {
     // Only supports FC ops
     if (kTfLiteBuiltinFullyConnected != registration->builtin_code)
       return false;
@@ -396,12 +398,12 @@ public:
     if (node->inputs->size != 3 && node->inputs->size != 2) return false;
     // This delegate only supports int8 types.
     for (int i = 0; i < 2; ++i) {
-      auto &tensor = context->tensors[node->inputs->data[i]];
+      auto& tensor = context->tensors[node->inputs->data[i]];
       if (tensor.type != kTfLiteInt8) return false;
     }
 
     if (node->inputs->size == 3 && node->inputs->data[2] >= 0) {
-      auto &tensor = context->tensors[node->inputs->data[2]];
+      auto& tensor = context->tensors[node->inputs->data[2]];
       if (tensor.type != kTfLiteInt32 && tensor.type <= 16) return false;
     }
 
@@ -410,15 +412,15 @@ public:
     return true;
   }
 
-  TfLiteStatus Initialize(TfLiteContext *context) override { return kTfLiteOk; }
+  TfLiteStatus Initialize(TfLiteContext* context) override { return kTfLiteOk; }
 
-  const char *Name() const override {
+  const char* Name() const override {
     static constexpr char kName[] = "FCGEMMDelegate";
     return kName;
   }
 
-  std::unique_ptr<SimpleDelegateKernelInterface>
-  CreateDelegateKernelInterface() override {
+  std::unique_ptr<SimpleDelegateKernelInterface> CreateDelegateKernelInterface()
+      override {
     return std::make_unique<FCGEMMDelegateKernel>(options_);
   }
 
@@ -427,12 +429,12 @@ public:
     return SimpleDelegateInterface::Options();
   }
 
-private:
+ private:
   const FCGEMMDelegateOptions options_;
 };
 
-} // namespace fcgemm_test
-} // namespace tflite
+}  // namespace fcgemm_test
+}  // namespace tflite
 
 FCGEMMDelegateOptions TfLiteFCGEMMDelegateOptionsDefault() {
   FCGEMMDelegateOptions options = {0};
@@ -445,8 +447,8 @@ FCGEMMDelegateOptions TfLiteFCGEMMDelegateOptionsDefault() {
 // Creates a new delegate instance that need to be destroyed with
 // `TfLiteFCGEMMDelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate *
-TfLiteFCGEMMDelegateCreate(const FCGEMMDelegateOptions *options) {
+TfLiteDelegate* TfLiteFCGEMMDelegateCreate(
+    const FCGEMMDelegateOptions* options) {
   std::unique_ptr<tflite::fcgemm_test::FCGEMMDelegate> fcgemm(
       new tflite::fcgemm_test::FCGEMMDelegate(
           options ? *options : TfLiteFCGEMMDelegateOptionsDefault()));
@@ -455,10 +457,10 @@ TfLiteFCGEMMDelegateCreate(const FCGEMMDelegateOptions *options) {
 }
 
 // Destroys a delegate created with `TfLiteFCGEMMDelegateCreate` call.
-void TfLiteFCGEMMDelegateDelete(TfLiteDelegate *delegate) {
+void TfLiteFCGEMMDelegateDelete(TfLiteDelegate* delegate) {
   SYSC_ON(profile.saveProfile(acc->profiling_vars));
   time_t now = time(0);
-  tm *ltm = localtime(&now);
+  tm* ltm = localtime(&now);
   std::string date =
       std::to_string(1900 + ltm->tm_year) + "-" +
       std::to_string(1 + ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday) +

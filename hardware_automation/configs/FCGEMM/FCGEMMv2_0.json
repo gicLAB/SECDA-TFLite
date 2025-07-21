@@ -1,0 +1,16 @@
+{
+  "acc_name": "FCGEMM",
+  "acc_version": 2,
+  "acc_sub_version": 0,
+  "acc_src": "fcgemm_delegate/v2/accelerator",
+  "acc_link_folder": "fcgemm_src_v2",
+  "hlx_tcl_script": "templated_FCGEMM.tcl",
+  "top": "FC_ACC_v2_0",
+  "del" : "fcgemm_delegate",
+  "del_version": "2",
+  "hls_clock" : "5",
+  "hlx_Mhz": "200",
+  "axi_bitW": "32",
+  "axi_burstS": "32",
+  "board": "Z1"
+}

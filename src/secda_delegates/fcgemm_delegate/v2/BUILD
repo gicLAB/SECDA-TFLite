@@ -23,6 +23,7 @@ cc_library(
     hdrs = [
         "fcgemm_delegate.h",
         "util.h",
+        "util_prep.h",
     ],
     deps = [
         "//tensorflow/lite/c:common",
@@ -34,7 +35,7 @@ cc_library(
         "//tensorflow/lite/kernels/internal:common",
         "//tensorflow/lite/kernels/internal:optimized_base",
         "//tensorflow/lite/kernels/internal:optimized_4bit",
-        "//tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/accelerator/driver:fc_driver",
+        "//tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2/accelerator/driver:fc_driver",
     ]
 )
 

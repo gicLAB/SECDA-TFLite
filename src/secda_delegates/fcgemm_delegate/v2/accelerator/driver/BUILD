@@ -20,6 +20,6 @@ cc_library(
     ],
     copts = common_copts,
     deps = [
-        "//tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/accelerator:accelerator",
+        "//tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2/accelerator:accelerator",
     ],
 )
