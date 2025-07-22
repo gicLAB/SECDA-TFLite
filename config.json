@@ -14,30 +14,30 @@
   "out_dir": "./generated",
   "boards": {
     "Z1": {
-      "board_user": "xilinx",
-      "board_hostname": "jharis.ddns.net",
-      "board_port": "2202",
-      "board_dir": "/home/xilinx/Workspace/secda_tflite",
+      "board_user": "Z1_USER",
+      "board_hostname": "IP_ADDRESS",
+      "board_port": "22",
+      "board_dir": "/home/Z1_USER/Workspace/secda_tflite",
       "fpga_part": "xc7z020clg400-1",
       "hlx_version": "2019"
     },
     "KRIA": {
-      "board_user": "root",
-      "board_hostname": "jharis.ddns.net",
-      "board_port": "2203",
-      "board_dir": "/home/ubuntu/Workspace/secda_tflite",
+      "board_user": "KRIA_USER",
+      "board_hostname": "IP_ADDRESS",
+      "board_port": "22",
+      "board_dir": "/home/KRIA_USER/Workspace/secda_tflite",
       "fpga_part": "xczu5ev-sfvc784-2-e",
       "hlx_version": "2024"
     }
   },
   "remote_server": {
-    "gateway": "-J jharis@sibu.dcs.gla.ac.uk",
-    "server_user": "jharis",
+    "gateway": "-J USER@sibu.dcs.gla.ac.uk",
+    "server_user": "test",
     "server_hostname": "pate.dcs.gla.ac.uk",
     "server_port": 22,
-    "server_dir": "/home/jharis/Workspace/remote/SECDA-TFLite/hardware_automation_remote/",
-    "server_2019_path": "/home/jharis/Xilinx2019/Vivado/2019.2/bin/",
-    "server_2024_path": "/home/jharis/Xilinx2024/Vivado/2024.1/bin/"
+    "server_dir": "/home/test/Workspace/remote/SECDA-TFLite/hardware_automation_remote/",
+    "server_2019_path": "/opt/Xilinx2019/Vivado/2019.2/bin",
+    "server_2024_path": "/opt/Xilinx2024/Vivado/2024.1/bin/"
   },
-  "push_bullet_token": "o.eIEuBUZBIooNKzofTc6WATcyobjqK4TD"
+  "push_bullet_token": "PB_TOKEN"
 }

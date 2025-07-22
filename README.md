@@ -105,13 +105,13 @@ bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
 bazel run //tensorflow/lite/examples/systemc:hello_systemc
 ```
 
-Once the environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
+Now you should have everything set up to start developing with the SECDA-TFLite toolkit.
 
-
-
-  
 
 ## 4. VSCode Instructions
+
+Once the development environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
+
 * Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
 
 * Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.
