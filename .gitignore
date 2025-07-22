@@ -5,7 +5,7 @@
 *__pycache__
 
 config.json
-/.devcontainer/config.json
+.devcontainer/config.json
 .deprecated/
 
 hardware_automation/generated
