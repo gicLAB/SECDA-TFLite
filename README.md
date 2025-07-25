@@ -54,10 +54,10 @@ Now you have the SECDA-TFLite repo downloaded and the basic dependencies install
 
 ## 2.A: Using VSCode Dev Container
 - Ensure docker is up and running and current user is part of docker group
-  - ``` sudo usermod -aG docker $USER ```
-- Open VSCode in the repo ``` code .```
+  - ``` sudo usermod -aG docker $USER ``` # change $USER to your Linux username
+- Open VSCode workspace using:  ```code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace```
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
-- Open the `devC` VSCode workspace, this will reload the window and enter you into the workspace. 
+- Once you installed the "Dev Containers" extension you reload VSCode using the command palette (Ctrl+Shift+P) and search for "Reload Window".
 - The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
 
 ![alt text](docs/image-1.png)
@@ -71,7 +71,7 @@ Note 1: Hardware Automation Projects can only be configured inside the dev conta
 Note 2: The dev container creates a conda environment called `secda-tflitev2` with all the required dependencies installed. You can activate this environment by running `conda activate secda-tflitev2` in the terminal. This environment is used to run the TensorFlow build process and other Python scripts.
 
 ## 2.B: Create development environment on natively
-### Setup Bazel & GDB
+### Setup Bazel and GBD
 ```bash
 sudo apt install apt-transport-https curl gnupg -y && \
 curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg && \
@@ -79,29 +79,46 @@ sudo mv bazel-archive-keyring.gpg /usr/share/keyrings && \
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list && \
 sudo apt update && sudo apt install bazel-6.1.0 -y && \
 sudo ln -sf /usr/bin/bazel-6.1.0 /usr/bin/bazel6
-sudo apt-get -y install gdb
+
+```
+
+### Setup Clang and CMake
+```bash
+wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2-Linux-x86_64.sh && \
+chmod +x cmake-3.18.2-Linux-x86_64.sh && \
+./cmake-3.18.2-Linux-x86_64.sh --skip-license --prefix=/usr/local && \
+sudo apt-get -y install gdb && \
+sudo apt install -y clang-14 lld-14 clang-format-14 && \
+sudo ln -s /usr/bin/clang-14 /usr/bin/clang && \
+sudo ln -s /usr/bin/clang++-14 /usr/bin/clang++  && \
+sudo ln -s /usr/bin/clang-format-14 /usr/bin/clang-format
 ```
 
 ### Setup miniconda environment needed for Tensorflow build process (Working with Ubuntu 22.04) 
 ```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-source ~/.bashrc
-conda config --set auto_activate_base false
-conda create -n secda-tflitev2 python -y
-conda activate secda-tflitev2
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
+bash Miniconda3-latest-Linux-x86_64.sh  && \
+source ~/.bashrc  && \
+conda config --set auto_activate_base false  && \
+conda create -n secda-tflitev2 python=3.9.19 -y  && \
+conda activate secda-tflitev2  && \
 pip install -r ./devcontainer/requirements.txt
 ```
 - Note: Within jupyter notebooks, you need to select the `secda-tflitev2` kernel to run the notebooks. 
 
-```bash
+
 ###  Configure Tensorflow & Test Bazel build (make sure to activate secda-tflitev2 environment)
 ```bash
-conda activate secda-tflitev2
-cd tensorflow
 # make sure to set python path to /home/your_user/miniconda3/bin/python3
-./configure # make sure say no to clang as the default compiler
-bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc
+# make sure say no to clang as the default compiler
+conda activate secda-tflitev2  && \
+cd tensorflow  && \
+./configure
+```
+
+### Test Bazel build
+```bash
+bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc  && \
 bazel run //tensorflow/lite/examples/systemc:hello_systemc
 ```
 
@@ -115,7 +132,8 @@ Once the development environment is created, we recommend using VSCode to immedi
 * Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
 
 * Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.
-* These configurations are stored within '/tensorflow/.vscode/launch.json' (to launch) and /tensorflow/.vscode/task.json (to compile), you can edit these to change the parameters to compile and launch the the end to end simulation.
+* These configurations are stored within '/tensorflow/.vscode/launch.json' (to launch) and /tensorflow/.vscode/task.json (to compile), you can edit these to change the parameters to compile and launch the the end to end simulation. Look at the [VSCode](./docs/vscode.md) for more information on how to use the VSCode task and launch configurations.
+
 * There are some configurations already prepared to run the VM,SA and FC-GEMM accelerator with the simulation delegates
 
 

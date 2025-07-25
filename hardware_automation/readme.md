@@ -81,7 +81,8 @@ The options available in the configuration files include:
 
 
 ## Project Generation
-The [`hw_gen.py`](./hw_gen.py) script is used to create the base hardware automation project from a given json configuration file. To generate a hardware project, run the following command in the terminal:
+The [`hw_gen.py`](./hw_gen.py) script is used to create the base hardware automation project from a given json configuration file. To generate a hardware project, run the following command in the terminal.
+If you are using the VSCode dev container or SECDA-TFLite natively, make sure to activate the secda-tflitev2 conda environment first.
 ```bash
 cd hardware_automation
 python3 hw_gen.py [path_to_config_file] # Example: python3 hw_gen.py configs/ADD/ADDv1_0.json
@@ -92,7 +93,7 @@ The script will create a new hardware project in `generated/` which will contain
 
 ## Hardware Generation
 Once the hardware project is generated, you can automate the process of running High Level Synthesis (HLS) and logic synthesis and copying files to the target board using the `run.sh` script generated in the `generated/[acc_name]` directory.
-To run the hardware generation workflow, first exit the VSCode dev container if you are using it, then navigate to the generated hardware project directory and execute the following command:
+To run the hardware generation workflow, you **must** first exit the VSCode dev container if you are using it, then navigate to the generated hardware project directory and execute the following command:
 ```bash
 cd generated/[acc_name]
 ./run.sh [run_hls] [run_hlx] [run_remote] [transfer_bitstream]

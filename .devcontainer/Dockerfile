@@ -13,7 +13,6 @@ RUN apt install -y clang-14 lld-14 clang-format-14 && \
 RUN apt install -y crossbuild-essential-armhf crossbuild-essential-arm64 libz-dev
 RUN apt install -y gdb
 RUN apt install -y software-properties-common
-RUN apt install -y python3.10 python3-pip python3-venv python3-dev
 
 # Install Bazel
 RUN apt install apt-transport-https curl gnupg -y && \
@@ -37,14 +36,14 @@ RUN wget https://github.com/ninja-build/ninja/releases/download/v1.10.1/ninja-li
     ln -s /usr/local/bin/ninja /usr/sbin/ninja
 
 # Install SystemC
-RUN mkdir -p /tmp/systemc /opt/systemc/systemc-2.3.3 /tmp/systemc/systemc-2.3.3/build
-WORKDIR /tmp/systemc
-RUN wget https://accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz && \
-    tar -xvf systemc-2.3.3.tar.gz
-WORKDIR /tmp/systemc/systemc-2.3.3/build
-RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
-    make -j$(nproc) && \
-    make install
+# RUN mkdir -p /tmp/systemc /opt/systemc/systemc-2.3.3 /tmp/systemc/systemc-2.3.3/build
+# WORKDIR /tmp/systemc
+# RUN wget https://accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz && \
+#     tar -xvf systemc-2.3.3.tar.gz
+# WORKDIR /tmp/systemc/systemc-2.3.3/build
+# RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
+#     make -j$(nproc) && \
+#     make install
 
 
 
@@ -82,6 +81,7 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 
 RUN conda create -y -n secda_tflitev2 python=3.9.19
 RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
+RUN conda init
 
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
