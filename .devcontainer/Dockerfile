@@ -30,10 +30,10 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2
     chmod +x cmake-3.18.2-Linux-x86_64.sh && \
     ./cmake-3.18.2-Linux-x86_64.sh --skip-license --prefix=/usr/local
 
-RUN wget https://github.com/ninja-build/ninja/releases/download/v1.10.1/ninja-linux.zip && \
-    unzip ninja-linux.zip && \
-    mv ninja /usr/local/bin/ninja && \
-    ln -s /usr/local/bin/ninja /usr/sbin/ninja
+# RUN wget https://github.com/ninja-build/ninja/releases/download/v1.10.1/ninja-linux.zip && \
+#     unzip ninja-linux.zip && \
+#     mv ninja /usr/local/bin/ninja && \
+#     ln -s /usr/local/bin/ninja /usr/sbin/ninja
 
 # Install SystemC
 # RUN mkdir -p /tmp/systemc /opt/systemc/systemc-2.3.3 /tmp/systemc/systemc-2.3.3/build
