@@ -8,6 +8,9 @@ config.json
 .devcontainer/config.json
 .deprecated/
 
+scripts/build.sh
+scripts/launch.sh
+
 hardware_automation/generated
 hardware_automation/acc_srcs
 hardware_automation/hlx_templater/generated

@@ -13,7 +13,6 @@ RUN apt install -y clang-14 lld-14 clang-format-14 && \
 RUN apt install -y crossbuild-essential-armhf crossbuild-essential-arm64 libz-dev
 RUN apt install -y gdb
 RUN apt install -y software-properties-common
-RUN apt install -y python3.10 python3-pip python3-venv python3-dev
 
 # Install Bazel
 RUN apt install apt-transport-https curl gnupg -y && \
@@ -79,7 +78,7 @@ RUN arch=$(uname -m) && \
 RUN conda --version
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-
+RUN conda init
 RUN conda create -y -n secda_tflitev2 python=3.9.19
 RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
 

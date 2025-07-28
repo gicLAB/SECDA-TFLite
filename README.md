@@ -50,17 +50,16 @@ cd ../tensorflow
 git checkout secda-tflite-v2_prerelease
 ```
 
-Now you have the SECDA-TFLite repo downloaded and the basic dependencies installed. You can now proceed to set up the development environment using VSCode dev containers (2A - highly recommended) or natively on your system (2B).
+Now you have the SECDA-TFLite repo downloaded and the basic dependencies installed. You can now proceed to set up the development environment [using VSCode dev containers](#2a-using-vscode-dev-container) (2.A - highly recommended), [using docker](#2b-using-docker) (2.B), or [natively on your system](2c-create-development-environment-on-natively) (2.C).
 
 ## 2.A: Using VSCode Dev Container
-- Ensure docker is up and running and current user is part of docker group
-  - ``` sudo usermod -aG docker $USER ```
+- Ensure docker is up and running and current user is part of docker group ``` sudo usermod -aG docker $USER ```
 - Open VSCode in the repo ``` code .```
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 - Open the `devC` VSCode workspace, this will reload the window and enter you into the workspace. 
 - The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
 
-![alt text](docs/image-1.png)
+![VS Code Dev Containers pop-up](docs/image-1.png)
 - Press `Reopen in Container`
 - It should take a while to download and install the container.
 - Once the container is created it should reopen you into the VSCode with the container active.
@@ -70,7 +69,23 @@ Note 1: Hardware Automation Projects can only be configured inside the dev conta
 
 Note 2: The dev container creates a conda environment called `secda-tflitev2` with all the required dependencies installed. You can activate this environment by running `conda activate secda-tflitev2` in the terminal. This environment is used to run the TensorFlow build process and other Python scripts.
 
-## 2.B: Create development environment on natively
+## 2.B: Using Docker
+This option is available in case you want to set up a containerized SECDA-TFLite development environment, but do not want to use VS Code with it.
+
+- Ensure docker is up and running and current user is part of docker group ``` sudo usermod -aG docker $USER ```
+- Build the `secda-tflite` docker image ``` docker build -t secda-tflite -f .devcontainer/Dockerfile . ```
+- Start a container from the image, mounting the repo to the container's file system ``` docker run -it -d --name secda-tflite -v .:/working_dir/SECDA-TFLite -w /working_dir/SECDA-TFLite secda-tflite ```
+- You can now enter the container with the following command ``` docker exec -it secda-tflite bash ```
+- The first time you enter the container, you must update its configuration ``` cd scripts && python3 ./update_config.py ```
+- You can generate scripts to execute from shell the same tasks available in the dev container by running ``` cd scripts && python3 ./generate_task_scripts.py ```
+  - `scripts/build.sh` can be used to build the executables
+  - `scripts/launch.sh` can be used to execute example tasks; leveraging `scripts/build.sh` to build the required executables
+
+Note 1: Hardware Automation Projects can only be configured inside the docker container. To use Vivado/Vitis you need to run your hardware project `run.sh` script outside the container. Refer to the [hardware automation](./hardware_automation/README.md) for more information on how to use the hardware automation scripts.
+
+Note 2: The docker container creates a conda environment called `secda-tflitev2` with all the required dependencies installed. You can activate this environment by running `conda activate secda-tflitev2` in the terminal. This environment is used to run the TensorFlow build process and other Python scripts.
+
+## 2.C: Create development environment on natively
 ### Setup Bazel & GDB
 ```bash
 sudo apt install apt-transport-https curl gnupg -y && \

@@ -90,3 +90,4 @@ wheel==0.45.1
 widgetsnbextension==4.0.14
 wrapt==1.17.2
 zipp==3.23.0
+json5==0.12.0
