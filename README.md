@@ -57,8 +57,14 @@ cd ../
 Now you have the SECDA-TFLite repo downloaded and the basic dependencies installed. You can now proceed to set up the development environment [using VSCode dev containers](#2a-using-vscode-dev-container) (2.A - highly recommended), [using docker](#2b-using-docker) (2.B), or [natively on your system](2c-create-development-environment-on-natively) (2.C).
 
 ## 2.A: Using VSCode Dev Container
-- Ensure docker is up and running and current user is part of docker group ``` sudo usermod -aG docker $USER # change $USER to your Linux username ```
-- Open VSCode workspace using:  ``` code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace ```
+- Ensure docker is up and running and current user is part of docker group
+```
+sudo usermod -aG docker $USER # change $USER to your Linux username
+```
+- Open VSCode workspace using
+```
+code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
+```
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 - Once you installed the "Dev Containers" extension you reload VSCode using the command palette (Ctrl+Shift+P) and search for "Reload Window".
 - The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
@@ -71,23 +77,41 @@ Now you have the SECDA-TFLite repo downloaded and the basic dependencies install
 
 **Note 1:** Hardware Automation Projects can only be configured inside the dev container. To use Vivado/Vitis you need to run your hardware project `run.sh` script outside the container (i.e. run the script from host machine terminal). Refer to the [hardware automation](./hardware_automation/README.md) for more information on how to use the hardware automation scripts.
 
-**Note 2:** The dev container creates a conda environment called `secda-tflitev2` with all the required dependencies installed and is activated by default.
+**Note 2:** The dev container creates a conda environment called `secda-tflitev2` with all the required dependencies installed, and is activated by default.
 
 ## 2.B: Using Docker
 This option is available in case you want to set up a containerized SECDA-TFLite development environment, but do not want to use VS Code with it.
 
-- Ensure docker is up and running and current user is part of docker group ``` sudo usermod -aG docker $USER ```
-- Build the `secda-tflite` docker image ``` docker build -t secda-tflite -f .devcontainer/Dockerfile . ```
-- Start a container from the image, mounting the repo to the container's file system ``` docker run -it -d --name secda-tflite -v .:/working_dir/SECDA-TFLite -w /working_dir/SECDA-TFLite secda-tflite ```
-- You can now enter the container with the following command ``` docker exec -it secda-tflite bash ```
-- The first time you enter the container, you must update its configuration ``` cd scripts && python3 ./update_config.py ```
-- You can generate scripts to execute from shell the same tasks available in the dev container by running ``` cd scripts && python3 ./generate_task_scripts.py ```
+- Ensure docker is up and running and current user is part of docker group
+```
+sudo usermod -aG docker $USER # change $USER to your Linux username
+```
+- Build the `secda-tflite` docker image
+```
+docker build -t secda-tflite -f .devcontainer/Dockerfile .
+```
+- Start a container from the image, mounting the repo to the container's file system
+```
+docker run -it -d --name secda-tflite -v .:/working_dir/SECDA-TFLite -w /working_dir/SECDA-TFLite secda-tflite
+```
+- You can now enter the container with the following command
+```
+docker exec -it secda-tflite bash
+```
+- The first time you enter the container, you must update its configuration
+```
+cd scripts && python3 ./update_config.py
+```
+- You can generate scripts to execute from shell the same tasks available in the dev container by running
+```
+cd scripts && python3 ./generate_task_scripts.py
+```
   - `scripts/build.sh` can be used to build the executables
   - `scripts/launch.sh` can be used to execute example tasks; leveraging `scripts/build.sh` to build the required executables
 
-Note 1: Hardware Automation Projects can only be configured inside the docker container. To use Vivado/Vitis you need to run your hardware project `run.sh` script outside the container. Refer to the [hardware automation](./hardware_automation/README.md) for more information on how to use the hardware automation scripts.
+**Note 1:** Hardware Automation Projects can only be configured inside the docker container. To use Vivado/Vitis you need to run your hardware project `run.sh` script outside the container. Refer to the [hardware automation](./hardware_automation/README.md) for more information on how to use the hardware automation scripts.
 
-Note 2: The docker container creates a conda environment called `secda-tflitev2` with all the required dependencies installed. You can activate this environment by running `conda activate secda-tflitev2` in the terminal. This environment is used to run the TensorFlow build process and other Python scripts.
+**Note 2:** The docker container creates a conda environment called `secda-tflitev2` with all the required dependencies installed, and is activated by default.
 
 ## 2.C: Create development environment on natively
 ### Setup Bazel and GDB
