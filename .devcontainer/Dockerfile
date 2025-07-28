@@ -30,20 +30,20 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2
     chmod +x cmake-3.18.2-Linux-x86_64.sh && \
     ./cmake-3.18.2-Linux-x86_64.sh --skip-license --prefix=/usr/local
 
-RUN wget https://github.com/ninja-build/ninja/releases/download/v1.10.1/ninja-linux.zip && \
-    unzip ninja-linux.zip && \
-    mv ninja /usr/local/bin/ninja && \
-    ln -s /usr/local/bin/ninja /usr/sbin/ninja
+# RUN wget https://github.com/ninja-build/ninja/releases/download/v1.10.1/ninja-linux.zip && \
+#     unzip ninja-linux.zip && \
+#     mv ninja /usr/local/bin/ninja && \
+#     ln -s /usr/local/bin/ninja /usr/sbin/ninja
 
 # Install SystemC
-RUN mkdir -p /tmp/systemc /opt/systemc/systemc-2.3.3 /tmp/systemc/systemc-2.3.3/build
-WORKDIR /tmp/systemc
-RUN wget https://accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz && \
-    tar -xvf systemc-2.3.3.tar.gz
-WORKDIR /tmp/systemc/systemc-2.3.3/build
-RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
-    make -j$(nproc) && \
-    make install
+# RUN mkdir -p /tmp/systemc /opt/systemc/systemc-2.3.3 /tmp/systemc/systemc-2.3.3/build
+# WORKDIR /tmp/systemc
+# RUN wget https://accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz && \
+#     tar -xvf systemc-2.3.3.tar.gz
+# WORKDIR /tmp/systemc/systemc-2.3.3/build
+# RUN ../configure --prefix=/opt/systemc/systemc-2.3.3/ && \
+#     make -j$(nproc) && \
+#     make install
 
 
 
@@ -81,6 +81,7 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 RUN conda init
 RUN conda create -y -n secda_tflitev2 python=3.9.19
 RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
+RUN conda init
 
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc

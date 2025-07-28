@@ -5,8 +5,8 @@ import os
 with open("../config.json", "r") as file:
     config = json.load(file)
 
-config["vivado_2019_path"] = "/working_dir/Vivado_2019/2019.2/bin/"
-config["vivado_2024_path"] = "/working_dir/Vivado_2024/2024.1/bin/"
+config["vivado_2019_path"] = ""
+config["vivado_2024_path"] = ""
 config["secda_tflite_path"] = "/working_dir/SECDA-TFLite/"
 
 config["models_dirs"] = [

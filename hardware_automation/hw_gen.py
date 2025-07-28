@@ -219,11 +219,11 @@ def process_hw_config(hw_config_file):
         hw_config_file += ".json"
 
     # Loads the system configuration for SECDA-TFLite
-    if os.environ.get("CONTAINERIZED"):
-        sc = load_config("../.devcontainer/config.json")
-    else:
-        sc = load_config("../config.json")
-
+    # if os.environ.get("CONTAINERIZED"):
+    #     sc = load_config("../.devcontainer/config.json")
+    # else:
+    #     sc = load_config("../config.json")
+    sc = load_config("../config.json")
     # Loads the hardware configuration
     if not os.path.exists(hw_config_file):
         hw_config_file = find_hw_config(

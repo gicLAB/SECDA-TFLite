@@ -1,7 +1,7 @@
 {
   "secda_tflite_path": "/working_dir/SECDA-TFLite/",
-  "vivado_2019_path": "/working_dir/Vivado_2019/2019.2/bin/",
-  "vivado_2024_path": "/working_dir/Vivado_2024/2024.1/bin/",
+  "vivado_2019_path": "",
+  "vivado_2024_path": "",
   "models_dirs": [
     "/working_dir/SECDA-TFLite/data/models",
     "/working_dir/SECDA-TFLite/src/benchmark_suite/model_gen/models",

@@ -1,11 +1,11 @@
 {
-  "secda_tflite_path": "/home/jude/Workspace/SECDA-TFLite_v1.2",
-  "vivado_2019_path": "/home/jude/Xilinx_2019.2/Vivado/2019.2/bin/",
-  "vivado_2024_path": "/mnt/Crucial/Xilinx2024/Vivado/2024.1/bin/",
+  "secda_tflite_path": "/path/to/SECDA-TFLite",
+  "vivado_2019_path": "/path/to/Xilinx2019/Vivado/2019.2/bin/",
+  "vivado_2024_path": "/path/to/Xilinx2024/Vivado/2024.1/bin/",
   "models_dirs": [
-    "/home/jude/Workspace/SECDA-TFLite_v1.2/data/models",
-    "/home/jude/Workspace/SECDA-TFLite_v1.2/src/benchmark_suite/model_gen/models",
-    "/home/jude/Workspace/SECDA-TFLite_v1.2/tensorflow/models"
+    "/path/to/SECDA-TFLite/data/models",
+    "/path/to/SECDA-TFLite/src/benchmark_suite/model_gen/models",
+    "/path/to/SECDA-TFLite/tensorflow/models"
   ],
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "hw_configs": "hardware_automation/configs",
@@ -31,13 +31,13 @@
     }
   },
   "remote_server": {
-    "gateway": "-J USER@sibu.dcs.gla.ac.uk",
-    "server_user": "test",
-    "server_hostname": "pate.dcs.gla.ac.uk",
+    "gateway": "-J GATEWAY_USER@GATEWAY_SERVER_IP_ADDRESS",
+    "server_user": "REMOTE_SERVER_USER",
+    "server_hostname": "REMOTE_SERVER_IP_ADDRESS",
     "server_port": 22,
-    "server_dir": "/home/test/Workspace/remote/SECDA-TFLite/hardware_automation_remote/",
-    "server_2019_path": "/opt/Xilinx2019/Vivado/2019.2/bin",
-    "server_2024_path": "/opt/Xilinx2024/Vivado/2024.1/bin/"
+    "server_dir": "/remote/path/to/SECDA-TFLite/hardware_automation_remote/",
+    "server_2019_path": "/remote/path/to/Xilinx2019/Vivado/2019.2/bin",
+    "server_2024_path": "/remote/path/to/Xilinx2024/Vivado/2024.1/bin/"
   },
   "push_bullet_token": "PB_TOKEN"
 }
