@@ -25,6 +25,7 @@ src/benchmark_suite/tmp
 src/benchmark_suite/logs
 src/benchmark_suite/files
 
+src/experimental/
 src/experimental/secda_apps_evaluation_suite/generated
 src/experimental/secda_apps_evaluation_suite/tmp
 src/experimental/secda_benchmark_suite/tmp
