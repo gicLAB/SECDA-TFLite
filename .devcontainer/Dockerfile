@@ -78,7 +78,7 @@ RUN arch=$(uname -m) && \
 RUN conda --version
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-
+RUN conda init
 RUN conda create -y -n secda_tflitev2 python=3.9.19
 RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
 RUN conda init
