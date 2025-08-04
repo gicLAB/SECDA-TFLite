@@ -132,7 +132,7 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 
 # Set IP repository paths
 set obj [get_filesets sources_1]
-set_property "ip_repo_paths" "[file normalize "$origin_dir/../Workspace/SECDA-TFLite_v1.2/hardware_automation/generated/FCGEMM_2_0/FCGEMM_2_0/FCGEMM_2_0"]" $obj
+set_property "ip_repo_paths" "[file normalize "$origin_dir/../Workspace/SECDA-TFLite/hardware_automation/generated/FCGEMM_2_0/FCGEMM_2_0/FCGEMM_2_0"]" $obj
 
 # Rebuild user ip_repo's index before adding any source files
 update_ip_catalog -rebuild

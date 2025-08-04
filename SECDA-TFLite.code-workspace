@@ -5,7 +5,7 @@
 			"path": "tensorflow"
 		},
 		{
-			"name": "SECDA-TFLite_v1.2",
+			"name": "SECDA-TFLite",
 			"path": "."
 		},
 	],
