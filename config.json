@@ -21,6 +21,14 @@
       "fpga_part": "xc7z020clg400-1",
       "hlx_version": "2019"
     },
+    "Z2": {
+      "board_user": "Z2_USER",
+      "board_hostname": "IP_ADDRESS",
+      "board_port": "22",
+      "board_dir": "/home/Z2_USER/Workspace/secda_tflite",
+      "fpga_part": "xc7z020clg400-1",
+      "hlx_version": "2019"
+    },
     "KRIA": {
       "board_user": "KRIA_USER",
       "board_hostname": "IP_ADDRESS",

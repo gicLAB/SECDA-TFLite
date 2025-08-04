@@ -4,6 +4,12 @@
 The Benchmark Suite is designed to evaluate the performance of various models on SECDA-TFLite accelerators.
 It provides graphical interface to set up experiments, run benchmarks, and visualize results.
 
+## Prerequisites
+- This assumes you have already set up the SECDA-TFLite environment as described in the [SECDA-TFLite README](./README.md).
+- Ensure you have the necessary dependencies installed, including Jupyter Notebook and ipywidgets.
+- If you are running the Benchmark Suite on a remote board, ensure you have SSH access to the board.
+- And that you have set up the board as described in the [FPGA Setup and Support Documentation](./docs/fpga_support.md).
+
 ## Getting Started
 
 1. Open [secda_benchmarking_suite.ipynb](./secda_benchmarking_suite.ipynb) in Jupyter Notebook.

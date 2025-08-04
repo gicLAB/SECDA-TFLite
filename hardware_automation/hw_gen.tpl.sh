@@ -151,6 +151,8 @@ if [ $run_hlx == 1 ]; then
   if [ $offload_hls_hlx == 1 ]; then
     # check server directory is available in the server
     ssh -q -t -p &{server_port} &{gateway} &{server_user}@&{server_hostname} "mkdir -p &{server_dir}"
+    # copy the HLS generated files to the server
+    rsync -r -av -e 'ssh -p &{server_port} &{gateway}' ./&{acc_tag} &{server_user}@&{server_hostname}:&{server_dir}/&{acc_tag}/
     rsync -r -av -e 'ssh -p &{server_port} &{gateway}' ./src &{server_user}@&{server_hostname}:&{server_dir}/&{acc_tag}/
     rsync -r -av -e 'ssh -p &{server_port} &{gateway}' hls_script.tcl &{server_user}@&{server_hostname}:&{server_dir}/&{acc_tag}/
     rsync -r -av -e 'ssh -p &{server_port} &{gateway}' hlx_script.tcl &{server_user}@&{server_hostname}:&{server_dir}/&{acc_tag}/

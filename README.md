@@ -20,8 +20,10 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
    - [Instructions for installing VSCode on Windows](https://code.visualstudio.com/docs/setup/windows)
    - Install [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
  - Hardware Synthesis (Not required for simulation but recommended for updating simulation timing using HLS):
-   - Vivado 2019.2 (required for SystemC HLS)
-   - Vitis 2024.2 (for logic synthesis for KV260)
+   - Vivado 2019.2 (required for SystemC HLS) | [Installation Guide](./docs/vivado_install.md)
+   - Vitis 2024.2 (optional, required for logic synthesis for KV260) | [Download Link](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vitis/2024-1.html)
+   - Checkout the [hardware automation](./hardware_automation/README.md) for more information on how to use the hardware automation scripts.
+   - Checkout the [FPGA Setup and Support Documentation](./docs/fpga_support.md) for more information on how to set up the FPGA board for SECDA-TFLite.
 
 
 ## 1. Repo Download and Configuration (#TODO: Update paths)
@@ -58,13 +60,12 @@ Now you have the SECDA-TFLite repo downloaded and the basic dependencies install
 
 ## 2.A: Using VSCode Dev Container
 - Ensure docker is up and running and current user is part of docker group
-```
-sudo usermod -aG docker $USER # change $USER to your Linux username
-```
+``` sudo usermod -aG docker $USER ``` # change $USER to your Linux username, you might need to log out and log back in for this to take effect
 - Open VSCode workspace using
 ```
 code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
 ```
+- Open VSCode workspace using:  ```code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace```
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 - Once you installed the "Dev Containers" extension you reload VSCode using the command palette (Ctrl+Shift+P) and search for "Reload Window".
 - The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
@@ -196,9 +197,6 @@ Once the development environment is created, we recommend using VSCode to immedi
 Overview of the repo structure with the important directories presented below:
 ```
 SECDA-TFLite_v1.2/
-├── LICENSE
-├── README.md
-├── WORKSPACE
 ├── config.json
 ├── data/
 │   ├── inputs/
@@ -208,13 +206,12 @@ SECDA-TFLite_v1.2/
 ├── scripts/
 ├── src/
 │   ├── benchmark_suite/
-│   ├── experimental/
 │   ├── secda_apps/
-│   ├── secda_generator/
 │   ├── secda_delegates/
-│   ├── secda_profilier/
-│   ├── secda_tflite/
+│   ├── secda_generator/
+│   └── secda_profilier/
 ├── tensorflow/
+└── tutorials/
 ```
 
 
