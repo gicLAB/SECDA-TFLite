@@ -70,7 +70,7 @@ code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
 - Once you installed the "Dev Containers" extension you reload VSCode using the command palette (Ctrl+Shift+P) and search for "Reload Window".
 - The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
 
-![VS Code Dev Containers pop-up](docs/image-1.png)
+![VS Code Dev Containers pop-up](docs/media/image-1.png)
 - Press `Reopen in Container`
 - It should take a while to download and install the container.
 - Once the container is created it should reopen you into the VSCode with the container active.

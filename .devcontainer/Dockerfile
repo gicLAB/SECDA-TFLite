@@ -81,7 +81,6 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 RUN conda init
 RUN conda create -y -n secda_tflitev2 python=3.9.19
 RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
-RUN conda init
 
 
 RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
@@ -92,14 +91,6 @@ RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
     echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc && \
     echo "export CONTAINERIZED=1" >> ~/.bashrc
 
-
-# Print welcome message
-# RUN echo "cd /working_dir" >> ~/.bashrc && \
-#     echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
-#     echo "echo ' '" >> ~/.bashrc && \
-#     echo "echo 'NOTE:'" >> ~/.bashrc && \
-#     echo "echo '    /working_dir folder was volume mounted'" >> ~/.bashrc && \
-#     echo "echo ' '" >> ~/.bashrc 
 
 RUN echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
     echo "echo ' '" >> ~/.bashrc && \
