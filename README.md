@@ -52,7 +52,7 @@ Once you have configured the `config.json` file, you can run the setup script an
 cd scripts && \
 ./setup.sh && \
 cd ../tensorflow && \
-git checkout secda-tflite-v2_prerelease && \
+git checkout secda-tflite-v2 && \
 cd ../
 ```
 
