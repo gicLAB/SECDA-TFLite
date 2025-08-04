@@ -183,15 +183,21 @@ Now you should have everything set up to start developing with the SECDA-TFLite 
 
 ## 4. VSCode Instructions
 
+### Recommended VSCode Extensions
+- [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)   | Needed for the debugging
+- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)    | Needed for running the python scripts and jupyter notebooks
+- [Jupyter](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter) | Needed for running Jupyter notebooks
+
+
 Once the development environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
 
 * Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
 
 * Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.
+  
 * These configurations are stored within '/tensorflow/.vscode/launch.json' (to launch) and /tensorflow/.vscode/task.json (to compile), you can edit these to change the parameters to compile and launch the the end to end simulation. Look at the [VSCode](./docs/vscode.md) for more information on how to use the VSCode task and launch configurations.
 
-* There are some configurations already prepared to run the VM,SA and FC-GEMM accelerator with the simulation delegates
-
+* There are some configurations already prepared to run and simulate some of the accelerator provided in the `src/secda_delegates/` directory.
 
 ## Repo Structure
 Overview of the repo structure with the important directories presented below:
