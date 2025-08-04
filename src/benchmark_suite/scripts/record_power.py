@@ -25,7 +25,7 @@ def main(raw_args=None):
 
     # Output file
     name = parser.parse_args().name
-    mypath = "/home/jude/Workspace/SECDA-TFLite_v1.2/src/benchmark_suite/files/"
+    mypath = "/home/jude/Workspace/SECDA-TFLite_v1.3/src/benchmark_suite/files/"
     onlyfiles = [join(mypath, f) for f in listdir(mypath) if isfile(join(mypath, f))]
     outname = mypath + f"{name}.mp4"
 
@@ -53,7 +53,7 @@ def main(raw_args=None):
     # signal.signal(signal.SIGINT, handler)
     # signal.signal(signal.SIGINT, signal_handler)
     try:
-        with open("/home/jude/Workspace/SECDA-TFLite_v1.2/src/benchmark_suite/files/coords.txt", "r") as f:
+        with open("/home/jude/Workspace/SECDA-TFLite_v1.3/src/benchmark_suite/files/coords.txt", "r") as f:
             px, py, pxs, pys = [int(x) for x in f.read().split()]
     except:
         print("No coords.txt found")

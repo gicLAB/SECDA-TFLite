@@ -6,7 +6,7 @@ import os
 from string import Template
 import json
 
-hw_gen_tpl = "hw_gen.tpl.sh"
+hw_gen_tpl = "gen.tpl.sh"
 
 
 # open c++ header file and parse all the #define and their values into a dictionary
@@ -80,13 +80,17 @@ class hardware_exp:
         self,
         config,
         sc,
+        true_sc,
     ):
         self.sc = sc
+        self.true_sc = true_sc
+
         self.config = config
         self.board = dict_default(config, "board", "Z1")
         self.bconfig = sc["boards"][self.board]
         # self.board = config["board"]
         self.hw_link_dir = f"{sc['secda_tflite_path']}/{sc['hw_link_dir']}/"
+        self.true_hw_link_dir = f"{true_sc['secda_tflite_path']}/{true_sc['hw_link_dir']}/"
         # self.vp = self.bconfig["vivado_path"]
         # self.vp_hls = self.bconfig["hls_path"]
         self.vp_hls = self.sc["vivado_2019_path"]
@@ -107,6 +111,9 @@ class hardware_exp:
         self.acc_name = config["acc_name"]
         self.acc_version = config["acc_version"]
         self.acc_sub_version = config["acc_sub_version"]
+        self.true_acc_link_folder = os.path.abspath(
+            self.true_hw_link_dir + config["acc_link_folder"]
+        )
         self.acc_link_folder = os.path.abspath(
             self.hw_link_dir + config["acc_link_folder"]
         )
@@ -176,7 +183,7 @@ class hardware_exp:
     def create_run_script(self, output_path):
         output_dir = output_path + "/" + self.acc_tag
         run_dict = {
-            "acc_link_folder": self.acc_link_folder,
+            "acc_link_folder": self.true_acc_link_folder,
             "acc_tag": self.acc_tag,
             "vp": self.vp,
             "vp_hls": self.vp_hls,
@@ -219,11 +226,11 @@ def process_hw_config(hw_config_file):
         hw_config_file += ".json"
 
     # Loads the system configuration for SECDA-TFLite
-    # if os.environ.get("CONTAINERIZED"):
-    #     sc = load_config("../.devcontainer/config.json")
-    # else:
-    #     sc = load_config("../config.json")
-    sc = load_config("../config.json")
+    if os.environ.get("CONTAINERIZED"):
+        sc = load_config("../.devcontainer/config.json")
+    else:
+        sc = load_config("../config.json")
+    true_sc = load_config("../config.json")
     # Loads the hardware configuration
     if not os.path.exists(hw_config_file):
         hw_config_file = find_hw_config(
@@ -258,15 +265,22 @@ def process_hw_config(hw_config_file):
     os.system(f"ln -sf {sysc_hw_utils_path} {target}")
 
     ## Creates the hw_exp project
-    acc_proj = hardware_exp(hw_config, sc)
+    acc_proj = hardware_exp(hw_config, sc, true_sc)
     acc_proj.create_project(out_dir)
 
     # Prints commands to run the script for the user
     acc_proj_path = os.path.abspath(out_dir + "/" + acc_proj.acc_tag)
-    print(f"The project has been created in {acc_proj_path}")
+    true_acc_proj_path = os.path.abspath(
+        true_sc["secda_tflite_path"] + "/hardware_automation/" +  true_sc["out_dir"] + "/" + acc_proj.acc_tag
+    )
+    if os.environ.get("CONTAINERIZED"):
+        print(f"                        [!WARNING!]                        ")
+        print(f"To run the project HLS and HLX you must first exit the docker container.")
+
+    print(f"The project has been created in {true_acc_proj_path}")
     print(f"To run the project HLS and HLX, run the following commands:")
-    print(f"cd {acc_proj_path}")
-    print(f"{acc_proj_path}/run.sh")
+    print(f"cd {true_acc_proj_path}")
+    print(f"{true_acc_proj_path}/run.sh")
 
 
 def main():
