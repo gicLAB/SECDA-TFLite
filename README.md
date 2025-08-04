@@ -58,8 +58,8 @@ cd ../
 Now you have the SECDA-TFLite repo downloaded and the basic dependencies installed. You can now proceed to set up the development environment [using VSCode dev containers](#2a-using-vscode-dev-container) (2.A - highly recommended), [using docker](#2b-using-docker) (2.B), or [natively on your system](2c-create-development-environment-on-natively) (2.C).
 
 ## 2.A: Using VSCode Dev Container
-- Ensure docker is up and running and current user is part of docker group
-``` sudo usermod -aG docker $USER ``` # change $USER to your Linux username, you might need to log out and log back in for this to take effect
+- Ensure docker is up and running, and there is a 'docker' group and current user is part of it
+``` sudo usermod -aG docker $USER ``` # might need to relog to apply the changes
 - Open VSCode workspace using
 ```
 code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
