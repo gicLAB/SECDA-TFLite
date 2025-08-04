@@ -1,12 +1,13 @@
 {
 	"folders": [
 		{
-			"path": "."
-		},
-		{
 			"name": "tensorflow",
 			"path": "tensorflow"
-		}
+		},
+		{
+			"name": "SECDA-TFLite_v1.2",
+			"path": "."
+		},
 	],
 	"settings": {
 		"files.associations": {
