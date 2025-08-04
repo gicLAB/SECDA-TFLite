@@ -26,13 +26,12 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
    - Checkout the [FPGA Setup and Support Documentation](./docs/fpga_support.md) for more information on how to set up the FPGA board for SECDA-TFLite.
 
 
-## 1. Repo Download and Configuration (#TODO: Update paths)
+## 1. Repo Download and Configuration
 ### Download the SECDA-TFLite repo and install basic dependencies
 Make sure you are in linux-based workspace environment with git installed. Run the following commands to download the SECDA-TFLite repo and install the basic dependencies:
 ```bash
-git clone git@github.com:judeharis/SECDA-TFLite.git && \
+git clone https://github.com/gicLAB/SECDA-TFLite.git && \
 cd SECDA-TFLite && \
-git checkout v1.3 && \
 git submodule init && \
 git submodule update && \
 sudo apt install -y jq ssh rsync
