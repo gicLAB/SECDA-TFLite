@@ -64,9 +64,11 @@ Now you have the SECDA-TFLite repo downloaded and the basic dependencies install
 sudo addgroup docker
 sudo usermod -aG docker $USER 
 ```
+
+- Open VSCode workspace using:  
+```bash
 code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
 ```
-- Open VSCode workspace using:  ```code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace```
 - Install "Dev Containers" extension https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 - Once you installed the "Dev Containers" extension you reload VSCode using the command palette (Ctrl+Shift+P) and search for "Reload Window".
 - The following pop-up should appear otherwise you can open the command palette (Ctrl+Shift+P) and search for "Dev Containers: Reopen in Container"
