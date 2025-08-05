@@ -253,14 +253,17 @@ def process_hw_config(hw_config_file):
     )
     for file in os.listdir(acc_src_dir):
         if file.endswith(".cc") or file.endswith(".h"):
-            source = os.path.abspath(acc_src_dir + file)
-            target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
+            target = "./acc_srcs/" + hw_config["acc_link_folder"] + "/"
+            abs_source = os.path.abspath(acc_src_dir + file)
+            source = os.path.relpath(abs_source, target)
             os.system(f"ln -sf {source} {target}")
-    target = os.path.abspath(hw_link_dir + hw_config["acc_link_folder"] + "/")
-    sysc_types_path = f"{sc['secda_tflite_path']}/src/utils/sysc_types.h"
-    sysc_hw_utils_path = (
+    target = "./acc_srcs/" + hw_config["acc_link_folder"] + "/"
+    abs_sysc_types_path = f"{sc['secda_tflite_path']}/src/utils/sysc_types.h"
+    abs_sysc_hw_utils_path = (
         f"{sc['secda_tflite_path']}/src/utils/secda_hw_utils.sc.h"
     )
+    sysc_types_path = os.path.relpath(abs_sysc_types_path, target)
+    sysc_hw_utils_path = os.path.relpath(abs_sysc_hw_utils_path, target)
     os.system(f"ln -sf {sysc_types_path} {target}")
     os.system(f"ln -sf {sysc_hw_utils_path} {target}")
 
