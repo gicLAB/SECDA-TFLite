@@ -15,6 +15,7 @@ Ultimately, this increases hardware accelerator developers' productivity, as the
 - Otherwise, if using Windows:
    - Install WSL for windows and use Ubuntu 22.04
    - Install [docker for windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+   - Clone this repository inside the WSL file system  (i.e. inside `/home/your_user/` directory) for symlinks to work correctly
 - Install [VSCode](https://code.visualstudio.com/download) (highlighy recommended)
    - [Instructions for installing VSCode on Linux](https://code.visualstudio.com/docs/setup/linux#_install-vs-code-on-linux)
    - [Instructions for installing VSCode on Windows](https://code.visualstudio.com/docs/setup/windows)
