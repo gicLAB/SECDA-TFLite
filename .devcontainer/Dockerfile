@@ -50,50 +50,63 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2
 # ============================================================================
 FROM builder AS dev-user
 
-COPY .devcontainer/requirements.txt /working_dir/requirements.txt
-WORKDIR /working_dir
+# User creation arguments
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+ARG WORKSPACE_PATH
 
-ENV PATH="/root/miniconda3/bin:${PATH}"
+# Create the user with matching UID/GID first
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Install Conda
-RUN apt-get update && \
-    apt-get install -y wget && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Switch to the target user
+USER $USERNAME
+WORKDIR /home/$USERNAME
 
+# Create the workspace directory structure
+RUN sudo mkdir -p $WORKSPACE_PATH && sudo chown -R $USERNAME:$USERNAME $(dirname $WORKSPACE_PATH)
+
+COPY .devcontainer/requirements.txt $WORKSPACE_PATH/requirements.txt
+
+# Install Conda as the target user
 RUN arch=$(uname -m) && \
     if [ "$arch" = "x86_64" ]; then \
-    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
     elif [ "$arch" = "aarch64" ]; then \
-    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
     else \
-    echo "Unsupported architecture: $arch"; \
-    exit 1; \
+        echo "Unsupported architecture: $arch"; \
+        exit 1; \
     fi && \
     wget $MINICONDA_URL -O miniconda.sh && \
-    mkdir -p /root/.conda && \
-    bash miniconda.sh -b -p /root/miniconda3 && \
+    mkdir -p ~/.conda && \
+    bash miniconda.sh -b -p ~/miniconda3 && \
     rm -f miniconda.sh
 
-RUN conda --version
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-RUN conda init
-RUN conda create -y -n secda_tflitev2 python=3.9.19
-RUN conda run -n secda_tflitev2 pip install -r /working_dir/requirements.txt
+# Update PATH and set up conda environment
+ENV PATH="/home/${USERNAME}/miniconda3/bin:${PATH}"
+RUN ~/miniconda3/bin/conda --version
+RUN ~/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+RUN ~/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+RUN ~/miniconda3/bin/conda init
+RUN ~/miniconda3/bin/conda create -y -n secda_tflitev2 python=3.9.19
+RUN ~/miniconda3/bin/conda run -n secda_tflitev2 pip install -r $WORKSPACE_PATH/requirements.txt
 
-
-RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc
-
-# Select clang compiler and set SystemC home
-RUN echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
+# Set up user's bashrc
+RUN echo "PS1='\[\033[01;31m\][\[\033[01;30m\]\u@\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '" >> ~/.bashrc && \
+    echo "export CXX=/usr/bin/clang++" >> ~/.bashrc && \
     echo "export CC=/usr/bin/clang" >> ~/.bashrc && \
     echo "export SYSTEMC_HOME=/opt/systemc/systemc-2.3.3" >> ~/.bashrc && \
-    echo "export CONTAINERIZED=1" >> ~/.bashrc
-
-
-RUN echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
+    echo "export CONTAINERIZED=1" >> ~/.bashrc && \
+    echo "conda activate secda_tflitev2" >> ~/.bashrc && \
+    echo "echo 'Welcome to the SECDA-TFLITE dev container'" >> ~/.bashrc && \
     echo "echo ' '" >> ~/.bashrc && \
-    echo "echo 'NOTE: Important folders are volume mounted to /working_dir '" >> ~/.bashrc 
+    echo "echo 'NOTE: Project is mounted at $WORKSPACE_PATH '" >> ~/.bashrc
 
-RUN echo "conda activate secda_tflitev2" >> ~/.bashrc
+# Set bash as the default shell and entrypoint
+SHELL ["/bin/bash", "-c"]
+
+WORKDIR $WORKSPACE_PATH

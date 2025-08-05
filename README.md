@@ -85,27 +85,27 @@ code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
 This option is available in case you want to set up a containerized SECDA-TFLite development environment, but do not want to use VS Code with it.
 
 - Ensure docker is up and running and current user is part of docker group
-```
+```bash
 sudo usermod -aG docker $USER # change $USER to your Linux username
 ```
-- Build the `secda-tflite` docker image
+- Build the `secda-tflite` docker image with the same configuration as the devcontainer
+```bash
+docker build -t secda-tflite -f .devcontainer/Dockerfile --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) --build-arg USERNAME=$USER --build-arg WORKSPACE_PATH=$(pwd) .
 ```
-docker build -t secda-tflite -f .devcontainer/Dockerfile .
-```
-- Start a container from the image, mounting the repo to the container's file system
-```
-docker run -it -d --name secda-tflite -v .:/working_dir/SECDA-TFLite -w /working_dir/SECDA-TFLite secda-tflite
+- Start a container from the image, mounting the repo to the same path as on the host
+```bash
+docker run -it -d --name secda-tflite -v $(pwd):$(pwd) -w $(pwd) --user $USER secda-tflite
 ```
 - You can now enter the container with the following command
-```
+```bash
 docker exec -it secda-tflite bash
 ```
 - The first time you enter the container, you must update its configuration
-```
+```bash
 cd scripts && python3 ./update_config.py
 ```
 - You can generate scripts to execute from shell the same tasks available in the dev container by running
-```
+```bash
 cd scripts && python3 ./generate_task_scripts.py
 ```
   - `scripts/build.sh` can be used to build the executables
@@ -192,7 +192,7 @@ Now you should have everything set up to start developing with the SECDA-TFLite 
 
 Once the development environment is created, we recommend using VSCode to immediately start developing. Checkout the VSCode instructions below.
 
-* Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at `/working_dir/SECDA-TFLite.code-workspace`.
+* Load VSCode `SECDA-TFLite.code-workspace` using "open workspace from file" option in the VSCode File menu. Note: within the container this workspace will be located at the same path as on your host system.
 
 * Once the VSCode workspace is loaded, you are able to run to the launch configurations through the [Run and Debug](https://code.visualstudio.com/docs/editor/debugging) tab to run the end to end simulation.
   
