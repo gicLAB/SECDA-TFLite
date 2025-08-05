@@ -65,3 +65,7 @@ config_user.json
 
 src/secda_apps/eval_model_accuracy/cmds.sh
 src/benchmark_suite/scripts/record_power.py
+src/benchmark_suite/scripts/record_power.ipynb
+src/benchmark_suite/scripts/process_power.ipynb
+src/benchmark_suite/scripts/process_power.py
+
