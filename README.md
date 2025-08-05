@@ -65,8 +65,8 @@ Now you have the SECDA-TFLite repo downloaded and the basic dependencies install
 sudo addgroup docker
 sudo usermod -aG docker $USER 
 ```
-- Open VSCode workspace using
-```
+- Open VSCode workspace using:  
+```bash
 code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace
 ```
 - Open VSCode workspace using:  ```code /path/to/SECDA-TFLite/SECDA-TFLite.code-workspace```
