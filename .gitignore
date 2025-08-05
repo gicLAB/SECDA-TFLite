@@ -62,3 +62,6 @@ src/secda_delegates/vm_delegate/v3
 src/secda_delegates/vm_delegate/v4
 .devcontainer/config_user.json
 config_user.json
+
+src/secda_apps/eval_model_accuracy/cmds.sh
+src/benchmark_suite/scripts/record_power.py

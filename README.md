@@ -207,7 +207,7 @@ Once the development environment is created, we recommend using VSCode to immedi
 ## Repo Structure
 Overview of the repo structure with the important directories presented below:
 ```
-SECDA-TFLite_v1.3/
+SECDA-TFLite_v2/
 ├── config.json
 ├── data/
 │   ├── inputs/
