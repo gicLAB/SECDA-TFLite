@@ -2,8 +2,16 @@
   "name": "secda-tflite",
   "build": {
     "dockerfile": "Dockerfile",
-    "context": ".."
+    "context": "..",
+    "args": {
+      "USER_UID": "${localEnv:USER_UID:1000}",
+      "USER_GID": "${localEnv:USER_GID:1000}",
+      "USERNAME": "${localEnv:USER:vscode}",
+      "WORKSPACE_PATH": "${localWorkspaceFolder}"
+    }
   },
+  "remoteUser": "${localEnv:USER:vscode}",
+  "containerUser": "${localEnv:USER:vscode}",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -14,8 +22,8 @@
     }
   },
   "mounts": [
-    "source=${localWorkspaceFolder},target=/working_dir/SECDA-TFLite/,type=bind,consistency=cached"
+    "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=cached"
   ],
-  "workspaceFolder": "/working_dir/SECDA-TFLite",
-  "postCreateCommand": "cd scripts && python3 ./update_config.py"
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "postCreateCommand": "sudo chown -R ${localEnv:USER:vscode}:${localEnv:USER:vscode} ${localWorkspaceFolder} && cd scripts && python3 ./update_config.py"
 }
