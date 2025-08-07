@@ -224,6 +224,9 @@ SECDA-TFLite/
 └── tutorials/
 ```
 
+# Development
+We are actively developing the SECDA-TFLite toolkit and the other SECDA related projects. If you have found a bug or have a feature request, please open an issue on the [SECDA-TFLite GitHub repository](https://github.com/gicLAB/SECDA-TFLite/issues).
+We will try to address the issue as soon as possible. 
 
 
 # Paper
