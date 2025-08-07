@@ -39,7 +39,6 @@ cc_library(
             "vmm_modules.sc.h",
             "vmm_unit.sc.h",
             "write_sync.sc.h",
-            "hwc.sc.h",
         ],
         "//conditions:default": [],
     }),

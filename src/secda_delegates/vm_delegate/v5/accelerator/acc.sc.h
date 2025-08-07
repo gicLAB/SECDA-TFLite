@@ -2,7 +2,6 @@
 #define ACCNAME_H
 
 #include "acc_config.sc.h"
-#include "hwc.sc.h"
 #include "vmm_unit.sc.h"
 
 SC_MODULE(ACCNAME) {
@@ -200,30 +199,14 @@ SC_MODULE(ACCNAME) {
 
   void start_VMM(int, int, int[13]);
 
-  // HW Threads
-  HWC_CTHREAD(Input_Handler);
-  HWC_CTHREAD(Output_Handler);
-  HWC_CTHREAD(Data_In);
-  HWC_CTHREAD(Scheduler);
-  HWC_CTHREAD(Arranger);
+  void Input_Handler();
+  void Output_Handler();
+  void Data_In();
+  void Scheduler();
+  void Arranger();
 
   // HWC_MAIN
   sc_in<bool> hwc_reset;
-  void HWC_MAIN() {
-    wait();
-    while (true) {
-      {
-#pragma HLS LATENCY max = 0 min = 0
-#pragma HLS protocol fixed
-        HWC_Logic(Input_Handler);
-        HWC_Logic(Output_Handler);
-        HWC_Logic(Data_In);
-        HWC_Logic(Scheduler);
-        HWC_Logic(Arranger);
-        DWAIT();
-      }
-    }
-  }
 
 #ifndef __SYNTHESIS__
   void Read_Cycle_Counter();
@@ -234,7 +217,6 @@ SC_MODULE(ACCNAME) {
   SC_HAS_PROCESS(ACCNAME);
 
   ACCNAME(sc_module_name name_) : sc_module(name_) {
-
     // Connect PE ports
     vars.init(clock, reset);
 
@@ -251,9 +233,6 @@ SC_MODULE(ACCNAME) {
     reset_signal_is(reset, true);
 
     SC_CTHREAD(Arranger, clock);
-    reset_signal_is(reset, true);
-
-    SC_CTHREAD(HWC_MAIN, clock);
     reset_signal_is(reset, true);
 
 #ifndef __SYNTHESIS__
@@ -285,11 +264,6 @@ SC_MODULE(ACCNAME) {
 
 #pragma HLS resource core = AXI4LiteS metadata = "-bus_bundle hwc" variable =  \
     hwc_reset
-    HWC_PragGroup(Input_Handler);
-    HWC_PragGroup(Output_Handler);
-    HWC_PragGroup(Data_In);
-    HWC_PragGroup(Scheduler);
-    HWC_PragGroup(Arranger);
 #pragma HLS RESET variable = reset
   }
 };

@@ -11,4 +11,3 @@
 #include "vmm_control.sc.h"
 #include "vmm_modules.sc.h"
 #include "vmm_unit.sc.h"
-#include "hwc.sc.h"
