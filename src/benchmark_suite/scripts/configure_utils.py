@@ -301,7 +301,9 @@ cpu_paths = {
     "eval_model": ["tensorflow/lite/examples/secda_apps/eval_model", "eval_model"],
 }
 
-cpu_types = {"KRIA": "aarch64-opt", "Z1": "armhf-opt"}
+# cpu_types = {"KRIA": "aarch64-opt", "Z1": "armhf-opt"}
+cpu_types = {"KRIA": "aarch64-opt", "Z1": "armhf-opt", "Z2": "armhf-opt"}
+
 
 global log
 
@@ -602,7 +604,7 @@ def generate_bazel_build_scripts(sc, boards, hardware, hardware_config):
         ## JDOC: This part generate the binaries for the different boards
         bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
         bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON'"
-        if board == "Z1":
+        if board == "Z1" or board == "Z2":
             bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
             # bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON' --@secda_tools//:config=fpga"
             bb_po = "--copt='-DSECDA_LOGGING_DISABLED' --cxxopt='-march=armv7-a' --cxxopt='-mfpu=neon' --cxxopt='-funsafe-math-optimizations' --cxxopt='-ftree-vectorize' --copt='-DACC_PROFILE' --define tflite_with_xnnpack=false --copt='-DTFLITE_ENABLE_XNNPACK=OFF' --copt='-DTFLITE_WITHOUT_XNNPACK' --copt='-DACC_NEON' --@secda_tools//:config=fpga"
@@ -993,7 +995,7 @@ def run_exp(sc, board, skip_inf_diff, collect_power, test_run, gen_script, name)
             first_line = script_file.readline()
             if not first_line.startswith("#!"):
                 script_file.write("#!/bin/bash\n")
-            if board == "Z1":
+            if board == "Z1" or board == "Z2":
                 if collect_power:
                     script_file.write(power_cap_sh_prefix)
                 script_file.write(
@@ -1015,7 +1017,7 @@ def run_exp(sc, board, skip_inf_diff, collect_power, test_run, gen_script, name)
         log_out("-----------------------------------------------------------")
         log_out(f"Running {board} Experiments")
         log_out("-----------------------------------------------------------")
-        if board == "Z1":
+        if board == "Z1" or board == "Z2":
             subprocess.run(
                 f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
                 shell=True,
