@@ -13,6 +13,8 @@ import subprocess
 
 import math
 
+cpu_types = {"KRIA": "aarch64-opt", "Z1": "armhf-opt", "Z2": "armhf-opt"}
+sudo_type = {"KRIA": "sudo -i", "Z1": "sudo", "Z2": "sudo"}
 
 def find_len_of_needed_outputs_of_outrows(id, oh, ow, pl, pr, pt, ks, sx, sy):
     width_col = (ow + pl + pr - ks) // sy + 1
@@ -493,7 +495,8 @@ def generate_benchmark_configs(
         declare_array(f, "del_version", del_version_list)
         declare_array(f, "del", delegate_list)
         f.close()
-        board_config["sudo_type"] = "sudo -i" if board == "KRIA" else "sudo"
+        # board_config["sudo_type"] = "sudo -i" if board == "KRIA" else "sudo"
+        board_config["sudo_type"] = sudo_type[board]
         ## Generate run_collect.sh
         r_dict = {
             "board": board,
@@ -599,7 +602,8 @@ def generate_bazel_build_scripts(sc, boards, hardware, hardware_config):
         board_dir = board_config["board_dir"]
         path_to_tf = sc["secda_tflite_path"] + "/tensorflow"
         rdel_path = sc["path_to_dels"]
-        cpu_type = "aarch64-opt" if board == "KRIA" else "armhf-opt"
+        # cpu_type = "aarch64-opt" if board == "KRIA" else "armhf-opt"
+        cpu_type = cpu_types[board]
 
         ## JDOC: This part generate the binaries for the different boards
         bb_pr = "bazel6 build --config=elinux_armhf -c opt //"
@@ -995,13 +999,13 @@ def run_exp(sc, board, skip_inf_diff, collect_power, test_run, gen_script, name)
             first_line = script_file.readline()
             if not first_line.startswith("#!"):
                 script_file.write("#!/bin/bash\n")
-            if board == "Z1" or board == "Z2":
+            if board == "Z1":
                 if collect_power:
                     script_file.write(power_cap_sh_prefix)
                 script_file.write(
                     f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'\n"
                 )
-            elif board == "KRIA":
+            elif board == "KRIA" or board == "Z2":
                 script_file.write(
                     f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} '((ls /etc/profile.d/pynq_venv.sh >> /dev/null 2>&1 && source /etc/profile.d/pynq_venv.sh) || echo '') && cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'\n"
                 )
@@ -1017,12 +1021,12 @@ def run_exp(sc, board, skip_inf_diff, collect_power, test_run, gen_script, name)
         log_out("-----------------------------------------------------------")
         log_out(f"Running {board} Experiments")
         log_out("-----------------------------------------------------------")
-        if board == "Z1" or board == "Z2":
+        if board == "Z1":
             subprocess.run(
                 f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} 'cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
                 shell=True,
             )
-        elif board == "KRIA":
+        elif board == "KRIA" or board == "Z2":
             subprocess.run(
                 f"ssh -o LogLevel=QUIET -t -p {board_port} {board_user}@{board_hostname} '((ls /etc/profile.d/pynq_venv.sh >> /dev/null 2>&1 && source /etc/profile.d/pynq_venv.sh) || echo '') && cd {bench_dir}/ && ./run_collect_{board}.sh 0 {int(skip_inf_diff)} {int(collect_power)} {int(test_run)}'",
                 shell=True,
