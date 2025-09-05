@@ -1,11 +1,11 @@
 {
-  "secda_tflite_path": "/path/to/SECDA-TFLite",
-  "vivado_2019_path": "/path/to/Xilinx2019/Vivado/2019.2/bin/",
-  "vivado_2024_path": "/path/to/Xilinx2024/Vivado/2024.1/bin/",
+  "secda_tflite_path": "/home/hdymarkowski/Workspace/SECDA-TFLite-v2",
+  "vivado_2019_path": "/home/hdymarkowski/Workspace/Xilinx2019/Vivado/2019.2/bin/",
+  "vivado_2024_path": "/home/hdymarkowski/Workspace/Xilinx2024/Vivado/2024.1/bin/",
   "models_dirs": [
-    "/path/to/SECDA-TFLite/data/models",
-    "/path/to/SECDA-TFLite/src/benchmark_suite/model_gen/models",
-    "/path/to/SECDA-TFLite/tensorflow/models"
+    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/data/models",
+    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/src/benchmark_suite/model_gen/models",
+    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/tensorflow/models"
   ],
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "hw_configs": "hardware_automation/configs",
@@ -22,10 +22,10 @@
       "hlx_version": "2019"
     },
     "Z2": {
-      "board_user": "Z2_USER",
-      "board_hostname": "IP_ADDRESS",
+      "board_user": "xilinx",
+      "board_hostname": "192.168.2.99",
       "board_port": "22",
-      "board_dir": "/home/Z2_USER/Workspace/secda_tflite",
+      "board_dir": "/home/xilinx/Workspace/secda_tflite",
       "fpga_part": "xc7z020clg400-1",
       "hlx_version": "2019"
     },
