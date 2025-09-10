@@ -13,8 +13,10 @@ import subprocess
 
 import math
 
+boards = ["KRIA", "Z1", "Z2"]
 cpu_types = {"KRIA": "aarch64-opt", "Z1": "armhf-opt", "Z2": "armhf-opt"}
-sudo_type = {"KRIA": "sudo -i", "Z1": "sudo", "Z2": "sudo"}
+sudo_type = {"KRIA": "sudo -i", "Z1": "sudo", "Z2": "sudo -i"}
+
 
 def find_len_of_needed_outputs_of_outrows(id, oh, ow, pl, pr, pt, ks, sx, sy):
     width_col = (ow + pl + pr - ks) // sy + 1
@@ -495,7 +497,6 @@ def generate_benchmark_configs(
         declare_array(f, "del_version", del_version_list)
         declare_array(f, "del", delegate_list)
         f.close()
-        # board_config["sudo_type"] = "sudo -i" if board == "KRIA" else "sudo"
         board_config["sudo_type"] = sudo_type[board]
         ## Generate run_collect.sh
         r_dict = {
