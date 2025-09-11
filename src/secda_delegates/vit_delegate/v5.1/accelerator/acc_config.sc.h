@@ -21,6 +21,11 @@
 #define ACC_DTYPE sc_int
 #define ACC_C_DTYPE int
 #define STOPPER -1
+#define AXI_DWIDTH 32
+#define AXI_TYPE sc_uint
+
+#define s_mdma multi_dma<AXI_DWIDTH, 0>
+
 
 #define IN_BUF_LEN 4096
 #define WE_BUF_LEN 8192
@@ -58,9 +63,9 @@
 #include <systemc.h>
 
 #ifndef __SYNTHESIS__
-#include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/sysc_types.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
+#include "secda_tools/axi_support/v5/axi_api_v5.h"
+#include "secda_tools/secda_integrator/sysc_types.h"
+#include "secda_tools/secda_profiler/profiler.h"
 #define DWAIT(x) wait(x)
 
 #ifdef VERBOSE_ACC
@@ -69,17 +74,34 @@
 #define ALOG(x)
 #endif
 
+typedef _BDATA<AXI_DWIDTH, AXI_TYPE> ADATA;
+
+
 #else // __SYNTHESIS__
 
-#define DWAIT(x)
-typedef struct _DATA {
-  sc_uint<32> data;
+#include "sysc_types.h"
+#define ALOG(x)
+
+struct _NDATA {
+  AXI_TYPE<AXI_DWIDTH> data;
   bool tlast;
-  inline friend ostream &operator<<(ostream &os, const _DATA &v) {
+  inline friend ostream &operator<<(ostream &os, const _NDATA &v) {
     cout << "data&colon; " << v.data << " tlast: " << v.tlast;
     return os;
   }
-} DATA;
+  void pack(ACC_DTYPE<AXI_DWIDTH_4> a1, ACC_DTYPE<AXI_DWIDTH_4> a2,
+            ACC_DTYPE<AXI_DWIDTH_4> a3, ACC_DTYPE<AXI_DWIDTH_4> a4) {
+    data.range(7, 0) = a1;
+    data.range(15, 8) = a2;
+    data.range(23, 16) = a3;
+    data.range(31, 24) = a4;
+  }
+};
+
+typedef _NDATA ADATA;
+
+#define DWAIT(x)
+#define DPROF(x)
 #endif
 
 #endif

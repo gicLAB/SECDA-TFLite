@@ -15,7 +15,7 @@ void ACCNAME::ReadInp() {
     for (int i_row = 0; i_row < pN_rem; i_row++) {
       DWAIT(1);
       for (int k_row = 0; k_row < pK; k_row += 4) {
-        DATA d_row = din2->read();
+        ADATA d_row = din2->read();
         rows[i_row][k_row + 0] = d_row.data.range(7, 0);
         rows[i_row][k_row + 1] = d_row.data.range(15, 8);
         rows[i_row][k_row + 2] = d_row.data.range(23, 16);

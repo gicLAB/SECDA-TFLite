@@ -63,7 +63,7 @@ void ACCNAME::Scheduler() {
   // For HLX
   out_sig.write(0);
   // wait();
-  DATA a;
+  ADATA a;
   wait();
   dout2.write(a);
   dout3.write(a);

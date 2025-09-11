@@ -8,6 +8,12 @@ package(
     licenses = ["notice"],
 )
 
+config_setting(
+    name = "linux_armhf",
+    values = {"cpu": "armhf"},
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "vit_delegate",
     srcs = [
@@ -23,6 +29,9 @@ cc_library(
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels/internal:types",
+        "//tensorflow/lite/kernels/internal:tensor",
+        "//tensorflow/lite/kernels/internal:common",
+        "//tensorflow/lite/kernels/internal:optimized_base",
         "//tensorflow/lite/kernels/internal:optimized_4bit",
         "//tensorflow/lite/delegates/utils/secda_delegates/vit_delegate/v5/accelerator/driver:vit_driver",
     ]

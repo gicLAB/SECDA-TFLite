@@ -1,5 +1,5 @@
 #include <string>
-#include <vector>
+// #include <vector>
 
 #include "vit_delegate.h"
 #include "tensorflow/lite/c/common.h"

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon Jul 21 15:18:28 2025" VIVADOVERSION="2019.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Fri Sep  5 13:47:25 2025" VIVADOVERSION="2019.2">
 
   <SYSTEMINFO ARCH="zynq" BOARD="www.digilentinc.com:pynq-z1:part0:1.0" DEVICE="7z020" NAME="design_1" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -159,7 +159,7 @@
   </EXTERNALINTERFACES>
 
   <MODULES>
-    <MODULE COREREVISION="2114180865" FULLNAME="/FC_ACC_v2_0" HWVERSION="1.0" INSTANCE="FC_ACC_v2_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="FC_ACC_v2_0" VLNV="xilinx:hls:FC_ACC_v2_0:1.0">
+    <MODULE COREREVISION="2114247046" FULLNAME="/FC_ACC_v2_0" HWVERSION="1.0" INSTANCE="FC_ACC_v2_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="FC_ACC_v2_0" VLNV="xilinx:hls:FC_ACC_v2_0:1.0">
       <DOCUMENTS/>
       <ADDRESSBLOCKS>
         <ADDRESSBLOCK ACCESS="read-write" INTERFACE="S_AXI_CTRL" NAME="Reg" RANGE="65536" USAGE="register"/>
@@ -2077,193 +2077,6 @@
             <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="peripheral_aresetn"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="S04_AXI_awid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="S04_AXI_awaddr" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWADDR">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWADDR"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="7" NAME="S04_AXI_awlen" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWLEN">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWLEN"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S04_AXI_awsize" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWSIZE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWSIZE"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="1" NAME="S04_AXI_awburst" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWBURST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWBURST"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="1" NAME="S04_AXI_awlock" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWLOCK">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWLOCK"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S04_AXI_awcache" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWCACHE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWCACHE"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S04_AXI_awprot" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWPROT">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWPROT"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_awregion" SIGIS="undef"/>
-        <PORT DIR="I" LEFT="3" NAME="S04_AXI_awqos" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWQOS">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWQOS"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_awvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S04_AXI_awready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="S04_AXI_wdata" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WDATA">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WDATA"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S04_AXI_wstrb" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WSTRB">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WSTRB"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_wlast" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WLAST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WLAST"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_wvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S04_AXI_wready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="0" NAME="S04_AXI_bid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="1" NAME="S04_AXI_bresp" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BRESP">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BRESP"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S04_AXI_bvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_bready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="0" NAME="S04_AXI_arid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="S04_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARADDR">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARADDR"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="7" NAME="S04_AXI_arlen" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARLEN">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARLEN"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S04_AXI_arsize" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARSIZE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARSIZE"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="1" NAME="S04_AXI_arburst" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARBURST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARBURST"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="1" NAME="S04_AXI_arlock" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARLOCK">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARLOCK"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S04_AXI_arcache" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARCACHE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARCACHE"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S04_AXI_arprot" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARPROT">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARPROT"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_arregion" SIGIS="undef"/>
-        <PORT DIR="I" LEFT="3" NAME="S04_AXI_arqos" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARQOS">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARQOS"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_arvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S04_AXI_arready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="0" NAME="S04_AXI_rid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="31" NAME="S04_AXI_rdata" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RDATA">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RDATA"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="1" NAME="S04_AXI_rresp" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RRESP">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RRESP"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S04_AXI_rlast" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RLAST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RLAST"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S04_AXI_rvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S04_AXI_rready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RREADY"/>
-          </CONNECTIONS>
-        </PORT>
         <PORT DIR="I" LEFT="0" NAME="S03_AXI_awid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_output_port_AWID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_output_port_AWID"/>
@@ -2449,6 +2262,193 @@
         <PORT DIR="I" NAME="S03_AXI_rready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_output_port_RREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_output_port_RREADY"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="0" NAME="S04_AXI_awid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="S04_AXI_awaddr" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWADDR">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWADDR"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="7" NAME="S04_AXI_awlen" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWLEN">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWLEN"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="2" NAME="S04_AXI_awsize" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWSIZE">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWSIZE"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="1" NAME="S04_AXI_awburst" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWBURST">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWBURST"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="1" NAME="S04_AXI_awlock" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWLOCK">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWLOCK"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="3" NAME="S04_AXI_awcache" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWCACHE">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWCACHE"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="2" NAME="S04_AXI_awprot" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWPROT">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWPROT"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_awregion" SIGIS="undef"/>
+        <PORT DIR="I" LEFT="3" NAME="S04_AXI_awqos" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWQOS">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWQOS"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_awvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWVALID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="S04_AXI_awready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_AWREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_AWREADY"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="S04_AXI_wdata" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WDATA">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WDATA"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="3" NAME="S04_AXI_wstrb" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WSTRB">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WSTRB"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_wlast" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WLAST">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WLAST"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_wvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WVALID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="S04_AXI_wready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_WREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_WREADY"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="0" NAME="S04_AXI_bid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="1" NAME="S04_AXI_bresp" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BRESP">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BRESP"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="S04_AXI_bvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BVALID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_bready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_BREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_BREADY"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="0" NAME="S04_AXI_arid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="S04_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARADDR">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARADDR"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="7" NAME="S04_AXI_arlen" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARLEN">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARLEN"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="2" NAME="S04_AXI_arsize" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARSIZE">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARSIZE"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="1" NAME="S04_AXI_arburst" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARBURST">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARBURST"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="1" NAME="S04_AXI_arlock" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARLOCK">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARLOCK"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="3" NAME="S04_AXI_arcache" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARCACHE">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARCACHE"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="2" NAME="S04_AXI_arprot" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARPROT">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARPROT"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_arregion" SIGIS="undef"/>
+        <PORT DIR="I" LEFT="3" NAME="S04_AXI_arqos" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARQOS">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARQOS"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_arvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARVALID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="S04_AXI_arready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_ARREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_ARREADY"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="0" NAME="S04_AXI_rid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="S04_AXI_rdata" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RDATA">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RDATA"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="1" NAME="S04_AXI_rresp" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RRESP">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RRESP"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="S04_AXI_rlast" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RLAST">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RLAST"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="S04_AXI_rvalid" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RVALID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="S04_AXI_rready" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_weight_port_RREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="FC_ACC_v2_0" PORT="m_axi_weight_port_RREADY"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="0" NAME="S02_AXI_awid" RIGHT="0" SIGIS="undef" SIGNAME="FC_ACC_v2_0_m_axi_input_port_AWID">

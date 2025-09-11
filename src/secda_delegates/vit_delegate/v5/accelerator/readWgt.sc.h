@@ -14,7 +14,7 @@ void ACCNAME::ReadWgt() {
         for (i = 0; i < pM_rem; i++) {
             DWAIT(1);
             for (k = 0; k < pK; k += 4) {
-                DATA d = din3->read();
+                ADATA d = din3->read();
                 cols[i][k+0] = d.data.range(7, 0);
                 cols[i][k+1] = d.data.range(15, 8);
                 cols[i][k+2] = d.data.range(23, 16);

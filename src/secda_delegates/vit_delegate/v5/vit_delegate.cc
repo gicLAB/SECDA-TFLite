@@ -2,15 +2,16 @@
 #include <fstream>
 #include <iostream>
 #include <utility>
+#include "tensorflow/lite/delegates/utils/secda_delegates/vit_delegate/v5/vit_delegate.h"
 
 #ifdef SYSC
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
 
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-
+#include "secda_tools/secda_profiler/profiler.h"
+#include "secda_tools/secda_utils/acc_helpers.h"
+#include "secda_tools/secda_utils/multi_threading.h"
+#include "secda_tools/secda_utils/utils.h"
 #include "accelerator/driver/vit_driver.h"
 #include "util.h"
 #include "vit_delegate.h"
@@ -32,7 +33,7 @@ struct MultiThreadContext mt_context;
 #ifdef SYSC
 struct sysC_sigs *scs;
 #define SYSC_DMA_BL 563840 * 4
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
+static struct s_mdma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
                              SYSC_DMA_BL);
 ACCNAME *acc;
 struct dma_buffer_set dfs[4] = {
@@ -43,7 +44,7 @@ struct dma_buffer_set dfs[4] = {
 };
 int recv_len = (SYSC_DMA_BL / DMA_BC);
 #else
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
+static struct s_mdma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
 int *acc;
 struct dma_buffer_set dfs[4] = {
     {DMA_BC, (DMA_BL / DMA_BC), dma_in0},

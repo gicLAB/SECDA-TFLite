@@ -157,7 +157,14 @@
       "layers": [
         "TRANSPOSE_CONV"
       ]
+    },
+    {
+      "name": "vit_tiny_patch16_224",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "FULLY_CONNECTED"
+      ]
     }
-    
   ]
 }

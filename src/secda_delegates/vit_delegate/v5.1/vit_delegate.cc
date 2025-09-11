@@ -1,23 +1,22 @@
 
+#include "tensorflow/lite/delegates/utils/secda_delegates/vit_delegate/v5.1/vit_delegate.h"
 #include <fstream>
 #include <iostream>
 #include <utility>
 
 #ifdef SYSC
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_integrator/systemc_integrate.h"
+#include "secda_tools/secda_integrator/systemc_integrate.h"
 #endif
 
-#include "tensorflow/lite/delegates/utils/secda_tflite/secda_profiler/profiler.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/acc_helpers.h"
-
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-
 #include "accelerator/driver/vit_driver.h"
+#include "secda_tools/secda_profiler/profiler.h"
+#include "secda_tools/secda_utils/acc_helpers.h"
+#include "secda_tools/secda_utils/multi_threading.h"
+#include "secda_tools/secda_utils/utils.h"
 #include "util.h"
 #include "util_prep.h"
 #include "vit_delegate.h"
 
-#include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/delegates/utils/simple_delegate.h"
 #include "tensorflow/lite/kernels/internal/quantization_util.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
@@ -35,8 +34,8 @@ struct MultiThreadContext mt_context;
 #ifdef SYSC
 struct sysC_sigs *scs;
 #define SYSC_DMA_BL 563840 * 4
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
-                             SYSC_DMA_BL);
+static struct s_mdma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out,
+                          SYSC_DMA_BL);
 ACCNAME *acc;
 struct dma_buffer_set dfs[4] = {
     {DMA_BC, (SYSC_DMA_BL / DMA_BC), dma_in0},
@@ -46,7 +45,7 @@ struct dma_buffer_set dfs[4] = {
 };
 int recv_len = (SYSC_DMA_BL / DMA_BC);
 #else
-static struct multi_dma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
+static struct s_mdma mdma(4, dma_addrs, dma_addrs_in, dma_addrs_out, DMA_BL);
 int *acc;
 struct dma_buffer_set dfs[4] = {
     {DMA_BC, (DMA_BL / DMA_BC), dma_in0},
@@ -111,21 +110,34 @@ public:
       dparams.init = true;
     }
 
-    // Save Tensors input & outputs
-    // Save other info (opdata)
-    // Save index to all nodes which are part of this delegate.
     inputs_.resize(params->nodes_to_replace->size);
     outputs_.resize(params->nodes_to_replace->size);
     builtin_code_.resize(params->nodes_to_replace->size);
+
+    biases.resize(params->nodes_to_replace->size);
+    crf.resize(params->nodes_to_replace->size);
+    crx.resize(params->nodes_to_replace->size);
+    wb0.resize(params->nodes_to_replace->size);
+    wb1.resize(params->nodes_to_replace->size);
+    wb2.resize(params->nodes_to_replace->size);
+    wb3.resize(params->nodes_to_replace->size);
+    wt_sum1.resize(params->nodes_to_replace->size);
+    wt_sum2.resize(params->nodes_to_replace->size);
+    wt_sum3.resize(params->nodes_to_replace->size);
+    wt_sum4.resize(params->nodes_to_replace->size);
+    temp_im2col.resize(params->nodes_to_replace->size);
+
+    // opdatas.resize(params->nodes_to_replace->size);
+    // cparams.resize(params->nodes_to_replace->size);
     opdatas.resize(params->nodes_to_replace->size);
     layers_params.resize(params->nodes_to_replace->size);
     is_global_output.resize(params->nodes_to_replace->size);
     output_dependencies.resize(params->nodes_to_replace->size);
     node_output_needed.resize(params->nodes_to_replace->size);
-    omni_tensor_ids.resize(params->nodes_to_replace->size);
 
     int conv2d_count = 0;
     int fc_count = 0;
+
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
       // Get this node information.
@@ -146,18 +158,18 @@ public:
       associated_nodes.push_back(node_index);
       layers_params[i] = delegated_node->builtin_data;
       opdatas[i] = delegated_node->user_data;
+
       if (builtin_code_[i] == kTfLiteBuiltinConv2d) conv2d_count++;
       if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) fc_count++;
     }
-    wt_sum.resize(params->nodes_to_replace->size);
-    omni_im2col.resize(params->nodes_to_replace->size);
     return kTfLiteOk;
   }
   TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) override {
     int node_count = inputs_.size();
     int out_tid = 0;
-    // int wsum_i = 0;
+
     for (int i = 0; i < node_count; i++) {
+
       // =======================================================
       // Tracking Output dependencies
       // =======================================================
@@ -198,24 +210,224 @@ public:
   // "tensorflow/lite/kernels/fully_connected.cc"
   // OFFLOADS TO ACCELERATOR DRIVER
   TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
-    // Evaluate the delegated graph
-    // Loop over all of the delegated nodes
-    // Number of nodes = inputs.size() and inputs[i] is a list of
-    // tensor indices for the input node i while outputs[i] is the
-    // list of ouptuts for that node
-
-    prf_start(1); // cpu_total
-
     int node_count = inputs_.size();
     struct acc_container drv;
     drv.acc = acc;
     drv.profile = &profile;
     drv.mdma = &mdma;
-    drv.mt_context = &mt_context;
+    drv.mt_context = &dparams.mt_context;
     drv.thread_count = context->recommended_num_threads;
+
     for (int i = 0; i < node_count; i++) {
-      if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) {
-        // Handle Fully Connected layers
+      // =======================================================
+      // Delegate Mangement Code
+      drv.op_type = builtin_code_[i];
+      // #ifdef DELEGATE_VERBOSE
+      cout << "======================================================" << endl;
+      cout << "Layer: " << dparams.layer
+           << "      Node: " << associated_nodes[i]
+           << "      Type: " << EnumNamesBuiltinOperator()[builtin_code_[i]]
+           << endl;
+      cout << "======================================================" << endl;
+
+      if (builtin_code_[i] == kTfLiteBuiltinConv2d) { // CONV2D
+        prf_start(1);
+        // // rpp -code
+        // t.layer = dparams.layer;
+        // t.conv_layer_no = dparams.layer;
+        // t.node = associated_nodes[i];
+        // rpp -code -end
+
+        TfLiteConvParams *params =
+            reinterpret_cast<TfLiteConvParams *>(layers_params[i]);
+        Conv2D_Data *data = reinterpret_cast<Conv2D_Data *>(opdatas[i]);
+
+        TfLiteTensor *output;
+        const TfLiteTensor *input;
+        const TfLiteTensor *filter;
+        const TfLiteTensor *bias;
+
+        GetInputSafe(context, inputs_[i][0], &input);
+        GetInputSafe(context, inputs_[i][1], &filter);
+        GetInputSafe(context, inputs_[i][2], &bias);
+        GetOutputSafe(context, outputs_[i][0], &output);
+
+        int8 *im2col_data = data->need_im2col ? &temp_im2col[i][0] : nullptr;
+
+        ConvParams op_params;
+        op_params.input_offset = -input->params.zero_point;
+        op_params.output_offset = output->params.zero_point;
+        op_params.stride_height = params->stride_height;
+        op_params.stride_width = params->stride_width;
+        op_params.dilation_height_factor = params->dilation_height_factor;
+        op_params.dilation_width_factor = params->dilation_width_factor;
+        op_params.padding_values.height = data->padding.height;
+        op_params.padding_values.width = data->padding.width;
+        op_params.quantized_activation_min = data->output_activation_min;
+        op_params.quantized_activation_max = data->output_activation_max;
+
+        // CONV2D Implementation algorithm
+        // int32_t input_offset = op_params.input_offset;
+        // int32_t output_offset = op_params.output_offset;
+        int stride_height = params->stride_height;
+        int stride_width = params->stride_width;
+        int filter_height = filter->dims->data[1];
+        int filter_width = filter->dims->data[2];
+        int input_height = input->dims->data[1];
+        int input_width = input->dims->data[2];
+        int input_depth = input->dims->data[3];
+        int output_height = output->dims->data[1];
+        int batches = input->dims->data[0];
+        int output_width = output->dims->data[2];
+        int output_channel = output->dims->data[3];
+        int filter_input_depth = filter->dims->data[3];
+        int groups = input_depth / filter_input_depth;
+        int dilation_width_factor = params->dilation_width_factor;
+        int dilation_height_factor = params->dilation_height_factor;
+        TFLITE_DCHECK_NE(groups, 0);
+        TFLITE_DCHECK_EQ(input_depth % filter_input_depth, 0);
+        int filters_per_group = output_channel / groups;
+        TFLITE_DCHECK_NE(filters_per_group, 0);
+        RuntimeShape input_shape =
+            RuntimeShape(input->dims->size, input->dims->data);
+        RuntimeShape filter_shape =
+            RuntimeShape(filter->dims->size, filter->dims->data);
+
+        /// new code two add driver code -- rpp
+        RuntimeShape output_shape =
+            RuntimeShape(output->dims->size, output->dims->data);
+        TfLiteTensor *im2col =
+            data->need_im2col
+                ? &context->tensors[node->temporaries->data[data->im2col_index]]
+                : nullptr;
+
+        int pad_width = data->padding.height;
+        int pad_height = data->padding.width;
+        const int8 *input_data = input->data.int8;
+        const int8 *filter_data = filter->data.int8;
+        int8 *output_data = output->data.int8;
+
+        const int32 input_offset = -input->params.zero_point;
+        const int32 output_offset = output->params.zero_point;
+        // Set min and max value of the output.
+        const int32 output_activation_min = data->output_activation_min;
+        const int32 output_activation_max = data->output_activation_max;
+
+        const int8 *gemm_input_data = nullptr;
+        const RuntimeShape *gemm_input_shape = nullptr;
+        // const int filter_width = filter_shape.Dims(2);
+        // const int filter_height = filter_shape.Dims(1);
+        const bool need_dilated_im2col =
+            dilation_width_factor != 1 || dilation_height_factor != 1;
+        const bool need_im2col = stride_width != 1 || stride_height != 1 ||
+                                 filter_width != 1 || filter_height != 1;
+        const int8 input_zero_point = -input_offset;
+        const uint8 zero_point_byte =
+            *reinterpret_cast<const uint8 *>(&input_zero_point);
+        if (need_dilated_im2col) {
+          TFLITE_DCHECK(im2col_data);
+          RuntimeShape im2col_shape =
+              RuntimeShape(im2col->dims->size, im2col->dims->data);
+          DilatedIm2col<int8_t>(op_params, zero_point_byte, input_shape,
+                                input_data, filter_shape, output_shape,
+                                im2col_data);
+
+          gemm_input_data = im2col_data;
+          gemm_input_shape = &im2col_shape;
+        } else if (need_im2col) {
+          TFLITE_DCHECK(im2col_data);
+          RuntimeShape im2col_shape =
+              RuntimeShape(im2col->dims->size, im2col->dims->data);
+          Im2col<int8_t>(op_params, filter_height, filter_width,
+                         zero_point_byte, input_shape, input_data, im2col_shape,
+                         im2col_data);
+          gemm_input_data = im2col_data;
+          gemm_input_shape = &im2col_shape;
+        } else {
+          TFLITE_DCHECK(!im2col_data);
+          gemm_input_data = input_data;
+          gemm_input_shape = &input_shape;
+        }
+
+        const int gemm_input_rows = gemm_input_shape->Dims(3);
+        const int gemm_input_cols = FlatSizeSkipDim(*gemm_input_shape, 3);
+        const int filter_rows = filter_shape.Dims(0);
+        const int filter_cols = FlatSizeSkipDim(filter_shape, 0);
+        const int output_rows = output_shape.Dims(3);
+        const int output_cols =
+            output_shape.Dims(0) * output_shape.Dims(1) * output_shape.Dims(2);
+
+        //  Load & Reshape Input data to temporary buffers before offloading
+        //  to DMA inbuffers
+        int width = gemm_input_cols;
+        int w = ((width + 3) - ((width + 3) % 4));
+        int depth = filter_cols;
+        int d = ((depth + 15) - ((depth + 15) % 16));
+        int s_need = w * d / 4 + 1;
+        int8_t inb0[s_need];
+        int8_t inb1[s_need];
+        int8_t inb2[s_need];
+        int8_t inb3[s_need];
+        precal_sum_load_pad(gemm_input_data, width, depth, inb0, inb1, inb2,
+                            inb3);
+
+        int *inb_0 = reinterpret_cast<int *>(inb0);
+        int *inb_1 = reinterpret_cast<int *>(inb1);
+        int *inb_2 = reinterpret_cast<int *>(inb2);
+        int *inb_3 = reinterpret_cast<int *>(inb3);
+
+        int *wb_0 = reinterpret_cast<int *>(&wb0[i][0]);
+        int *wb_1 = reinterpret_cast<int *>(&wb1[i][0]);
+        int *wb_2 = reinterpret_cast<int *>(&wb2[i][0]);
+        int *wb_3 = reinterpret_cast<int *>(&wb3[i][0]);
+
+        // acc_container is used to wrap all the paramters the
+        // gemm_driver/accelerator needs from the delegate
+        drv.acc = acc;
+        drv.mdma = &mdma;
+        drv.profile = &profile;
+        drv.st_params = st_params;
+        drv.dfs = dfs;
+        drv.mt_context = &dparams.mt_context;
+        drv.thread_count = context->recommended_num_threads;
+        drv.in_id = 0;
+        drv.wb_0 = wb_0;
+        drv.wb_1 = wb_1;
+        drv.wb_2 = wb_2;
+        drv.wb_3 = wb_3;
+        drv.wt_sum1 = wt_sum1[i];
+        drv.wt_sum2 = wt_sum2[i];
+        drv.wt_sum3 = wt_sum3[i];
+        drv.wt_sum4 = wt_sum4[i];
+        drv.crf = crf[i];
+        drv.crx = crx[i];
+        drv.inb_0 = inb_0;
+        drv.inb_1 = inb_1;
+        drv.inb_2 = inb_2;
+        drv.inb_3 = inb_3;
+        drv.ra = output_offset;
+        drv.t = &t;
+        // drv.t->layer = associated_nodes[i];
+        drv.recv_len = recv_len;
+        drv.rows = gemm_input_cols;
+        drv.cols = filter_rows;
+        drv.depth = filter_cols;
+        drv.use_sim = false;
+        prf_end(1, vm_t.ipack);
+        // drv.t2 = vm_t;
+        vit_sim::Entry(drv, output_data);
+        // vm_t = drv.t2;
+
+        // saveMatrixCSV("aData/conv_fc/" +
+        // std::to_string(associated_nodes[i])
+        // +
+        //                   "_out_acc.csv",
+        // output_data, gemm_input_cols, filter_rows);
+      } else if (builtin_code_[i] == kTfLiteBuiltinFullyConnected) { // FC
+        t.layer = dparams.layer;
+        t.conv_layer_no = dparams.layer;
+        t.node = associated_nodes[i];
+
         TfLiteFullyConnectedParams *params =
             reinterpret_cast<TfLiteFullyConnectedParams *>(layers_params[i]);
         FC_Data *data = reinterpret_cast<FC_Data *>(opdatas[i]);
@@ -248,237 +460,123 @@ public:
         op_params.quantized_activation_max = data->output_activation_max;
         op_params.lhs_cacheable = IsConstantTensor(filter);
         op_params.rhs_cacheable = IsConstantTensor(input);
+
         const int32_t output_offset = op_params.output_offset;
-        const int32_t lhs_offset = -op_params.weights_offset;
-        const int32_t rhs_offset = -op_params.input_offset;
+        const int32_t weight_offset = op_params.weights_offset;
+        const int32_t input_offset = op_params.input_offset;
         const int32_t output_multiplier = op_params.output_multiplier;
         const int output_shift = op_params.output_shift;
         const int32_t output_activation_min =
             op_params.quantized_activation_min;
         const int32_t output_activation_max =
             op_params.quantized_activation_max;
+
         RuntimeShape input_shape =
             RuntimeShape(input->dims->size, input->dims->data);
         RuntimeShape filter_shape =
             RuntimeShape(filter->dims->size, filter->dims->data);
         RuntimeShape output_shape =
             RuntimeShape(output->dims->size, output->dims->data);
-        const int output_dim_count = output_shape.DimensionsCount();
-        const int filter_dim_count = filter_shape.DimensionsCount();
-        const int output_depth = output_shape.Dims(1);
-        const int filter_rows = filter_shape.Dims(filter_dim_count - 2);
-        const int filter_cols = filter_shape.Dims(filter_dim_count - 1);
-        const int batches = output_shape.Dims(0);
-        const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
+const int output_dim_count = output_shape.DimensionsCount();
+      const int filter_dim_count = filter_shape.DimensionsCount();
+      const int output_depth = output_shape.Dims(1);
+      const int filter_rows = filter_shape.Dims(filter_dim_count - 2);
+      const int filter_cols = filter_shape.Dims(filter_dim_count - 1);
+      const int batches = output_shape.Dims(0);
+      const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
 
-        // nmk = dimensions for vectors with (N,M) and (M,K)
-        int N = batches;
-        int M = output_depth;
-        int K = accum_depth;
-        int rfactor = 16;
-        int pN = roundUp(N, rfactor); // Padded
-        int pM = roundUp(M, rfactor);
-        // int pK = roundUp(K, rfactor);
-        int unroll = 64;
-        int pK = roundUp(K, unroll);
+      // nmk = dimensions for vectors with (N,M) and (M,K)
+      int N = batches;
+      int M = output_depth;
+      int K = accum_depth;
+      int rfactor = 16;
+      int pN = roundUp(N, rfactor); // Padded
+      int pM = roundUp(M, rfactor);
+      // int pK = roundUp(K, rfactor);
+      int unroll = 64;
+      int pK = roundUp(K, unroll);
 
-        std::vector<int> in_sum; // Sums accross the layers or smth
-        std::vector<int> wt_sum;
-        int *idims = input->dims->data;
-        int *wdims = filter->dims->data;
-        int8_t *padded_input = new int8_t[pN * pK];
-        int8_t *padded_weights = new int8_t[pM * pK];
-        int8_t *padded_output = new int8_t[pM * pN];
+      std::vector<int> in_sum; // Sums accross the layers or smth
+      std::vector<int> wt_sum;
+      int *idims = input->dims->data;
+      int *wdims = filter->dims->data;
+      int8_t *padded_input = new int8_t[pN * pK];
+      int8_t *padded_weights = new int8_t[pM * pK];
+      int8_t *padded_output = new int8_t[pM * pN];
 
-        int8_t *input_data_p = input->data.int8;
-        int8_t *filter_data_p = filter->data.int8;
-        int8_t *output_data_p = output->data.int8;
+      int8_t *input_data_p = input->data.int8;
+      int8_t *filter_data_p = filter->data.int8;
+      int8_t *output_data_p = output->data.int8;
 
-        // Calls the fc_driver to re-shape TFLite input/weight tensor and also
-        // produces vector of sums from the tensor'r rows (required for
-        // re-quantization)
-        prf_start(3);
-        precal_sum_load_padv3_vectorized(input->data.int8, N, K, padded_input,
-                                         in_sum);
-        precal_sum_load_padv3_vectorized(filter->data.int8, M, K,
-                                         padded_weights, wt_sum);
-        prf_end(3, a_t.prep);
-        struct acc_container drv;
-        drv.profile = &profile;
-        drv.acc = acc;
-        drv.mdma = &mdma;
-        drv.layer = associated_nodes[i];
-        drv.pN = pN;
-        drv.pM = pM;
-        drv.pK = pK;
-        drv.N = N;
-        drv.M = M;
-        drv.K = K;
-        drv.padded_input = padded_input;
-        drv.padded_weights = padded_weights;
-        drv.padded_output = padded_output;
-        drv.in_sum = &in_sum[0];
-        drv.wt_sum = &wt_sum[0];
-        drv.crx = output_shift;
-        drv.crf = output_multiplier;
-        drv.ra = output_offset;
-        drv.rhs_offset = -rhs_offset;
-        drv.lhs_offset = -lhs_offset;
-        drv.a_t = &a_t;
-        // drv.a_t = a_t; // TODO: This is different
-        // if (!isBias) {
-        //   drv.bias = new int32_t[pM]();
-        //   drv.is_bias = 0;
-        // } else {
-        //   drv.bias = biases[i];
-        //   drv.is_bias = 1;
-        // }
-        // Calls fc_driver to offload the FC operation
-        drv.start_count = dparams.start_count;
-        prf_start(0); // driver
-        vit_sim::Entry(drv);
-        prf_end(0, a_t.driver);
-        dparams.start_count = drv.start_count;
+      // Calls the fc_driver to re-shape TFLite input/weight tensor and also
+      // produces vector of sums from the tensor'r rows (required for
+      // re-quantization)
+      prf_start(3);
+      precal_sum_load_padv3_vectorized(input->data.int8, N, K, padded_input,
+                                       in_sum);
+      precal_sum_load_padv3_vectorized(filter->data.int8, M, K, padded_weights,
+                                       wt_sum);
+      prf_end(3, a_t.prep);
 
-        store_unpad(padded_output, N, M, output_data_p, 16, 16);
-        if (!isBias) delete[] drv.bias;
-
-        dparams.layer++;
-        dparams.delegated_nodes--;
-      } else if (builtin_code_[i] == kTfLiteBuiltinConv2d) {
-        // Handle Conv2D layers
-        TfLiteConvParams *params =
-            reinterpret_cast<TfLiteConvParams *>(layers_params[i]);
-        Conv2D_Data *data = reinterpret_cast<Conv2D_Data *>(opdatas[i]);
-
-        TfLiteTensor *output;
-        const TfLiteTensor *input;
-        const TfLiteTensor *filter;
-        const TfLiteTensor *bias;
-
-        GetInputSafe(context, inputs_[i][0], &input);
-        GetInputSafe(context, inputs_[i][1], &filter);
-        GetInputSafe(context, inputs_[i][2], &bias);
-        GetOutputSafe(context, outputs_[i][0], &output);
-
-        int8 *im2col_data = data->need_im2col ? &omni_im2col[i][0] : nullptr;
-
-        ConvParams op_params;
-        op_params.input_offset = -input->params.zero_point;
-        op_params.output_offset = output->params.zero_point;
-        op_params.stride_height = params->stride_height;
-        op_params.stride_width = params->stride_width;
-        op_params.dilation_height_factor = params->dilation_height_factor;
-        op_params.dilation_width_factor = params->dilation_width_factor;
-        op_params.padding_values.height = data->padding.height;
-        op_params.padding_values.width = data->padding.width;
-        op_params.quantized_activation_min = data->output_activation_min;
-        op_params.quantized_activation_max = data->output_activation_max;
-
-        // CONV2D Implementation algorithm
-        int32_t input_offset = op_params.input_offset;
-        int32_t output_offset = op_params.output_offset;
-        int stride_height = params->stride_height;
-        int stride_width = params->stride_width;
-        int filter_height = filter->dims->data[1];
-        int filter_width = filter->dims->data[2];
-        int input_height = input->dims->data[1];
-        int input_width = input->dims->data[2];
-        int input_depth = input->dims->data[3];
-        int output_height = output->dims->data[1];
-        int batches = input->dims->data[0];
-        int output_width = output->dims->data[2];
-        int output_channel = output->dims->data[3];
-        int filter_input_depth = filter->dims->data[3];
-        int groups = input_depth / filter_input_depth;
-        int dilation_width_factor = params->dilation_width_factor;
-        int dilation_height_factor = params->dilation_height_factor;
-        TFLITE_DCHECK_NE(groups, 0);
-        TFLITE_DCHECK_EQ(input_depth % filter_input_depth, 0);
-        int filters_per_group = output_channel / groups;
-        TFLITE_DCHECK_NE(filters_per_group, 0);
-        RuntimeShape input_shape =
-            RuntimeShape(input->dims->size, input->dims->data);
-        RuntimeShape filter_shape =
-            RuntimeShape(filter->dims->size, filter->dims->data);
-
-        int pad_width = data->padding.height;
-        int pad_height = data->padding.width;
-        const int8 *input_data = input->data.int8;
-        const int8 *filter_data = filter->data.int8;
-        int8 *output_data = output->data.int8;
-
-        // Simple Convolution Algorithm
-        for (int oh = 0; oh < output_height; ++oh) {
-          for (int ow = 0; ow < output_width; ++ow) {
-            for (int oc = 0; oc < output_channel; ++oc) {
-              int32_t acc = 0;
-              for (int fh = 0; fh < filter_height; ++fh) {
-                for (int fw = 0; fw < filter_width; ++fw) {
-                  for (int ic = 0; ic < input_depth; ++ic) {
-                    int in_x = ow * stride_width + fw - data->padding.width;
-                    int in_y = oh * stride_height + fh - data->padding.height;
-                    if (in_x >= 0 && in_x < input_width && in_y >= 0 &&
-                        in_y < input_height) {
-                      int input_index =
-                          ((in_y * input_width + in_x) * input_depth) + ic;
-                      int filter_index =
-                          (oc * filter_height * filter_width * input_depth) +
-                          (fh * filter_width * input_depth) +
-                          (fw * input_depth) + ic;
-
-                      int8_t input_val = input_data[input_index];
-                      int8_t filter_val = filter_data[filter_index];
-
-                      acc += (input_data[input_index] + input_offset) *
-                             filter_data[filter_index];
-                    }
-                  }
-                }
-              }
-
-              // int wsum_offset = wt_sum[i][oc] * -input->params.zero_point;
-              // if (bias != nullptr) wsum_offset += bias->data.i32[oc];
-              // acc += wsum_offset;
-              if (bias != nullptr) acc += bias->data.i32[oc];
-              int out_shift = data->per_channel_output_shift.data()[oc];
-              int out_mult = data->per_channel_output_multiplier.data()[oc];
-              int out_offset = op_params.output_offset;
-              int out_min = op_params.quantized_activation_min;
-              int out_max = op_params.quantized_activation_max;
-              acc = Quantised_Multiplier_V1(acc, out_mult, out_shift,
-                                            out_offset, out_min, out_max);
-              int output_index =
-                  ((oh * output_width) + ow) * output_channel + oc;
-              output_data[output_index] = static_cast<int8_t>(acc);
-            }
-          }
-        }
+      struct acc_container drv;
+      drv.profile = &profile;
+      drv.acc = acc;
+      drv.mdma = &mdma;
+      drv.layer = associated_nodes[i];
+      drv.pN = pN;
+      drv.pM = pM;
+      drv.pK = pK;
+      drv.N = N;
+      drv.M = M;
+      drv.K = K;
+      drv.padded_input = padded_input;
+      drv.padded_weights = padded_weights;
+      drv.padded_output = padded_output;
+      drv.in_sum = &in_sum[0];
+      drv.wt_sum = &wt_sum[0];
+      drv.crx = output_shift;
+      drv.crf = output_multiplier;
+      drv.ra = output_offset;
+      drv.rhs_offset = -rhs_offset;
+      drv.lhs_offset = -lhs_offset;
+      drv.a_t = &a_t;
+      if (!isBias) {
+        drv.bias = new int32_t[pM]();
+        drv.is_bias = 0;
+      } else {
+        drv.bias = biases[i];
+        drv.is_bias = 1;
       }
-      for (int n = 0; n < i; n++) {
-        for (int dep_node : output_dependencies[n]) {
-          if (dep_node == i) {
+
+      // Debugging
 #ifdef DELEGATE_VERBOSE
-            cout << "Popping node: " << associated_nodes[i]
-                 << " from layer dependency: " << associated_nodes[n] << endl;
+      cout << "===========================" << endl;
+      cout << "Layer: " << dparams.layer
+           << "      Node: " << associated_nodes[i] << endl;
+      cout << "===========================" << endl;
 #endif
-            output_dependencies[n].erase(
-                std::remove(output_dependencies[n].begin(),
-                            output_dependencies[n].end(), dep_node),
-                output_dependencies[n].end());
-          }
-          node_output_needed[n] = output_dependencies[n].size() > 0;
-        }
-      }
+
+      // Calls fc_driver to offload the FC operation
+      drv.start_count = dparams.start_count;
+      prf_start(0); // driver
+      vit_sim::Entry(drv);
+      // a_t = drv.a_t;
+      prf_end(0, a_t.driver);
+      dparams.start_count = drv.start_count;
+
+      // Calls the fc_driver to unpack/unpad result to TFLite tensor
+      store_unpad(padded_output, N, M, output_data_p, 16, 16);
+      if (!isBias) delete[] drv.bias;
+
       dparams.layer++;
       dparams.delegated_nodes--;
     }
+
     return kTfLiteOk;
   }
-
   std::vector<std::vector<int>> inputs_, outputs_;
   std::vector<int> builtin_code_, associated_nodes;
-    std::vector<std::vector<int>> wt_sum1;
+  std::vector<std::vector<int>> wt_sum1;
   std::vector<std::vector<int>> wt_sum2;
   std::vector<std::vector<int>> wt_sum3;
   std::vector<std::vector<int>> wt_sum4;
@@ -493,19 +591,14 @@ public:
   std::vector<std::vector<int8_t>> crx;
 
   // std::vector<OpData *> opdatas;
+  // std::vector<TfLiteConvParams *> cparams;
+
   std::vector<void *> opdatas;
   std::vector<void *> layers_params;
 
   std::vector<std::vector<int>> output_dependencies;
   std::vector<bool> node_output_needed;
   std::vector<bool> is_global_output;
-  std::vector<std::vector<std::tuple<int, int>>> omni_tensor_ids;
-
-  // Convolution specific variables
-  std::vector<std::vector<int>> wt_sum;
-  std::vector<std::vector<int8_t>> omni_im2col;
-
-  // Add specific variables
 
 private:
   const VitDelegateOptions options_;
@@ -524,15 +617,12 @@ public:
     bool isCONV2D = IsNode_CONV2D_INT8(registration, node, context);
     bool isFC = IsNode_FC_INT8(registration, node, context);
 
-    // Node will be delegated if inside supported_nodes
     std::vector<bool> supported_nodes = {isCONV2D, isFC};
-
     bool delegated_node = false;
-    // Check if the node is supported by the delegate
+
     for (int i = 0; i < supported_nodes.size(); i++)
       if (supported_nodes[i]) delegated_node = true;
 
-    // Use this to restrict certain nodes from being delegated
     int output_tid = node->outputs->data[0];
     int forbidden_output_tid[] = {
         // 110, //  restricts node with output tid 110 from being delegated

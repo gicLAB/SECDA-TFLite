@@ -8,10 +8,12 @@
 #endif
 
 #include "../acc_config.sc.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
-#include "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-#include "tensorflow/lite/util.h"
-#include <vector>
+#include "secda_tools/axi_support/v5/axi_api_v5.h"
+#include "secda_tools/secda_profiler/profiler.h"
+#include "secda_tools/secda_utils/acc_helpers.h"
+#include "secda_tools/secda_utils/multi_threading.h"
+#include "secda_tools/secda_utils/utils.h"
+// #include <vector>
 
 #ifdef ACC_NEON
 #include "arm_neon.h"
@@ -85,12 +87,9 @@ struct acc_container {
 #endif
 
   Profile *profile;
-  struct multi_dma *mdma;
-  MultiThreadContext *mt_context;
-  int thread_count;
-  int op_type;
+  struct s_mdma *mdma;
 
-      // dimensions - Input(N,K) * Weights(K,M) (+ bias[N])
+  // dimensions - Input(N,K) * Weights(K,M) (+ bias[N])
   int N;
   int K;
   int M;
@@ -124,6 +123,11 @@ struct acc_container {
   // Debugging
   int layer = 0;
   struct acc_times *a_t;
+
+  // Added form Rpp
+  MultiThreadContext *mt_context;
+  int thread_count;
+  int op_type;
 };
 
 void store_unpad(int8_t *data, int width, int depth, int8_t *shape_data,

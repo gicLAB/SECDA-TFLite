@@ -14,7 +14,7 @@ import subprocess
 import math
 
 cpu_types = {"KRIA": "aarch64-opt", "Z1": "armhf-opt", "Z2": "armhf-opt"}
-sudo_type = {"KRIA": "sudo -i", "Z1": "sudo", "Z2": "sudo"}
+sudo_type = {"KRIA": "sudo -i", "Z1": "sudo", "Z2": "sudo -i"}
 
 def find_len_of_needed_outputs_of_outrows(id, oh, ow, pl, pr, pt, ks, sx, sy):
     width_col = (ow + pl + pr - ks) // sy + 1

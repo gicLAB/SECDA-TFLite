@@ -1,5 +1,5 @@
-#ifndef TENSORFLOW_LITE_DELEGATES_UTILS_PREP_VIT_DELEGATE_VIT_DELEGATE_UTIL_H_
-#define TENSORFLOW_LITE_DELEGATES_UTILS_PREP_VIT_DELEGATE_VIT_DELEGATE_UTIL_H_
+#ifndef TENSORFLOW_LITE_DELEGATES_UTILS_PREP_VM_DELEGATE_VIT_DELEGATE_UTIL_H_
+#define TENSORFLOW_LITE_DELEGATES_UTILS_PREP_VM_DELEGATE_VIT_DELEGATE_UTIL_H_
 
 #include "tensorflow/lite/kernels/internal/optimized/optimized_ops.h"
 #include "util.h"
@@ -797,7 +797,6 @@ static inline void Requantize(const input_type *input_data, int32_t size,
 // =========================================================
 
 // tensorflow/lite/kernels/conv.cc
-// tensorflow/lite/kernels/conv.cc
 bool Prepare_CONV2D_INT8(TfLiteContext *context, TfLiteNode *node, int i,
                          void *layers_params, void *opdatas,
                          vector<vector<int>> inputs_,
@@ -1121,6 +1120,5 @@ bool Prepare_FC_INT8(TfLiteContext *context, TfLiteNode *node, int i,
   }
   return kTfLiteOk;
 }
-
 
 #endif

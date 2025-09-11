@@ -4,18 +4,15 @@
 #include "tensorflow/lite/builtin_ops.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/optimized/fully_connected_4bit.h"
-#include "tensorflow/lite/kernels/internal/quantization_util.h"
-#include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/internal/types.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
+#include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/padding.h"
 #include "tensorflow/lite/util.h"
-#include <cassert>
-#include <iostream>
 
+#include <cassert>
 
 using namespace std;
-
 
 inline const char *const *EnumNamesBuiltinOperator() {
   static const char *const names[207] = {"ADD",
@@ -228,20 +225,14 @@ inline const char *const *EnumNamesBuiltinOperator() {
   return names;
 }
 
-// This file has four implementations of FullyConnected
-// enum KernelType {
-//   kReference,
-//   kGenericOptimized,
-//   kLegacyPie, // Legacy path used by the PIE team and related clients.
-// };
 enum QuantizeKernelType {
   kReference,
   kGenericOptimized,
 };
 
+
 const int kTensorNotAllocated = -1;
 static constexpr size_t kMaxIm2colBufferSizeMobile = 1024 * 1024 * 1024; // 1GB
-
 // CONV2D INT8
 struct Conv2D_Data {
   int im2col_id = kTensorNotAllocated;
@@ -303,11 +294,11 @@ struct FC_Data {
   TfLiteType quantized_bias_type = kTfLiteNoType;
 };
 
-// constexpr int kInputTensor = 0;
-// constexpr int kWeightsTensor = 1;
-// constexpr int kBiasTensor = 2;
-// constexpr int kOutputTensor = 0;
-// constexpr int kShuffledInputWorkspaceTensor = 1;
+constexpr int kInputTensor = 0;
+constexpr int kWeightsTensor = 1;
+constexpr int kBiasTensor = 2;
+constexpr int kOutputTensor = 0;
+constexpr int kShuffledInputWorkspaceTensor = 1;
 
 inline TfLiteTensor *GetTensorAtIndex(const TfLiteContext *context,
                                       int tensor_index) {
@@ -474,55 +465,6 @@ TfLiteStatus ResizeCol2ImTensor(TfLiteContext *context,
 // IsNodeSupportedByDelegate
 // =========================================================
 
-bool IsNode_ADD_INT8(const TfLiteRegistration *registration,
-                     const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports Add ops
-  if (kTfLiteBuiltinAdd != registration->builtin_code) return false;
-
-  if (node->inputs->size != 2) return false;
-
-  // This delegate only supports int8 types.
-  for (int i = 0; i < 2; ++i) {
-    auto &tensor = context->tensors[node->inputs->data[i]];
-    if (tensor.type != kTfLiteInt8) return false;
-  }
-
-  TfLiteTensor input1 = context->tensors[node->inputs->data[0]];
-  TfLiteTensor input2 = context->tensors[node->inputs->data[1]];
-
-  if (!TfLiteIntArrayEqual(input1.dims, input2.dims)) return false;
-
-  return true;
-}
-
-bool IsNode_TCONV_INT8(const TfLiteRegistration *registration,
-                       const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports TCONV ops
-  if (kTfLiteBuiltinTransposeConv != registration->builtin_code) return false;
-
-  // This delegate requires at least 3 inputs.
-  // Input, Weight,  Output shape tensor and maybe Bias.
-  if (node->inputs->size < 3) return false;
-
-  // This delegate only supports int8 types.
-  for (int i = 1; i < 3; ++i) {
-    auto &tensor = context->tensors[node->inputs->data[i]];
-    if (tensor.type != kTfLiteInt8) return false;
-  }
-
-  // Ensures output shape tensor is supports int32 type
-  auto &tensor = context->tensors[node->inputs->data[0]];
-  if (tensor.type != kTfLiteInt32) return false;
-
-  if (node->inputs->size == 4) {
-    // Ensures bias tensor is supports int32 type
-    auto &tensor2 = context->tensors[node->inputs->data[3]];
-    if (tensor2.type != kTfLiteInt32) return false;
-  }
-
-  return true;
-}
-
 bool IsNode_FC_INT8(const TfLiteRegistration *registration,
                     const TfLiteNode *node, TfLiteContext *context) {
   // Only supports FC ops
@@ -536,26 +478,8 @@ bool IsNode_FC_INT8(const TfLiteRegistration *registration,
   }
 
   if (node->inputs->size == 3 && node->inputs->data[2] >= 0) {
-    auto &tensor = context->tensors[node->inputs->data[2]];
-    if (tensor.type != kTfLiteInt32 && tensor.type <= 16) return false;
-  }
-
-  return true;
-}
-
-bool IsNode_DWCONV2D_INT8(const TfLiteRegistration *registration,
-                          const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports FC ops
-  if (kTfLiteBuiltinDepthwiseConv2d != registration->builtin_code) return false;
-
-  if (node->inputs->size != 3 && node->inputs->size != 2) return false;
-  // This delegate only supports int8 types.
-  for (int i = 0; i < 2; ++i) {
-    auto &tensor = context->tensors[node->inputs->data[i]];
-    if (tensor.type != kTfLiteInt8) return false;
-  }
-
-  if (node->inputs->size == 3 && node->inputs->data[2] >= 0) {
+    // repp -test
+    return false;
     auto &tensor = context->tensors[node->inputs->data[2]];
     if (tensor.type != kTfLiteInt32 && tensor.type <= 16) return false;
   }
@@ -591,131 +515,5 @@ bool IsNode_CONV2D_INT8(const TfLiteRegistration *registration,
 
   return true;
 }
-
-bool IsNode_SHAPE_INT8(const TfLiteRegistration *registration,
-                       const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports SHAPE ops
-  if (kTfLiteBuiltinShape != registration->builtin_code) return false;
-
-  // This delegate only supports int8 types.
-  if (node->inputs->size != 1) return false;
-  for (int i = 0; i < 1; ++i) {
-    auto &tensor = context->tensors[node->inputs->data[i]];
-    if (tensor.type != kTfLiteInt8) return false;
-  }
-
-  // Verify the output tensor type is int32
-  if (node->outputs->size != 1) return false;
-  auto &tensor = context->tensors[node->outputs->data[0]];
-  if (tensor.type != kTfLiteInt32) return false;
-
-  return true;
-}
-
-bool IsNode_SOFTMAX_INT8(const TfLiteRegistration *registration,
-                         const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports SOFTMAX ops
-  if (kTfLiteBuiltinSoftmax != registration->builtin_code) return false;
-
-  // This delegate only supports int8 types.
-  if (node->inputs->size != 1) return false;
-
-  auto &itensor = context->tensors[node->inputs->data[0]];
-  if (itensor.type != kTfLiteInt8) return false;
-
-  // Verify the output tensor type is int32
-  if (node->outputs->size != 1) return false;
-  auto &otensor = context->tensors[node->outputs->data[0]];
-  if (otensor.type != kTfLiteInt8) return false;
-
-  if (!TfLiteIntArrayEqual(itensor.dims, otensor.dims)) return false;
-
-  return true;
-}
-
-bool IsNode_PAD_INT8(const TfLiteRegistration *registration,
-                     const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports PAD ops
-  if (kTfLiteBuiltinPad != registration->builtin_code) return false;
-
-  // This delegate only supports int8 types.
-  if (node->inputs->size != 2) return false;
-
-  auto &itensor1 = context->tensors[node->inputs->data[0]];
-  if (itensor1.type != kTfLiteInt8) return false;
-  auto &itensor2 = context->tensors[node->inputs->data[1]];
-  if (itensor2.type != kTfLiteInt32) return false;
-
-  // Verify the output tensor type is int32
-  if (node->outputs->size != 1) return false;
-  auto &otensor = context->tensors[node->outputs->data[0]];
-  if (otensor.type != kTfLiteInt8) return false;
-
-  return true;
-}
-
-bool IsNode_MEAN_INT8(const TfLiteRegistration *registration,
-                      const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports MEAN ops
-  if (kTfLiteBuiltinMean != registration->builtin_code) return false;
-
-  // This delegate only supports int8 types.
-  if (node->inputs->size != 2) return false;
-
-  auto &itensor1 = context->tensors[node->inputs->data[0]];
-  if (itensor1.type != kTfLiteInt8) return false;
-  auto &itensor2 = context->tensors[node->inputs->data[1]];
-  if (itensor2.type != kTfLiteInt32) return false;
-
-  // Verify the output tensor type is int32
-  if (node->outputs->size != 1) return false;
-  auto &otensor = context->tensors[node->outputs->data[0]];
-  if (otensor.type != kTfLiteInt8) return false;
-
-  return true;
-}
-
-bool IsNode_QUANTIZE_INT8(const TfLiteRegistration *registration,
-                          const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports QUANTIZE ops
-  if (kTfLiteBuiltinQuantize != registration->builtin_code) return false;
-
-  // This delegate only supports int8 types.
-  if (node->inputs->size != 1) return false;
-
-  // Verify the output tensor type is int32
-  if (node->outputs->size != 1) return false;
-  auto &otensor = context->tensors[node->outputs->data[0]];
-  if (otensor.type != kTfLiteInt8) return false;
-
-  return true;
-}
-
-bool IsNode_DEQUANTIZE_INT8(const TfLiteRegistration *registration,
-                            const TfLiteNode *node, TfLiteContext *context) {
-  // Only supports QUANTIZE ops
-  if (kTfLiteBuiltinDequantize != registration->builtin_code) return false;
-  auto &itensor1 = context->tensors[node->inputs->data[0]];
-  if (itensor1.type != kTfLiteInt8) return false;
-
-  // This delegate only supports int8 types.
-  if (node->inputs->size != 1) return false;
-
-  // Verify the output tensor type is int32
-  if (node->outputs->size != 1) return false;
-  auto &otensor = context->tensors[node->outputs->data[0]];
-  if (otensor.type != kTfLiteFloat32) return false;
-
-  return true;
-}
-// int Generic_Quantised_Multiplier(int x, int qm, int shift) {
-//   int total_shift = 31 - shift;
-//   std::int64_t x_64(x);
-//   std::int64_t quantized_multiplier_64(qm);
-//   std::int64_t round = (int64_t)1 << (total_shift - 1);
-//   int64_t result = x_64 * quantized_multiplier_64 + round;
-//   result = result >> total_shift;
-//   return static_cast<std::int32_t>(result);
-// }
 
 #endif

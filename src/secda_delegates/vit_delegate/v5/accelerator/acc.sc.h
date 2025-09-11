@@ -11,7 +11,7 @@
 // "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 // #include
 // "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-#include <vector>
+// #include <vector>
 
 #ifndef __SYNTHESIS__
 #define DWAIT(x) wait(x)
@@ -36,15 +36,15 @@ SC_MODULE(ACCNAME) {
   int pN_rem;
   int pM_rem;
 
-  sc_fifo_in<DATA> din1;
-  sc_fifo_in<DATA> din2;
-  sc_fifo_in<DATA> din3;
-  sc_fifo_in<DATA> din4;
+  sc_fifo_in<ADATA> din1;
+  sc_fifo_in<ADATA> din2;
+  sc_fifo_in<ADATA> din3;
+  sc_fifo_in<ADATA> din4;
 
-  sc_fifo_out<DATA> dout1;
-  sc_fifo_out<DATA> dout2;
-  sc_fifo_out<DATA> dout3;
-  sc_fifo_out<DATA> dout4;
+  sc_fifo_out<ADATA> dout1;
+  sc_fifo_out<ADATA> dout2;
+  sc_fifo_out<ADATA> dout3;
+  sc_fifo_out<ADATA> dout4;
 
   // Inputs here - like all of the calculation variables
   // TODO: Not sure if this is all I need here
@@ -72,7 +72,7 @@ SC_MODULE(ACCNAME) {
   sc_int<8> cols[pmF][1563];
   int temp[pkF][4];
 
-  DATA d_array[pmQ];
+  ADATA d_array[pmQ];
   // sc_int<8> cur_outs[4];
   sc_int<8> dout_1;
   sc_int<8> dout_2;
@@ -92,10 +92,10 @@ SC_MODULE(ACCNAME) {
 
   // int layer = 0; // layer number
 
-  DATA d1;
-  DATA d2;
-  DATA d3;
-  DATA d4;
+  ADATA d1;
+  ADATA d2;
+  ADATA d3;
+  ADATA d4;
 
   int value1;
   int value2;
