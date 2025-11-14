@@ -150,7 +150,7 @@ First, make a quick edit to distinguish our kernel build from the binaries insta
 
 ```bash
 fakeroot debian/rules clean
-vi debian.zynqmp/changelog
+nano debian.zynqmp/changelog
 ```
 
 **Modify kernel configuration:**
