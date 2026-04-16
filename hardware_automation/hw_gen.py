@@ -264,8 +264,11 @@ def process_hw_config(hw_config_file):
     )
     sysc_types_path = os.path.relpath(abs_sysc_types_path, target)
     sysc_hw_utils_path = os.path.relpath(abs_sysc_hw_utils_path, target)
+    sysc_hwc_path = f"{sc['secda_tflite_path']}/src/utils/hwc.sc.h"
     os.system(f"ln -sf {sysc_types_path} {target}")
     os.system(f"ln -sf {sysc_hw_utils_path} {target}")
+    os.system(f"ln -sf {sysc_hwc_path} {target}")
+
 
     ## Creates the hw_exp project
     acc_proj = hardware_exp(hw_config, sc, true_sc)

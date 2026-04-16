@@ -20,6 +20,6 @@
     "CONFIG.c_s_axis_s2mm_tdata_width" : "   CONFIG.c_s_axis_s2mm_tdata_width {&{axi_bitW}} \\"
   },
   "delete": {
-    "update_ip_catalog -rebuild": "# Proc to create BD design_1"
+    "# Set 'sources_1' fileset object": "# Proc to create BD design_1"
   }
 }

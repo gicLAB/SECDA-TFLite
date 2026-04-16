@@ -71,3 +71,17 @@ src/benchmark_suite/scripts/record_power.ipynb
 src/benchmark_suite/scripts/process_power.ipynb
 src/benchmark_suite/scripts/process_power.py
 
+
+src/secda_delegates/vit_delegate/
+src/secda_delegates/vm_delegate_rpp/
+src/secda_delegates/vm_shift_delegate_rpp/
+
+
+
+hardware_automation/configs/VIT/
+hardware_automation/configs/VMRPP/
+data/models/
+src/benchmark_suite/bitstreams/Z1/
+src/benchmark_suite/scripts/process_power copy.py
+MODULE.bazel
+MODULE.bazel.lock
