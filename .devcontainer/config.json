@@ -3,7 +3,9 @@
   "vivado_2019_path": "/home/hdymarkowski/Workspace/Vivado2019.2/Vivado/2019.2/bin/",
   "vivado_2024_path": "/home/hdymarkowski/Workspace/Xilinx2024/Vivado/2024.1/bin/",
   "models_dirs": [
-    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/SECDA-TFLite/data/models"
+    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/SECDA-TFLite/data/models",
+    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/SECDA-TFLite/src/benchmark_suite/model_gen/models",
+    "/home/hdymarkowski/Workspace/SECDA-TFLite-v2/SECDA-TFLite/tensorflow/models"
   ],
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "hw_configs": "hardware_automation/configs",
@@ -21,13 +23,13 @@
     }
   },
   "remote_server": {
-    "gateway": "-J USER@sibu.dcs.gla.ac.uk",
-    "server_user": "test",
-    "server_hostname": "pate.dcs.gla.ac.uk",
+    "gateway": "-J GATEWAY_USER@GATEWAY_SERVER_IP_ADDRESS",
+    "server_user": "REMOTE_SERVER_USER",
+    "server_hostname": "REMOTE_SERVER_IP_ADDRESS",
     "server_port": 22,
-    "server_dir": "/home/test/Workspace/remote/SECDA-TFLite/hardware_automation_remote/",
-    "server_2019_path": "/opt/Xilinx2019/Vivado/2019.2/bin",
-    "server_2024_path": "/opt/Xilinx2024/Vivado/2024.1/bin/"
+    "server_dir": "/remote/path/to/SECDA-TFLite/hardware_automation_remote/",
+    "server_2019_path": "/remote/path/to/Xilinx2019/Vivado/2019.2/bin",
+    "server_2024_path": "/remote/path/to/Xilinx2024/Vivado/2024.1/bin/"
   },
   "push_bullet_token": "PB_TOKEN"
 }

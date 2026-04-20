@@ -21,7 +21,7 @@ cc_library(
     copts = common_copts,
     deps = [
         "@systemc//:systemc",
-        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v14/accelerator:accelerator",
+        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v14/accelerator:accelerator",
         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite_sim",
     ],
 )
@@ -35,7 +35,7 @@ cc_library(
         ],
     copts = common_copts,
     deps = [
-        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v14/accelerator:accelerator_config",
+        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v14/accelerator:accelerator_config",
         "//tensorflow/lite/delegates/utils/secda_tflite:secda_tflite",
     ],
 )

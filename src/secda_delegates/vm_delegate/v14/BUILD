@@ -21,29 +21,26 @@ config_setting(
 )
 
 cc_library(
-    name="vm_delegate_rpp",
-    srcs=[
-        "vm_delegate_rpp.cc",
+    name = "vm_delegate",
+    srcs = [
+        "vm_delegate.cc",
     ],
-    hdrs=[
-        "vm_delegate_rpp.h",
+    hdrs = [
+        "vm_delegate.h",
         "util.h",
-        "util_prep.h"
     ],
-    deps=[
+    deps = [
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/delegates/utils:simple_delegate",
         "//tensorflow/lite/kernels:padding",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels/internal:types",
+        "//tensorflow/lite/kernels/internal:tensor",
         "//tensorflow/lite/kernels/internal:common",
-        "//tensorflow/lite/kernels/internal:optimized_base"
-
-    ] + select({
-        ":linux_armhf": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v14/accelerator/driver:driver"],
-        ":linux_aarch64": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v14/accelerator/driver:driver"],
-        "//conditions:default": ["//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v14/accelerator/driver:driver_sysc"],
-    }),
+        "//tensorflow/lite/kernels/internal:optimized_base",
+        "//tensorflow/lite/kernels/internal:optimized_4bit",
+        "//tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v14/accelerator/driver:vm_driver",
+    ]
 )
 
 
@@ -105,7 +102,7 @@ cc_binary(
 )
 
 cc_binary(
-    name="inference_diff_plus_vm_delegate_rpp",
+    name="inference_diff_plus_vm_delegate",
     copts=tflite_copts(),
     linkopts=task_linkopts(),
     deps=[

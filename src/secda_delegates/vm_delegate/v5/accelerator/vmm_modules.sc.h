@@ -12,6 +12,9 @@ sc_int<64> VMM_UNIT::mul_s64(int a, sc_int<64> b) {
 
 int VMM_UNIT::Quantised_Multiplier_ruy_reference(int x, int qm,
                                                  sc_int<8> shift) {
+  // Used in simulation and in hardware on KRIA
+
+  // cout << "x: " << x << ", qm: " << qm << ", shift: " << shift << endl;
   int nshift = shift;
   int total_shift = 31 - shift;
   sc_int<64> x_64 = x;
@@ -31,6 +34,7 @@ int VMM_UNIT::Quantised_Multiplier_ruy_reference(int x, int qm,
 int VMM_UNIT::Quantised_Multiplier_gemmlowp(int x, int qm, sc_int<64> pl,
                                             sc_int<32> pr, sc_int<32> msk,
                                             sc_int<32> sm) {
+// Used in hardware on PYNQ
   sc_int<64> val = mul_s64(x, pl);
   if (val > MAX) val = MAX; // ALU MIN
   if (val < MIN) val = MIN; // ALU MAX

@@ -91,7 +91,16 @@
 			"typeindex": "cpp",
 			"typeinfo": "cpp",
 			"valarray": "cpp",
-			"variant": "cpp"
+			"variant": "cpp",
+			"alignedvector3": "cpp",
+			"nnls": "cpp",
+			"*.expression": "cpp",
+			"fft": "cpp",
+			"__mutex_base": "cpp"
 		}
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": []
 	}
 }

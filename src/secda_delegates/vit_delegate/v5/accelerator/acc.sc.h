@@ -11,7 +11,7 @@
 // "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 // #include
 // "tensorflow/lite/delegates/utils/secda_tflite/threading_utils/utils.h"
-// #include <vector>
+#include <vector>
 
 #ifndef __SYNTHESIS__
 #define DWAIT(x) wait(x)
@@ -67,9 +67,10 @@ SC_MODULE(ACCNAME) {
   sc_int<32> msk;
   sc_int<32> sm;
 
-
-  sc_int<8> rows[pnF][1563]; // vit_base goes to 3072, small goes to 1536
-  sc_int<8> cols[pmF][1563];
+  // TODO: This is rather hardcoded, the 64 is a max it could be and the
+  // ... 1000 is just a stupid big number
+  sc_int<8> rows[pnF][1600]; // vit: 768,  deit:
+  sc_int<8> cols[pmF][1600];
   int temp[pkF][4];
 
   ADATA d_array[pmQ];

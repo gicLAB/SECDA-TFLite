@@ -1,0 +1,16 @@
+{
+    "acc_name": "VIT",
+    "acc_version": 9,
+    "acc_sub_version": 0,
+    "acc_src": "/vit_delegate/v9/accelerator",
+    "acc_link_folder": "secda_vit_v9",
+    "hlx_tcl_script": "mdma_axilite_hlx_reconfig_4.tcl",
+    "top": "VIT_ACC",
+    "del": "vit_delegate",
+    "del_version": "9",
+    "hls_clock": "5",
+    "hlx_Mhz": "200",
+    "axi_bitW": "32",
+    "axi_burstS": "32",
+    "board": "Z2"
+}

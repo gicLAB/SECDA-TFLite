@@ -319,6 +319,7 @@ public:
                 ? &context->tensors[node->temporaries->data[data->im2col_index]]
                 : nullptr;
 
+        // $$$
         int pad_width = data->padding.height;
         int pad_height = data->padding.width;
         const int8 *input_data = input->data.int8;
@@ -619,7 +620,6 @@ public:
       // }
     }
 #endif
-
     prf_end(0, vm_t.conv_total);
     return kTfLiteOk;
   }

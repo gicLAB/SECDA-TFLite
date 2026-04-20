@@ -20,6 +20,14 @@
       "board_dir": "/home/xilinx/Workspace/secda_tflite",
       "fpga_part": "xc7z020clg400-1",
       "hlx_version": "2019"
+    },
+        "Z1": {
+      "board_user": "Z1_USER",
+      "board_hostname": "IP_ADDRESS",
+      "board_port": "22",
+      "board_dir": "/home/Z1_USER/Workspace/secda_tflite",
+      "fpga_part": "xc7z020clg400-1",
+      "hlx_version": "2019"
     }
   },
   "remote_server": {

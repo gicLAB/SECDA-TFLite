@@ -1,0 +1,210 @@
+#ifndef PPU_H
+#define PPU_H
+
+#include "acc_config.sc.h"
+
+// Defined in acc.sc.h
+// void ACCNAME::PPU() { ... }
+
+void ACCNAME::PPU() {
+  ppuReadyS.write(0);
+  pePostTotalS.write(0);
+  wait();
+  DWAIT(2);
+
+  while (1) {
+    while (ppuReadyS.read() == 0) wait();
+
+    pePostTotalS.write(1);
+
+    int pnr = pN_rem;
+    int pmr = pM_rem;
+    int cur_ra = ra;
+
+    // Output zero point (ra) printed once in vit_delegate.cc - suppress repeated output here
+    // cout << "ra: " << cur_ra << endl;
+
+    DWAIT(3);
+
+    for (int i = 0; i < pnr; i++) {
+      DWAIT(1);
+      
+      // Iterate in blocks of 4 up to pm_block (constant size)
+      for (int j = 0; j < pm_block; j += 4) {
+// #pragma HLS pipeline II = 1
+        
+        // Accumulate prec (Bias + Offset corrections)
+        res[i][j + 0] += prec[i][j + 0];
+        res[i][j + 1] += prec[i][j + 1];
+        res[i][j + 2] += prec[i][j + 2];
+        res[i][j + 3] += prec[i][j + 3];
+
+        wait();
+        
+        // === CONV LAYER LOGIC ===
+        if (layer_t == 1) {
+          wait();
+
+          int local_crf[4];
+          sc_int<8> local_crx[4];
+          int local_res[4];
+          ACC_DTYPE<64> local_pl[4];
+          ACC_DTYPE<32> local_pr[4];
+          ACC_DTYPE<32> local_msk[4];
+          ACC_DTYPE<32> local_sm[4];
+          
+#pragma HLS array_partition variable = local_crf complete dim = 0
+#pragma HLS array_partition variable = local_crx complete dim = 0
+#pragma HLS array_partition variable = local_res complete dim = 0
+#pragma HLS array_partition variable = local_pl complete dim = 0
+#pragma HLS array_partition variable = local_pr complete dim = 0
+#pragma HLS array_partition variable = local_msk complete dim = 0
+#pragma HLS array_partition variable = local_sm complete dim = 0
+
+          for (int c = 0; c < 4; c++) {
+// #pragma HLS UNROLL
+            local_crf[c] = crf_v[j + c];
+            local_crx[c] = crx_v[j + c];
+            local_res[c] = res[i][j + c];
+          }
+          wait();
+
+          for (int c = 0; c < 4; c++) {
+// #pragma HLS UNROLL
+            if (local_crx[c] > 0) {
+              // [FIX] Correct positive shift logic
+              // Instead of x * shift, we need x * (1 << shift)
+              local_pl[c] = local_crx[c]; 
+              local_pr[c] = 0;
+              local_msk[c] = 0;
+              local_sm[c] = 0;
+            } else {
+              // Negative shift (Right shift) logic
+              local_pl[c] = 1;
+              local_pr[c] = -local_crx[c];
+              local_msk[c] = (1 << -local_crx[c]) - 1;
+              local_sm[c] = local_msk[c] >> 1;
+            }
+          }
+
+          wait();
+
+#ifndef __SYNTHESIS__
+          // Simulation logic
+          value1 = Quantised_Multiplier_Conv(local_res[0], local_crf[0], local_crx[0]);
+          value2 = Quantised_Multiplier_Conv(local_res[1], local_crf[1], local_crx[1]);
+          value3 = Quantised_Multiplier_Conv(local_res[2], local_crf[2], local_crx[2]);
+          value4 = Quantised_Multiplier_Conv(local_res[3], local_crf[3], local_crx[3]);
+          wait();
+#else
+          // Hardware Synthesis logic
+          value1 = Quantised_Multiplier_Conv(local_res[0], local_crf[0], local_pl[0], local_pr[0], local_msk[0], local_sm[0]);
+          wait();
+          value2 = Quantised_Multiplier_Conv(local_res[1], local_crf[1], local_pl[1], local_pr[1], local_msk[1], local_sm[1]);
+          wait();
+          value3 = Quantised_Multiplier_Conv(local_res[2], local_crf[2], local_pl[2], local_pr[2], local_msk[2], local_sm[2]);
+          wait();
+          value4 = Quantised_Multiplier_Conv(local_res[3], local_crf[3], local_pl[3], local_pr[3], local_msk[3], local_sm[3]);
+          wait();
+#endif
+
+        } else {
+          // === FC LAYER LOGIC ===
+          // Assuming FC layers handle quantization uniformly per tensor or similar
+          int cur_crf = crf;
+          int cur_crx = crx;
+          wait();
+          
+          if (cur_crx > 0) {
+             // Apply SAME FIX for FC layers just in case
+             pl = cur_crx; 
+             pr = 0;
+             msk = 0;
+             sm = 0;
+          } else {
+             pl = 1;
+             pr = -cur_crx;
+             msk = (1 << -cur_crx) - 1;
+             sm = msk >> 1;
+          }
+          wait();
+          value1 = Quantised_Multiplier_FC(res[i][j + 0], cur_crf, cur_crx);
+          wait();
+          value2 = Quantised_Multiplier_FC(res[i][j + 1], cur_crf, cur_crx);
+          wait();
+          value3 = Quantised_Multiplier_FC(res[i][j + 2], cur_crf, cur_crx);
+          wait();
+          value4 = Quantised_Multiplier_FC(res[i][j + 3], cur_crf, cur_crx);
+          wait();
+        }
+        
+        wait(); // a
+
+        // Boundary Check: Zero out if we are in padding region
+        if (j + 0 >= pmr) value1 = 0;
+        if (j + 1 >= pmr) value2 = 0;
+        if (j + 2 >= pmr) value3 = 0;
+        if (j + 3 >= pmr) value4 = 0;
+        
+        wait();
+
+        // Add Output Offset (ra)
+        svalue1 = value1 + cur_ra;
+        svalue2 = value2 + cur_ra;
+        svalue3 = value3 + cur_ra;
+        svalue4 = value4 + cur_ra;
+
+        wait();
+
+        // Clamp to INT8 range
+        if (svalue1 > MAX8) svalue1 = MAX8; else if (svalue1 < MIN8) svalue1 = MIN8;
+        if (svalue2 > MAX8) svalue2 = MAX8; else if (svalue2 < MIN8) svalue2 = MIN8;
+        if (svalue3 > MAX8) svalue3 = MAX8; else if (svalue3 < MIN8) svalue3 = MIN8;
+        if (svalue4 > MAX8) svalue4 = MAX8; else if (svalue4 < MIN8) svalue4 = MIN8;
+
+        wait(); // a
+
+        dout_1 = svalue1.range(7, 0);
+        dout_2 = svalue2.range(7, 0);
+        dout_3 = svalue3.range(7, 0);
+        dout_4 = svalue4.range(7, 0);
+
+        wait(); // a;
+
+        // Clear Accumulator for next run (Redundant but safe)
+        res[i][j + 0] = 0;
+        res[i][j + 1] = 0;
+        res[i][j + 2] = 0;
+        res[i][j + 3] = 0;
+
+        wait(); // a
+
+        // Pack and Write Output
+        d_array[j / 4].data = Clamp_Combine(dout_1, dout_2, dout_3, dout_4, MAX8, MIN8);
+        
+        DWAIT(32);
+        wait(); // a
+      }
+      
+      wait(); // a
+
+      // Stream out the row
+      for (int j = 0; j < (pm_block / 4); j++) {
+// #pragma HLS pipeline II = 1
+        if (j < (pmr / 4)) {
+          if (i == (pnr - 1) && j == (pmr / 4) - 1) {
+            d_array[j].tlast = true;
+          } else d_array[j].tlast = false;
+          dout1.write(d_array[j]);
+        }
+      }
+    }
+    
+    wait();
+    ppuReadyS.write(0);
+    pePostTotalS.write(0);
+    wait();
+  }
+}
+
+#endif // PPU_H

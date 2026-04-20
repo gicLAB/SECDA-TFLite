@@ -76,6 +76,8 @@ struct acc_container {
   int *acc;
 #endif
 
+  int layer_type; // 0 = fc, 1 = conv
+
   Profile *profile;
   struct multi_dma *mdma;
 

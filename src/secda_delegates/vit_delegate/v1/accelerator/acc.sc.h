@@ -28,6 +28,8 @@ SC_MODULE(ACCNAME) {
   // sc_in<int> in_sig;
   sc_out<int> out_sig;
 
+  int layer_type; // 0 = fc, 1 = conv
+
   // Index variables
   int i;
   int k;

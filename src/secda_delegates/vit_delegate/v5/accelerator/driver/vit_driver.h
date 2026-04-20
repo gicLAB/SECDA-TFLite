@@ -31,7 +31,7 @@ void block_add(acc_container &drv) {
   param_buf[param_len++] = drv.pN;
   param_buf[param_len++] = drv.pM;
   param_buf[param_len++] = drv.pK;
-  // cout << "pK: " << drv.pK << endl;
+  cout << "pN: " << drv.pN << " pM: " << drv.pM << " pK: " << drv.pK << endl;
 
   param_buf[param_len++] = drv.crx;
   param_buf[param_len++] = drv.crf;
@@ -56,11 +56,8 @@ void block_add(acc_container &drv) {
     input_buf[input_len++] = n_remaining;
 
     prf_start(2); // input_copy
-
-    // memcpy (dest, src, size)
-    memcpy(input_buf + input_len, 
-      drv.padded_input + n * drv.pK, 
-      drv.pK * n_remaining * sizeof(int8_t));
+    memcpy(input_buf + input_len, drv.padded_input + n * drv.pK, 
+       drv.pK * n_remaining * sizeof(int8_t));
     input_len += (drv.pK * n_remaining) / 4;
     prf_end(2, drv.a_t->inp_copy);
 
@@ -116,6 +113,7 @@ void block_add(acc_container &drv) {
         prf_end(9, drv.a_t->out_copy);
 
       }
+
     }
   }
 }

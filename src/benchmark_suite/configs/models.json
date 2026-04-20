@@ -27,14 +27,6 @@
       ]
     },
     {
-      "name": "mobilevit_xxs_int8",
-      "dataset": "unknown",
-      "datatype": "int8",
-      "layers": [
-        "FULLY_CONNECTED"
-      ]
-    },
-    {
       "name": "efficientnet_lite",
       "dataset": "unknown",
       "datatype": "int8",
@@ -163,7 +155,57 @@
       "dataset": "unknown",
       "datatype": "int8",
       "layers": [
+        "FULLY_CONNECTED",
+        "CONV_2D"
+      ]
+    },
+    {
+      "name": "deit_tiny_patch16_224",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "FULLY_CONNECTED",
+        "CONV_2D"
+      ]
+    },
+    {
+      "name": "swin_t",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
         "FULLY_CONNECTED"
+      ]
+    },
+    {
+      "name": "efficientvit_int8",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D"
+      ]
+    },
+    {
+      "name": "mobilevit_xxs_int8",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D"
+      ]
+    },
+    {
+      "name": "mobilevit_xs_int8",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D"
+      ]
+    },
+    {
+      "name": "mobilevit_s_int8",
+      "dataset": "unknown",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D"
       ]
     }
   ]
