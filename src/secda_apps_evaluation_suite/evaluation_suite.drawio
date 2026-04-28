@@ -1,0 +1,22 @@
+<mxfile host="65bd71144e">
+    <diagram id="iuWpL76F66VsKiqWdohr" name="Page-1">
+        <mxGraphModel dx="808" dy="827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Evaluation Suite&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="330" y="290" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="3" target="2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="config file" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="330" y="180" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="&lt;div&gt;- activate conda-env&lt;/div&gt;- Create a folder in the host machine with the name of the experiment and time stamp&lt;div&gt;- Copy the config file in the folder&lt;/div&gt;&lt;div&gt;- Send the data to the board and required device scripts&lt;/div&gt;&lt;div&gt;- process the config file&amp;nbsp;&lt;/div&gt;&lt;div&gt;- generate the binaries and send to the device&lt;/div&gt;&lt;div&gt;- Check respective bitstream file is there in the board or not.&lt;/div&gt;&lt;div&gt;- Load the bitStream&lt;/div&gt;&lt;div&gt;- run the binaries and log the terminal output in a text file.&lt;/div&gt;&lt;div&gt;- return the log file and any other file create by the binaries&lt;/div&gt;&lt;div&gt;- process the files in the host machine to show the result&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="290" width="480" height="210" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

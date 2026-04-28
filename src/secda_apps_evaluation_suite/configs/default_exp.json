@@ -1,0 +1,30 @@
+{
+    "paths": {
+        "d": "/home/xilinx/Workspace/data"
+    },
+    "hardware": [
+        "CPU_PYNQv1_0"
+    ],
+    "apps": {
+        "benchmark_model": {
+            "graph": [
+                "$(d)/imagenet/models/mobilenetv2"
+            ],
+            "num_threads": [
+                "1"
+            ],
+            "num_runs": "100",
+            "enable_op_profiling": "true",
+            "profiling_output_csv_file": "\"layer.csv\""
+        },
+        "inference_diff": {
+            "model_file": [
+                "$(d)/imagenet/models/mobilenetv2"
+            ],
+            "num_interpreter_threads": [
+                "1"
+            ],
+            "num_runs": "1"
+        }
+    }
+}
