@@ -92,6 +92,9 @@ for ((i = 0; i < hw_length; i++)); do
       echo "${pass}" | sudo -S bash -c 'source /etc/profile.d/xrt_setup.sh; source /etc/profile.d/pynq_venv.sh; python3 '${scripts_dir}'/load_bitstream.py '${bitstream_dir}'/'${HW}'_'${VERSION}'.bit -q'
 
       if [ $? -ne 0 ]; then prev_failed=1 && echo "Load bitstream failed ${bitstream_dir}/${HW}_${VERSION}.bit" && continue; fi
+
+      echo "Clearing cache"
+      sudo sh -c "/bin/echo 3 > /proc/sys/vm/drop_caches" # Clear cache
     fi
   fi
   
@@ -127,6 +130,18 @@ for ((i = 0; i < hw_length; i++)); do
       prev_failed=1
       continue
     fi
+  elif [ "${APP}" == "imagenet_image_classification" ]; then
+    echo "Running Imagenet Image Classification-Accuracy Test!!"
+    rm -f ./tmp/${runname}_*.txt
+    echo "echo '${pass}' | sudo -S timeout --foreground 10h ${CMD}" >>commands.txt
+    echo "${pass}" | sudo -S timeout --foreground 10h ${CMD} >tmp/${runname}.txt 2>&1
+    if [ $? -ne 0 ]; then
+      echo "run failed"
+      echo "sudo timeout --foreground 10h ${CMD}"
+      prev_failed=1
+      continue
+    fi
+    echo "✅ Completed Imagenet Image Classification-Accuracy Test!!"
 
   elif [ "${APP}" == "benchmark_model" ]; then
     echo "Running benchmark model"
