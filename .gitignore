@@ -85,3 +85,8 @@ src/benchmark_suite/bitstreams/Z1/
 src/benchmark_suite/scripts/process_power copy.py
 MODULE.bazel
 MODULE.bazel.lock
+
+todo.md
+src/secda_apps_evaluation_suite/results
+src/secda_apps_evaluation_suite/generated
+data/
