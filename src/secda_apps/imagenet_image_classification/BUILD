@@ -29,7 +29,7 @@ cc_library(
 )
 
 cc_binary(
-    name = "run_eval",
+    name = "imagenet_image_classification",
     copts = tflite_copts(),
     linkopts = task_linkopts(),
     deps = [

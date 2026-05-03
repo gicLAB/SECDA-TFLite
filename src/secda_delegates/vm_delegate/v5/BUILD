@@ -124,6 +124,17 @@ cc_binary(
 )
 
 cc_binary(
+    name="imagenet_image_classification_plus_vm_delegate",
+    copts=tflite_copts(),
+    linkopts=task_linkopts(),
+    deps=[
+        "//tensorflow/lite/tools/evaluation/tasks:task_executor_main",
+        "//tensorflow/lite/examples/secda_apps/imagenet_image_classification:run_eval_lib",
+        ":vm_delegate_provider",
+    ],
+)
+
+cc_binary(
     name = "imagenet_classification_eval_plus_vm_delegate",
     copts = tflite_copts(),
     linkopts = task_linkopts(),

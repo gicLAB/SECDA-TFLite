@@ -30,8 +30,9 @@ devcontainer_dir = os.path.join(workspace_path, ".devcontainer")
 devcontainer_cfg = os.path.join(devcontainer_dir, "config.json")
 os.makedirs(devcontainer_dir, exist_ok=True)
 
-force_symlink = "--force-symlink" in sys.argv
+# force_symlink = "--force-symlink" in sys.argv
 
+force_symlink = True
 print(f"Force symlink: {force_symlink}")
 
 try:

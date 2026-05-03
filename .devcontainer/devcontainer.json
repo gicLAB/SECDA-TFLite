@@ -25,5 +25,5 @@
     "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=cached"
   ],
   "workspaceFolder": "${localWorkspaceFolder}",
-  "postCreateCommand": "sudo chown -R ${localEnv:USER:vscode}:${localEnv:USER:vscode} ${localWorkspaceFolder} && cd scripts && python3 ./update_config.py --force-symlink"
+  "postCreateCommand": "sudo chown -R ${localEnv:USER:vscode}:${localEnv:USER:vscode} ${localWorkspaceFolder} && cd scripts && python3 ./update_config.py"
 }
