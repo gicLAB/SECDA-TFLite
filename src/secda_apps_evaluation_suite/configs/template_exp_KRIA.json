@@ -1,7 +1,4 @@
 {
-    "paths": {
-        "d": "/home/ubuntu/Workspace/data"
-    },
     "hardware": [
         "CPU_KRIAv1_0",
         "VMRPP_KRIA_GEMM8_250Mv12_4",

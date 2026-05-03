@@ -1,9 +1,6 @@
 {
-    "paths": {
-        "d": "/home/xilinx/Workspace/data"
-    },
     "hardware": [
-        "CPU_PYNQv1_0"
+        "VMv5_0_KRIA"
     ],
     "apps": {
         "benchmark_model": {
@@ -13,7 +10,7 @@
             "num_threads": [
                 "1"
             ],
-            "num_runs": "100",
+            "num_runs": "10",
             "enable_op_profiling": "true",
             "profiling_output_csv_file": "\"layer.csv\""
         },

@@ -1,10 +1,10 @@
 {
-  "secda_tflite_path": "/home/rappy/workspace/secda-tflite-v2_rpp/SECDA-TFLite",
+  "secda_tflite_path": "/mnt/new_ssd/workspace/secda-tflite-v2_rpp/SECDA-TFLite",
   "vivado_2019_path": "/opt/Xilinx/Vivado/2019.2/bin/",
   "vivado_2024_path": "/opt/Xilinx/Vivado/2024.2/bin/",
   "models_dirs": [
-    "/home/rappy/workspace/secda-tflite-v2_rpp/SECDA-TFLite/data/models",
-    "/home/rappy/workspace/secda-tflite-v2_rpp/SECDA-TFLite/src/benchmark_suite/model_gen/models"
+    "/mnt/new_ssd/workspace/secda-tflite-v2_rpp/SECDA-TFLite/data",
+    "/mnt/new_ssd/workspace/secda-tflite-v2_rpp/SECDA-TFLite/src/benchmark_suite/model_gen/models"
   ],
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "hw_configs": "hardware_automation/configs",

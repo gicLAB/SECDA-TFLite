@@ -1,7 +1,4 @@
 {
-    "paths": {
-        "d": "/home/xilinx/Workspace/data"
-    },
     "hardware": [
         "CPU_PYNQv1_0",
         "VMRPP_PYNQ_GEMM4_200Mv14_4",
