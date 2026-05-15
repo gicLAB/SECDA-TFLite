@@ -55,7 +55,6 @@ bitstream_dir="${board_dir}/bitstreams"
 scripts_dir="${board_dir}/scripts"
 board_user="${board_user}"
 ld_bst=${ld_bst}
-pass="xilinx"
 
 # echo "bitstream_dir=${bitstream_dir}"
 # echo "scripts_dir=${scripts_dir}"
@@ -84,12 +83,10 @@ for ((i = 0; i < hw_length; i++)); do
   if [ ${ld_bst} -eq 1 ]; then
     if [ ${prev_failed} -eq 1 ] || [ "${prev_hw_version}" != "${HW}_${VERSION}" ]; then
       echo "Loading bitstream ${HW}_${VERSION}.bit"
-      # echo sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q >>commands.txt
-      echo "echo '${pass}' | sudo -S bash -c 'source /etc/profile.d/xrt_setup.sh; source /etc/profile.d/pynq_venv.sh; python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q'" >> commands.txt
+      echo "sudo -S bash -c 'source /etc/profile.d/xrt_setup.sh; source /etc/profile.d/pynq_venv.sh; python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q'" >> commands.txt
 
       # this template is customized for rpp pynq board
-      # sudo python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q
-      echo "${pass}" | sudo -S bash -c 'source /etc/profile.d/xrt_setup.sh; source /etc/profile.d/pynq_venv.sh; python3 '${scripts_dir}'/load_bitstream.py '${bitstream_dir}'/'${HW}'_'${VERSION}'.bit -q'
+      sudo -S bash -c 'source /etc/profile.d/xrt_setup.sh; source /etc/profile.d/pynq_venv.sh; python3 '${scripts_dir}'/load_bitstream.py '${bitstream_dir}'/'${HW}'_'${VERSION}'.bit -q'
 
       if [ $? -ne 0 ]; then prev_failed=1 && echo "Load bitstream failed ${bitstream_dir}/${HW}_${VERSION}.bit" && continue; fi
 

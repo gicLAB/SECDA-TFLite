@@ -17,7 +17,7 @@ helpFunction() {
 # bin_gen: Generate binaries
 aec_path="" ## apps evaluation config.json file , give the default path
 init=0
-name=""
+name="exp_0"
 bin_gen=0
 cpy_bst=0
 ld_bst=1

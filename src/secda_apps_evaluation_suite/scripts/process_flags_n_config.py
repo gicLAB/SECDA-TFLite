@@ -433,11 +433,12 @@ def create_run_config(sc, aec, app_dict, load_bitstreams):
                         models = [model + ".tflite" for model in models]
                         config_arr[f] = models
                         continue
-
+                    
+                    # Replace "$(d)" in aec["apps"][app][f] with board_data_dir
                     if type(aec["apps"][app][f]) == list:
-                        config_arr[f] = aec["apps"][app][f]
+                        config_arr[f] = [str(val).replace("$(d)", board_data_dir) for val in aec["apps"][app][f]]
                     else:
-                        config_arr[f] = [aec["apps"][app][f]]
+                        config_arr[f] = [str(aec["apps"][app][f]).replace("$(d)", board_data_dir)]
                 all_configs = list(product(*config_arr.values()))
                 usedel = f"--use_{delegate}=true"
                 if "CPU" in hw:

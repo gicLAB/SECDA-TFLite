@@ -3,17 +3,6 @@
         "VMv5_0_KRIA"
     ],
     "apps": {
-        "benchmark_model": {
-            "graph": [
-                "$(d)/imagenet/models/mobilenetv2"
-            ],
-            "num_threads": [
-                "1"
-            ],
-            "num_runs": "10",
-            "enable_op_profiling": "true",
-            "profiling_output_csv_file": "\"layer.csv\""
-        },
         "inference_diff": {
             "model_file": [
                 "$(d)/imagenet/models/mobilenetv2"

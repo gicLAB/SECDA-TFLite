@@ -1,60 +1,139 @@
-## TODO: secda_apps_evaluation_suite
+# secda_apps_evaluation_suite
 
-- log_power_KRIA.sh should be in the src/secda_apps_evaluation_suite/scripts/ folder
-and should be copied to the BOARD during the initialization step.
+This suite generates board-specific run scripts from a JSON experiment description, pushes the generated files to the target board, and then executes the requested apps.
 
-## How should we configure the Secda_apps_evaluation_suite?
+## Current Layout
 
-1. We have different apps and different hardware.
+Hardware configurations are collected from [hardware_automation/configs](../../hardware_automation/configs). The current hardware families in this repository are:
 
-2. In each app, we have different arguments.
+- `ADD`
+- `CPU`
+- `FCGEMM`
+- `SA`
+- `VM`
 
-3. Within these different arguments, might want to run some arguments with different variations in a single run.
+The SECDA app entry points under [src/secda_apps](../secda_apps) are:
 
-4. Hardware names should be collected from the hardware_automation/configs/*.json files.
+- `eval_model`
+- `eval_model_accuracy`
+- `imagenet_image_classification`
 
-5. Collect apps name from the src/secda_apps directory.
+The suite also supports `benchmark_model` and `inference_diff` through the TensorFlow Lite tooling and the generated run scripts.
 
-6. Benchmark_model supported argument variations:
-    - go to the model_n_data dir and copy the model path in the "models" argument witoout the extension ".tflite"
-    - "models" : ["model1", "model2", "model3"] // multiple values supported
-    - "models" : "model_name.json" // json file with multiple values
-    - "threads": ["1","2"], // only multiple values accepted
-    - "runs"   : "100" // only single value accepted
+## How It Works
 
-7. inference_diff supported argument variations:
-    - go to the model_n_data dir and copy the model path in the "models" argument witoout the extension ".tflite"
-    - "models" : ["model1", "model2", "model3"] // multiple values supported
-    - "models" : "model_name.json" // json file with multiple values
-    - "threads": ["1","2"], // only multiple values accepted
-    - "runs"   : "100" // only single value accepted
+1. Choose the hardware list from `hardware_automation/configs/*.json`.
+2. Choose the app list and arguments in an experiment config under [configs](configs).
+3. Use arrays in the JSON when you want the suite to run multiple values in one invocation.
+4. Use the `$(d)` token for paths that should be expanded to the board data directory during generation.
+5. Run the wrapper script to generate configs, copy files, and launch the experiments.
 
-8. em_apps supported argument variations:
-    - currently apps only support for imageNet models, so model should be in the dir (/mnt/sata/model_n_data/imagenet/models)
-    - make sure given image name is available in data_dir (/mnt/sata/model_n_data/imagenet/otherImages)
-    - "models" : ["model1", "model2", "model3"] // multiple values supported
-    - "threads": ["1","2"], // only multiple values accepted
+## Supported App Fields
 
-9. ema_apps supported argument variations:
-    - go to the model_n_data dir and copy the model path in the "models" argument witoout the extension ".tflite"
-    - currently supports only cifar 10 models, so model should be in the dir (/mnt/sata/model_n_data/cifar10/models)
-    - "models" : ["model1", "model2", "model3"] // multiple values supported
-    - "threads": ["1","2"], // only multiple values accepted
-    - "img_no"  : "10000" // only single value accepted(highest value is 10000)
+The example configs in this directory use the following field names.
 
-10. iic_apps supported argument variations:
-    - go to the model_n_data dir and copy the model path in the "models" argument witoout the extension ".tflite"
-    - currently apps only support for imageNet models, so model should be in the dir (/mnt/sata/model_n_data/imagenet/models)
-    - "models" : ["model1", "model2", "model3"] // multiple values supported
-    - "threads": ["1","2"], // only multiple values accepted
-    - "img_no"  : "10000" // only single value accepted(highest value is 50000S)
+### `benchmark_model`
 
-secda_apps_evaluation_suite:
--- enable evaluation suite to run any apps with secda delegate
--- tested for different combination
-todo:
--- need to enable for PYNQ and imagene_classification apps
--- copy bitstream and binary in the result folder
--- update readme.md
--- create post-processing python function for all apps
--- describe how to use define flags for each apps.
+- `graph` or `model_file`
+- `num_threads` or `threads`
+- `num_runs` or `runs`
+- Optional fields such as `enable_op_profiling` and `profiling_output_csv_file`
+
+### `inference_diff`
+
+- `model_file` or `tflite_model`
+- `num_interpreter_threads` or `threads`
+- `num_runs` or `runs`
+
+### `eval_model`
+
+- `tflite_model`
+- `labels`
+- `image`
+- `threads`
+
+### `eval_model_accuracy`
+
+- `tflite_model`
+- `threads`
+- `labels`
+- `image`
+- `test_dataset_location`
+- `ground_truth_labels_file_name`
+- `output_file_name`
+- `no_of_images`
+
+### `imagenet_image_classification`
+
+- `model_file`
+- `num_interpreter_threads`
+- `ground_truth_images_path`
+- `ground_truth_labels`
+- `model_output_labels`
+- `output_file_path`
+- `num_images`
+- `SkipEvaluation`
+
+## Example Experiment Files
+
+### `configs/default_exp.json`
+
+Minimal example for a single app on two hardware targets:
+
+### `configs/template_exp.json`
+
+Larger example with multiple apps, multiple models, and mixed scalar/list values:
+
+
+## How To Run
+
+### Prerequisites
+
+Before running any experiments, you **must** complete the board setup steps in [FPGA Setup and Support Documentation](../../docs/fpga_support.md#board-setup-for-secda-apps-evaluation-suite). This includes:
+- Configuring SSH key-based authentication
+- Enabling passwordless sudo
+- Setting up XRT and PYNQ environments
+
+Run the wrapper from the `src/secda_apps_evaluation_suite` directory.
+
+```bash
+./secda_apps_evaluation_suite.sh -j configs/default_exp.json
+```
+
+Common options:
+
+- `-j <file>` select the experiment JSON file.
+- `-i` initialize the board side directories and sync helper scripts.
+- `-b` generate binaries.
+- `-c` copy bitstreams to the boards.
+- `-l` skip loading bitstreams on the board.
+- `-p` collect power while running benchmark jobs.
+- `-n <name>` name the output folder under `results/`.
+
+
+### Example 1: Full run on the default experiment
+
+```bash
+./secda_apps_evaluation_suite.sh -j configs/default_exp.json -i -b -c -n default_full_run
+```
+
+### Example 2: Run benchmark with power collection
+
+```bash
+./secda_apps_evaluation_suite.sh -j configs/default_exp.json -b -c -p -n bm_power
+```
+
+**Note:** Power collection (with `-p`) only works for KRIA boards. For Z1 and Z2, use a USB power meter for manual measurement.
+
+## Output
+
+- Generated files are written under the experiment output directory configured in `config.json`.
+- A copy of the generated results and the input JSON is stored under `results/<name>/`.
+- The main log file is `process_flags_n_config.log` in the generated output directory.
+
+## Notes
+
+- Use `$(d)` in paths when the same experiment should resolve correctly on the host and the board.
+- Put multiple candidate values in arrays when you want the suite to generate one run per combination.
+
+

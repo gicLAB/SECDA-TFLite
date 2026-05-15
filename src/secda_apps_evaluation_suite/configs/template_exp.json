@@ -1,10 +1,7 @@
 {
     "hardware": [
-        "CPU_PYNQv1_0",
-        "VMRPP_PYNQ_GEMM4_200Mv14_4",
-        "VMRPP_PYNQ_SH_QK_GEMM4_200Mv14_1",
-        "VMRPP_PYNQ_SH_MSQ_OPT_GEMM4_200Mv14_1",
-        "VMRPP_PYNQ_SH_APOT_OPT_GEMM4_200Mv14_1"
+        "VMv5_0",
+        "VMv5_0_KRIA"
     ],
     "apps": {
         "eval_model": {
@@ -52,7 +49,7 @@
             ],
             "num_threads": [
                 "1",
-                "2"
+                "4"
             ],
             "num_runs": "100",
             "enable_op_profiling": "true",
@@ -62,19 +59,20 @@
             "model_file": [
                 "$(d)/imagenet/models/mobilenetv2",
                 "$(d)/imagenet/models/inceptionv1",
+                "$(d)/imagenet/models/inceptionv3",
                 "$(d)/imagenet/models/resnet18v1",
+                "$(d)/imagenet/models/resnet50v2",
+                "$(d)/imagenet/models/efficientnet_lite",
                 "$(d)/otherModels/vit_tiny_patch16_224",
                 "$(d)/otherModels/vit_small_patch16_224",
                 "$(d)/otherModels/vit_base_patch16_224",
                 "$(d)/otherModels/deit_tiny_patch16_224",
                 "$(d)/otherModels/deit_small_patch16_224",
                 "$(d)/otherModels/deit_base_patch16_224",
-                "$(d)/otherModels/albert_int8",
-                "$(d)/otherModels/mobilebert_quant",
                 "$(d)/otherModels/edgenext_small_keras_quant_int8"
             ],
             "num_interpreter_threads": [
-                "2"
+                "4"
             ],
             "num_runs": "1"
         }
