@@ -188,7 +188,7 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
   int wanted_height = interpreter->tensor(input)->dims->data[1];
   int wanted_width = interpreter->tensor(input)->dims->data[2];
   int wanted_channels = interpreter->tensor(input)->dims->data[3];
-  
+
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
 
@@ -199,13 +199,13 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
     in[i * 3 + 2] = temp;
   }
 
-  //save in a csv file
-  // std::ofstream input_tensor_stg1;
-  // input_tensor_stg1.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_raw_secda.csv");
-  // for (const auto& value : in) {
-  //     input_tensor_stg1 << static_cast<int>(value) << std::endl;
-  // }
-  // input_tensor_stg1.close();
+  // save in a csv file
+  //  std::ofstream input_tensor_stg1;
+  //  input_tensor_stg1.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_raw_secda.csv");
+  //  for (const auto& value : in) {
+  //      input_tensor_stg1 << static_cast<int>(value) << std::endl;
+  //  }
+  //  input_tensor_stg1.close();
 
   switch (settings->input_type) {
   case kTfLiteFloat32:
@@ -230,8 +230,9 @@ void ResizeBMPInput(Settings *settings, tflite::Interpreter *interpreter,
   }
 }
 
-void processOutput(tflite::Interpreter *interpreter, int output, float threshold,
-                   int number_of_results, string ground_truth_label, Settings *settings) {
+void processOutput(tflite::Interpreter *interpreter, int output,
+                   float threshold, int number_of_results,
+                   string ground_truth_label, Settings *settings) {
   std::vector<std::pair<float, int>> top_results;
   TfLiteIntArray *output_dims = interpreter->tensor(output)->dims;
   auto output_size = output_dims->data[output_dims->size - 1];
@@ -262,7 +263,7 @@ void processOutput(tflite::Interpreter *interpreter, int output, float threshold
   if (ReadLabelsFile(settings->labels_file_name, &labels, &label_count) !=
       kTfLiteOk)
     exit(-1);
-  
+
   // outputFile << "Predicted lables" << std::endl;
   static int top_1_count = 0;
   static int top_5_count = 0;
@@ -272,17 +273,18 @@ void processOutput(tflite::Interpreter *interpreter, int output, float threshold
     const float confidence = result.first;
     const int index = result.second;
     if (ground_truth_label == labels[index]) {
-        top_5_count++;
+      top_5_count++;
     }
-    
+
     if (loop_count == 0 && ground_truth_label == labels[index]) {
       top_1_count++;
     }
-    if (loop_count == 0)
-    {
+    if (loop_count == 0) {
       static int ccd = 0;
-      LOG(INFO) << "No: " << ccd << " ground_truth_label: " << ground_truth_label //
-      << " Pred "<< confidence << ": " << index << " " << labels[index];
+      // LOG(INFO) << "No: " << ccd
+      //           << " ground_truth_label: " << ground_truth_label //
+      //           << " Pred " << confidence << ": " << index << " "
+      //           << labels[index];
       ccd++;
     }
     // if (loop_count==0)
@@ -291,14 +293,24 @@ void processOutput(tflite::Interpreter *interpreter, int output, float threshold
     loop_count++;
   }
   if (no_of_images == settings->no_of_images - 1) {
-    LOG(INFO) << "Top 1 Accuracy: " << (float)top_1_count *100 / settings->no_of_images;
-    LOG(INFO) << "Top 5 Accuracy: " << (float)top_5_count *100 / settings->no_of_images;
-    std::ofstream outputFile(settings->output_file_name,std::ios::app);
-    outputFile << "Top 1 Accuracy: " << (float)top_1_count *100 / settings->no_of_images << std::endl;
-    outputFile << "Top 5 Accuracy: " << (float)top_5_count *100 / settings->no_of_images << std::endl;
-    outputFile.close(); // Close the output file
-  }
-  else no_of_images++;
+    LOG(INFO) << "Top 1 Accuracy: "
+              << (float)top_1_count * 100 / settings->no_of_images;
+    LOG(INFO) << "Top 5 Accuracy: "
+              << (float)top_5_count * 100 / settings->no_of_images;
+
+    // check if (settings->output_file_name is empty string)
+    if (!settings->output_file_name.empty()) {
+      std::ofstream outputFile(settings->output_file_name, std::ios::app);
+
+      outputFile << "Top 1 Accuracy: "
+                 << (float)top_1_count * 100 / settings->no_of_images
+                 << std::endl;
+      outputFile << "Top 5 Accuracy: "
+                 << (float)top_5_count * 100 / settings->no_of_images
+                 << std::endl;
+      outputFile.close(); // Close the output file
+    }
+  } else no_of_images++;
 }
 
 void Load_Data_NPY(std::unique_ptr<tflite::Interpreter> &interpreter,
@@ -307,8 +319,7 @@ void Load_Data_NPY(std::unique_ptr<tflite::Interpreter> &interpreter,
   TfLiteTensor *tensor = interpreter->tensor(t_inputs[0]);
   int input_size = tensor->dims->size;
   int input_len = 1;
-  for (int i = 0; i < input_size; i++)
-    input_len *= tensor->dims->data[i];
+  for (int i = 0; i < input_size; i++) input_len *= tensor->dims->data[i];
 
   std::vector<unsigned long> shape;
   bool fortran_order;
@@ -318,8 +329,7 @@ void Load_Data_NPY(std::unique_ptr<tflite::Interpreter> &interpreter,
     indata.clear();
     npy::LoadArrayFromNumpy(npy_file_path, shape, fortran_order, indata);
     auto in_data = tensor->data.int8;
-    for (int i = 0; i < input_len; i++)
-      in_data[i] = (int8_t)indata[i];
+    for (int i = 0; i < input_len; i++) in_data[i] = (int8_t)indata[i];
   } else if (tensor->type == 3) {
     std::vector<float> indata;
     indata.clear();
@@ -328,8 +338,7 @@ void Load_Data_NPY(std::unique_ptr<tflite::Interpreter> &interpreter,
     auto in_data = tensor->data.uint8;
     int data_len = shape[0] * shape[1] * shape[2] * shape[3];
     input_len = data_len > input_len ? input_len : data_len;
-    for (int i = 0; i < input_len; i++)
-      in_data[i] = (uint8_t)indata[i];
+    for (int i = 0; i < input_len; i++) in_data[i] = (uint8_t)indata[i];
   } else {
     std::vector<float> indata;
     indata.clear();
@@ -338,8 +347,7 @@ void Load_Data_NPY(std::unique_ptr<tflite::Interpreter> &interpreter,
     auto in_data = tensor->data.f;
     int data_len = shape[0] * shape[1] * shape[2] * shape[3];
     input_len = data_len > input_len ? input_len : data_len;
-    for (int i = 0; i < input_len; i++)
-      in_data[i] = indata[i];
+    for (int i = 0; i < input_len; i++) in_data[i] = indata[i];
   }
   std::cout << "Input  Loaded" << std::endl;
 }
@@ -389,15 +397,14 @@ void LoadModel(Settings *settings,
   }
 }
 
-
-std::string removeCarriageReturn(const std::string& str) {
-    std::string result;
-    for (char c : str) {
-        if (c != '\r') {
-            result += c;
-        }
+std::string removeCarriageReturn(const std::string &str) {
+  std::string result;
+  for (char c : str) {
+    if (c != '\r') {
+      result += c;
     }
-    return result;
+  }
+  return result;
 }
 
 void RunInference(Settings *settings,
@@ -414,8 +421,7 @@ void RunInference(Settings *settings,
   // ======================================================================
 
   int input = interpreter->inputs()[0];
-  if (settings->verbose)
-    LOG(INFO) << "input: " << input;
+  if (settings->verbose) LOG(INFO) << "input: " << input;
 
   const std::vector<int> inputs = interpreter->inputs();
   const std::vector<int> outputs = interpreter->outputs();
@@ -442,8 +448,7 @@ void RunInference(Settings *settings,
     exit(-1);
   }
 
-  if (settings->verbose)
-    PrintInterpreterState(interpreter.get());
+  if (settings->verbose) PrintInterpreterState(interpreter.get());
 
   // get input dimension from the input tensor metadata
   // assuming one input only
@@ -459,45 +464,44 @@ void RunInference(Settings *settings,
   // int image_height = 28;
   // int image_channels = 1;
 
-  // check the test dataset location and take first settings->no_of_images images location in an array
-  // read the image from the location and resize it to 224x224x3
+  // check the test dataset location and take first settings->no_of_images
+  // images location in an array read the image from the location and resize it
+  // to 224x224x3
   std::vector<std::string> image_files, ground_truth_image_labels;
   if (GetSortedFileNames(StripTrailingSlashes(settings->test_dataset_location),
-                        &image_files) != kTfLiteOk) {
-    LOG(ERROR) << "setting->test_dataset_location: " << settings->test_dataset_location;  
+                         &image_files) != kTfLiteOk) {
+    LOG(ERROR) << "setting->test_dataset_location: "
+               << settings->test_dataset_location;
     LOG(ERROR) << "Could not read ground truth image folder location";
     exit(-1);
   }
 
   size_t ground_truth_image_label_count;
-  if (ReadLabelsFile(settings->ground_truth_labels_file_name, &ground_truth_image_labels, &ground_truth_image_label_count) !=
-      kTfLiteOk)
-  {
+  if (ReadLabelsFile(settings->ground_truth_labels_file_name,
+                     &ground_truth_image_labels,
+                     &ground_truth_image_label_count) != kTfLiteOk) {
     LOG(ERROR) << "Could not read ground truth image labels file location";
     exit(-1);
   }
 
-  // LOG(INFO) << "ground_truth_image_label_count: " << ground_truth_image_label_count;
-
-  // clear settings->output_file_name file before writing to it
-  std::ofstream outputFile(settings->output_file_name);
-  outputFile.close();
+  // LOG(INFO) << "ground_truth_image_label_count: " <<
+  // ground_truth_image_label_count;
 
   const int step = settings->no_of_images / 100;
-  
+
   struct timeval start_time, stop_time;
   LOG(INFO) << "Starting Evaluation: ";
   gettimeofday(&start_time, nullptr);
-  
-  for (int i=0; i<settings->no_of_images; i++) {
+
+  for (int i = 0; i < settings->no_of_images; i++) {
     if (step > 1 && i % step == 0) {
       LOG(INFO) << "Evaluated: " << i / step << "%";
     }
 
     settings->input_bmp_name = image_files[i];
     // LOG(INFO) << "settings->input_bmp_name: " << settings->input_bmp_name;
-    ResizeBMPInput(settings, interpreter.get(), input, image_width, image_height,
-                 image_channels);
+    ResizeBMPInput(settings, interpreter.get(), input, image_width,
+                   image_height, image_channels);
     //  Manual Inputs v2
     // Load_Data_NPY(interpreter, settings->input_npy_name);
 
@@ -508,15 +512,15 @@ void RunInference(Settings *settings,
     auto profiler = absl::make_unique<profiling::Profiler>(
         settings->max_profiling_buffer_entries);
     interpreter->SetProfiler(profiler.get());
-    if (settings->profiling)
-      profiler->StartProfiling();
+    if (settings->profiling) profiler->StartProfiling();
 
     // const float* preproc_out = interpreter->typed_tensor<float>(0);
     // // save output tensor in a csv file
     // std::ofstream input_tensor_stg4;
     // input_tensor_stg4.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_normalized_preProcOut_secda.csv");
     // for (int i = 0; i < (32*32*3); i++) {
-    //   input_tensor_stg4 << std::fixed << std::setprecision(6) << preproc_out[i] << std::endl;
+    //   input_tensor_stg4 << std::fixed << std::setprecision(6) <<
+    //   preproc_out[i] << std::endl;
     // }
     // input_tensor_stg4.close();
 
@@ -538,36 +542,38 @@ void RunInference(Settings *settings,
             subgraph->node_and_registration(op_index);
         const TfLiteRegistration registration = node_and_registration->second;
         PrintProfilingInfo(profile_events[i], subgraph_index, op_index,
-                          registration);
+                           registration);
       }
     }
 
     const float threshold = 0.000001f;
     std::vector<std::pair<float, int>> top_results;
     int output = interpreter->outputs()[0];
-    string ground_truth_label = removeCarriageReturn(ground_truth_image_labels[i]);
+    string ground_truth_label =
+        removeCarriageReturn(ground_truth_image_labels[i]);
 
     processOutput(interpreter.get(), output, threshold,
-                  settings->number_of_results,ground_truth_label, settings);
+                  settings->number_of_results, ground_truth_label, settings);
   }
   gettimeofday(&stop_time, nullptr);
-  std::ofstream outputFile1(settings->output_file_name,std::ios::app);
+
   LOG(INFO) << "average time per image: "
             << (get_us(stop_time) - get_us(start_time)) /
-                  (settings->no_of_images * 1000)
+                   (settings->no_of_images * 1000)
             << " ms";
   LOG(INFO) << "Total time: "
-            << (get_us(stop_time) - get_us(start_time)) / 1000000
-            << " s";
-  outputFile1 << "average time per image: "
-            << (get_us(stop_time) - get_us(start_time)) /
-                  (settings->no_of_images * 1000)
-            << " ms" << std::endl;
-  outputFile1 << "Total time: "
-            << (get_us(stop_time) - get_us(start_time)) / 1000000
-            << " s" << std::endl; 
-  outputFile1.close(); // Close the output file
-
+            << (get_us(stop_time) - get_us(start_time)) / 1000000 << " s";
+  if (!settings->output_file_name.empty()) {
+    std::ofstream outputFile1(settings->output_file_name, std::ios::app);
+    outputFile1 << "average time per image: "
+                << (get_us(stop_time) - get_us(start_time)) /
+                       (settings->no_of_images * 1000)
+                << " ms" << std::endl;
+    outputFile1 << "Total time: "
+                << (get_us(stop_time) - get_us(start_time)) / 1000000 << " s"
+                << std::endl;
+    outputFile1.close(); // Close the output file
+  }
 }
 
 void display_usage() {
@@ -593,7 +599,6 @@ void display_usage() {
       << "--test_dataset_location, -d: location of the test dataset\n"
       << "--ground_truth_labels_file_name, -h: ground truth labels file name\n"
       << "--output_file_name, -o: output file name\n";
-
 }
 
 // Copied from label_image.cc
@@ -639,94 +644,50 @@ int Main(int argc, char **argv) {
     int option_index = 0;
 
     c = getopt_long(argc, argv,
-                    "a:b:c:d:e:f:g:i:j:l:m:n:p:r:s:t:v:w:x:d:h:o:u:", long_options,
-                    &option_index);
+                    "a:b:c:d:e:f:g:i:j:l:m:n:p:r:s:t:v:w:x:d:h:o:u:",
+                    long_options, &option_index);
 
     /* Detect the end of the options. */
-    if (c == -1)
-      break;
+    if (c == -1) break;
 
     switch (c) {
-    case 'a':
-      s.accel = strtol(optarg, nullptr, 10);
-      break;
-    case 'b':
-      s.input_mean = strtod(optarg, nullptr);
-      break;
-    case 'c':
-      s.loop_count = strtol(optarg, nullptr, 10);
-      break;
+    case 'a': s.accel = strtol(optarg, nullptr, 10); break;
+    case 'b': s.input_mean = strtod(optarg, nullptr); break;
+    case 'c': s.loop_count = strtol(optarg, nullptr, 10); break;
     case 'e':
       s.max_profiling_buffer_entries = strtol(optarg, nullptr, 10);
       break;
-    case 'f':
-      s.allow_fp16 = strtol(optarg, nullptr, 10);
-      break;
-    case 'g':
-      s.gl_backend = strtol(optarg, nullptr, 10);
-      break;
-    case 'i':
-      s.input_bmp_name = optarg;
-      break;
-    case 'j':
-      s.hexagon_delegate = optarg;
-      break;
-    case 'l':
-      s.labels_file_name = optarg;
-      break;
-    case 'm':
-      s.model_name = optarg;
-      break;
-    case 'n':
-      s.input_npy_name = optarg;
-      break;
-    case 'p':
-      s.profiling = strtol(optarg, nullptr, 10);
-      break;
-    case 'r':
-      s.number_of_results = strtol(optarg, nullptr, 10);
-      break;
-    case 's':
-      s.input_std = strtod(optarg, nullptr);
-      break;
-    case 't':
-      s.number_of_threads = strtol(optarg, nullptr, 10);
-      break;
-    case 'v':
-      s.verbose = strtol(optarg, nullptr, 10);
-      break;
-    case 'w':
-      s.number_of_warmup_runs = strtol(optarg, nullptr, 10);
-      break;
-    case 'x':
-      s.xnnpack_delegate = strtol(optarg, nullptr, 10);
-      break;
-    case 'd':
-      s.test_dataset_location = optarg; 
-      break;
-    case 'h':
-      s.ground_truth_labels_file_name = optarg;
-      break;
-    case 'o':
-      s.output_file_name = optarg;
-      break;
-    case 'u':
-      s.no_of_images = strtol(optarg, nullptr, 10);
-      break;
+    case 'f': s.allow_fp16 = strtol(optarg, nullptr, 10); break;
+    case 'g': s.gl_backend = strtol(optarg, nullptr, 10); break;
+    case 'i': s.input_bmp_name = optarg; break;
+    case 'j': s.hexagon_delegate = optarg; break;
+    case 'l': s.labels_file_name = optarg; break;
+    case 'm': s.model_name = optarg; break;
+    case 'n': s.input_npy_name = optarg; break;
+    case 'p': s.profiling = strtol(optarg, nullptr, 10); break;
+    case 'r': s.number_of_results = strtol(optarg, nullptr, 10); break;
+    case 's': s.input_std = strtod(optarg, nullptr); break;
+    case 't': s.number_of_threads = strtol(optarg, nullptr, 10); break;
+    case 'v': s.verbose = strtol(optarg, nullptr, 10); break;
+    case 'w': s.number_of_warmup_runs = strtol(optarg, nullptr, 10); break;
+    case 'x': s.xnnpack_delegate = strtol(optarg, nullptr, 10); break;
+    case 'd': s.test_dataset_location = optarg; break;
+    case 'h': s.ground_truth_labels_file_name = optarg; break;
+    case 'o': s.output_file_name = optarg; break;
+    case 'u': s.no_of_images = strtol(optarg, nullptr, 10); break;
     case '?':
       /* getopt_long already printed an error message. */
       display_usage();
       exit(-1);
-    default:
-      exit(-1);
+    default: exit(-1);
     }
   }
   // LOG(INFO) << "Settings: ";
   // LOG(INFO) << "Labels file name: " << s.labels_file_name;
   // LOG(INFO) << "test_dataset_location: " << s.test_dataset_location;
-  // LOG(INFO) << "ground_truth_labels_file_name: " << s.ground_truth_labels_file_name;
-  // LOG(INFO) << "output_file_name: " << s.output_file_name;
-  // LOG(INFO) << "no_of_images: " << s.no_of_images;
+  // LOG(INFO) << "ground_truth_labels_file_name: " <<
+  // s.ground_truth_labels_file_name; LOG(INFO) << "output_file_name: " <<
+  // s.output_file_name; LOG(INFO) << "no_of_images: " << s.no_of_images;
 
   // exit(-1);
   delegate_providers.MergeSettingsIntoParams(s);

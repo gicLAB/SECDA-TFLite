@@ -60,7 +60,7 @@ echo "Configurations"
 echo "--------------"
 echo "process_on_fpga=${process_on_fpga}"
 echo "skip_inf_diff=${skip_inf_diff}"
-# echo "collect_power=${collect_power}"
+echo "collect_power=${collect_power}"
 echo "test_run=${test_run}"
 echo "-----------------------------------------------------------"
 
@@ -112,11 +112,14 @@ for ((i = 0; i < length; i++)); do
     echo £{sudo_type} python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q >>commands.txt
     £{sudo_type} python3 ${scripts_dir}/load_bitstream.py ${bitstream_dir}/${HW}_${VERSION}.bit -q
     if [ $? -ne 0 ]; then prev_failed=1 && echo "Load bitstream failed ${bitstream_dir}/${HW}_${VERSION}.bit" && continue; fi
+
+    echo "Clearing cache"
+    sudo sh -c "/bin/echo 3 > /proc/sys/vm/drop_caches" && sleep 3
   fi
 
   if [ "${prev_model}" != "${MODEL}" ]; then
     echo "Clearing cache"
-    sudo sh -c "/bin/echo 3 > /proc/sys/vm/drop_caches" # Clear cache
+    sudo sh -c "/bin/echo 3 > /proc/sys/vm/drop_caches" && sleep 3 # Clear cache
   fi
 
   prev_failed=0
