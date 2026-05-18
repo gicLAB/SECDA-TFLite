@@ -6,12 +6,8 @@ import shutil
 # Get the actual workspace path (parent directory of scripts)
 workspace_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-<<<<<<< HEAD
-with open("../config.json", "r") as file:
-=======
 src_config_path = os.path.join(workspace_path, "config.json")
 with open(src_config_path, "r") as file:
->>>>>>> dev_repo/main
     config = json.load(file)
 
 config["vivado_2019_path"] = ""
@@ -21,11 +17,7 @@ config["secda_tflite_path"] = workspace_path
 config["models_dirs"] = [
     f"{workspace_path}/data/models",
     f"{workspace_path}/src/benchmark_suite/model_gen/models",
-<<<<<<< HEAD
-    f"{workspace_path}/tensorflow/models"
-=======
     f"{workspace_path}/tensorflow/models",
->>>>>>> dev_repo/main
 ]
 
 
