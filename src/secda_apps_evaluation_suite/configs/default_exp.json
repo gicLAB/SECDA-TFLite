@@ -1,0 +1,16 @@
+{
+    "hardware": [
+        "VMv5_0_KRIA"
+    ],
+    "apps": {
+        "inference_diff": {
+            "model_file": [
+                "$(d)/imagenet/models/mobilenetv2"
+            ],
+            "num_interpreter_threads": [
+                "1"
+            ],
+            "num_runs": "1"
+        }
+    }
+}

@@ -1,11 +1,10 @@
 {
-  "secda_tflite_path": "/path/to/SECDA-TFLite",
-  "vivado_2019_path": "/path/to/Xilinx2019/Vivado/2019.2/bin/",
-  "vivado_2024_path": "/path/to/Xilinx2024/Vivado/2024.1/bin/",
+  "secda_tflite_path": "/mnt/new_ssd/workspace/secda-tflite-v2_rpp/SECDA-TFLite",
+  "vivado_2019_path": "/opt/Xilinx/Vivado/2019.2/bin/",
+  "vivado_2024_path": "/opt/Xilinx/Vivado/2024.2/bin/",
   "models_dirs": [
-    "/path/to/SECDA-TFLite/data/models",
-    "/path/to/SECDA-TFLite/src/benchmark_suite/model_gen/models",
-    "/path/to/SECDA-TFLite/tensorflow/models"
+    "/mnt/new_ssd/workspace/secda-tflite-v2_rpp/SECDA-TFLite/data",
+    "/mnt/new_ssd/workspace/secda-tflite-v2_rpp/SECDA-TFLite/src/benchmark_suite/model_gen/models"
   ],
   "path_to_dels": "tensorflow/tensorflow/lite/delegates/utils/secda_delegates",
   "hw_configs": "hardware_automation/configs",
@@ -14,38 +13,38 @@
   "out_dir": "./generated",
   "boards": {
     "Z1": {
-      "board_user": "Z1_USER",
-      "board_hostname": "IP_ADDRESS",
-      "board_port": "22",
-      "board_dir": "/home/Z1_USER/Workspace/secda_tflite",
+      "board_user": "xilinx",
+      "board_hostname": "rpphost.ddns.net",
+      "board_port": "2223",
+      "board_dir": "/home/xilinx/Workspace/secda_tflite",
       "fpga_part": "xc7z020clg400-1",
       "hlx_version": "2019"
     },
     "Z2": {
-      "board_user": "Z2_USER",
-      "board_hostname": "IP_ADDRESS",
-      "board_port": "22",
-      "board_dir": "/home/Z2_USER/Workspace/secda_tflite",
+      "board_user": "xilinx",
+      "board_hostname": "rpphost.ddns.net",
+      "board_port": "2223",
+      "board_dir": "/home/xilinx/Workspace/secda_tflite",
       "fpga_part": "xc7z020clg400-1",
       "hlx_version": "2019"
     },
     "KRIA": {
-      "board_user": "KRIA_USER",
-      "board_hostname": "IP_ADDRESS",
-      "board_port": "22",
-      "board_dir": "/home/KRIA_USER/Workspace/secda_tflite",
+      "board_user": "ubuntu",
+      "board_hostname": "rpphost.ddns.net",
+      "board_port": "2222",
+      "board_dir": "/home/ubuntu/Workspace/secda_tflite",
       "fpga_part": "xczu5ev-sfvc784-2-e",
       "hlx_version": "2024"
     }
   },
   "remote_server": {
-    "gateway": "-J GATEWAY_USER@GATEWAY_SERVER_IP_ADDRESS",
-    "server_user": "REMOTE_SERVER_USER",
-    "server_hostname": "REMOTE_SERVER_IP_ADDRESS",
+    "gateway": "-J rappy@sibu.dcs.gla.ac.uk",
+    "server_user": "test",
+    "server_hostname": "pate.dcs.gla.ac.uk",
     "server_port": 22,
-    "server_dir": "/remote/path/to/SECDA-TFLite/hardware_automation_remote/",
-    "server_2019_path": "/remote/path/to/Xilinx2019/Vivado/2019.2/bin",
-    "server_2024_path": "/remote/path/to/Xilinx2024/Vivado/2024.1/bin/"
+    "server_dir": "/home/test/Workspace/remote/SECDA-TFLite/hardware_automation_remote/",
+    "server_2019_path": "/opt/Xilinx2019/Vivado/2019.2/bin",
+    "server_2024_path": "/opt/Xilinx2024/Vivado/2024.1/bin/"
   },
   "push_bullet_token": "PB_TOKEN"
 }

@@ -1424,7 +1424,9 @@ public:
     bool isDEQUANTIZE = IsNode_DEQUANTIZE_INT8(registration, node, context);
 
     // Node will be delegated if inside supported_nodes
-    std::vector<bool> supported_nodes = {isCONV2D,isDWCONV2D,isADD,isFC,isTCONV,isSHAPE,isSOFTMAX,isPAD,isMEAN,isQUANTIZE,isDEQUANTIZE};
+    // std::vector<bool> supported_nodes = {isCONV2D,isDWCONV2D,isADD,isFC,isTCONV,isSHAPE,isSOFTMAX,isPAD,isMEAN,isQUANTIZE,isDEQUANTIZE};
+    std::vector<bool> supported_nodes = {isCONV2D};
+
 
     bool delegated_node = false;
     // Check if the node is supported by the delegate

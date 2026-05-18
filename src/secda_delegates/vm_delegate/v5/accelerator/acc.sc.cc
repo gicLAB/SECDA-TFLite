@@ -10,4 +10,8 @@
 #include "vm_gemm.sc.h"
 #include "vmm_control.sc.h"
 #include "vmm_modules.sc.h"
+<<<<<<< HEAD
 #include "vmm_unit.sc.h"
+=======
+#include "vmm_unit.sc.h"
+>>>>>>> dev_repo/main
