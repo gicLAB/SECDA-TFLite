@@ -30,9 +30,9 @@ namespace tflite {
 namespace eval_model {
 
 template <class T>
-void resize(T* out, uint8_t* in, int image_height, int image_width,
+void resize(T *out, uint8_t *in, int image_height, int image_width,
             int image_channels, int wanted_height, int wanted_width,
-            int wanted_channels, Settings* s) {
+            int wanted_channels, Settings *s) {
   int number_of_pixels = image_height * image_width * image_channels;
   std::unique_ptr<Interpreter> interpreter(new Interpreter);
 
@@ -45,6 +45,7 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
   // set input and output tensors
   interpreter->SetInputs({0, 1});
   interpreter->SetOutputs({2});
+  
 
   // set parameters of tensors
   TfLiteQuantizationParams quant;
@@ -58,9 +59,9 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
       {1, wanted_height, wanted_width, wanted_channels}, quant);
 
   ops::builtin::BuiltinOpResolver resolver;
-  const TfLiteRegistration* resize_op =
+  const TfLiteRegistration *resize_op =
       resolver.FindOp(BuiltinOperator_RESIZE_BILINEAR, 1);
-  auto* params = reinterpret_cast<TfLiteResizeBilinearParams*>(
+  auto *params = reinterpret_cast<TfLiteResizeBilinearParams *>(
       malloc(sizeof(TfLiteResizeBilinearParams)));
   params->align_corners = false;
   params->half_pixel_centers = false;
@@ -96,7 +97,6 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
   // float inp_mean[3] = {0.4465f, 0.4822f, 0.4914f};
   // float inp_std[3] = {0.2616f, 0.2435f, 0.2470f};
 
-
   // float inp_mean[3] = {0.44653124f, 0.48215827f, 0.49139968f};
   // float inp_std[3] = {0.26158768f, 0.24348505f, 0.24703233f};
 
@@ -107,61 +107,56 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
   // std::ofstream output_file;
   // output_file.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_raw2_secda.csv");
   // for (int i = 0; i < output_number_of_pixels; i++) {
-  //   // output_file << std::fixed << std::setprecision(6) << output[i] << std::endl;
-  //   output_file << output[i] << std::endl;
+  //   // output_file << std::fixed << std::setprecision(6) << output[i] <<
+  //   std::endl; output_file << output[i] << std::endl;
   // }
   // output_file.close();
-  
+
   // save output tensor in a csv file
   // std::ofstream output_file1;
   // std::ofstream output_file2;
   // output_file1.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_normalized_step1_secda.csv");
   // output_file2.open("/home/rppv15/workspace/SECDA-TFLite/tensorflow/aData/csvfiles/target_image_normalized_step2_secda.csv");
 
-  for (int i = 0; i < output_number_of_pixels; i+=3) {
+  for (int i = 0; i < output_number_of_pixels; i += 3) {
     switch (s->input_type) {
-      case kTfLiteFloat32:
-        //MNIST Norm//
-        // out[i] = (output[i]) / 255.0f;
-        // out[i+1] = (output[i+1]) / 255.0f;
-        // out[i+2] = (output[i+2]) / 255.0f;
-        
-        //CIFAR 10 Norm//
-        out[i] = (output[i]) / 255.0f;
-        out[i+1] = (output[i+1]) / 255.0f;
-        out[i+2] = (output[i+2]) / 255.0f;
+    case kTfLiteFloat32:
+      // MNIST Norm//
+      //  out[i] = (output[i]) / 255.0f;
+      //  out[i+1] = (output[i+1]) / 255.0f;
+      //  out[i+2] = (output[i+2]) / 255.0f;
 
-        // output_file1 << out[i] << std::endl;
-        // output_file1 << out[i+1] << std::endl;
-        // output_file1 << out[i+2] << std::endl;
+      // CIFAR 10 Norm//
+      out[i] = (output[i]) / 255.0f;
+      out[i + 1] = (output[i + 1]) / 255.0f;
+      out[i + 2] = (output[i + 2]) / 255.0f;
 
-        out[i] = (out[i] - inp_mean[0]) / inp_std[0];
-        out[i+1] = (out[i+1] - inp_mean[1]) / inp_std[1];
-        out[i+2] = (out[i+2] - inp_mean[2]) / inp_std[2];
-        
-        // output_file2 << out[i] << std::endl;
-        // output_file2 << out[i+1] << std::endl;
-        // output_file2 << out[i+2] << std::endl;
+      // output_file1 << out[i] << std::endl;
+      // output_file1 << out[i+1] << std::endl;
+      // output_file1 << out[i+2] << std::endl;
 
-        // previous normilization
-        // out[i] = (output[i] - s->input_mean) / s->input_std;
-        
-        break;
-      case kTfLiteInt8:
-        out[i] = static_cast<int8_t>(output[i] - 128);
-        break;
-      case kTfLiteUInt8:
-        out[i] = static_cast<uint8_t>(output[i]);
-        break;
-      default:
-        break;
+      out[i] = (out[i] - inp_mean[0]) / inp_std[0];
+      out[i + 1] = (out[i + 1] - inp_mean[1]) / inp_std[1];
+      out[i + 2] = (out[i + 2] - inp_mean[2]) / inp_std[2];
+
+      // output_file2 << out[i] << std::endl;
+      // output_file2 << out[i+1] << std::endl;
+      // output_file2 << out[i+2] << std::endl;
+
+      // previous normilization
+      // out[i] = (output[i] - s->input_mean) / s->input_std;
+
+      break;
+    case kTfLiteInt8: out[i] = static_cast<int8_t>(output[i] - 128); break;
+    case kTfLiteUInt8: out[i] = static_cast<uint8_t>(output[i]); break;
+    default: break;
     }
   }
   // output_file1.close();
   // output_file2.close();
 }
 
-}  // namespace eval_model
-}  // namespace tflite
+} // namespace eval_model
+} // namespace tflite
 
-#endif  // TENSORFLOW_LITE_EXAMPLES_eval_model_BITMAP_HELPERS_IMPL_H_
+#endif // TENSORFLOW_LITE_EXAMPLES_eval_model_BITMAP_HELPERS_IMPL_H_

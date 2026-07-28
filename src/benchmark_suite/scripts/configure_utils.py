@@ -403,7 +403,7 @@ def find_relpath_for_model_from_models_dir(model, paths):
             if f"{model}.tflite" in files:
                 model_path = os.path.relpath(root, start=path)
                 model_path = "" if model_path == "." else model_path
-                log_out(f"Found {model}.tflite in {root}")
+                # log_out(f"Found {model}.tflite in {root}")
                 return model_path
     return None
 
@@ -944,24 +944,40 @@ def transfer_exp_configs(sc, board):
         log.close()
 
 
-power_cap_sh_prefix = """
-    echo '-----------------------------------------------------------'
-    echo 'Initializing Power Capture'
-    python3 scripts/record_power.py $name &
-    echo $! >/tmp/record_power.py.pid
-    echo '-----------------------------------------------------------'
-    """
+power_cap_sh_prefix = """echo '-----------------------------------------------------------'
+echo 'Initializing Power Capture'
+python3 scripts/record_power.py $name &
+echo $! >/tmp/record_power.py.pid
+echo '-----------------------------------------------------------'
+"""
 
-power_cap_sh_postfix = """
-    if [[ -e /tmp/record_power.py.pid ]]; then
-        kill $(cat /tmp/record_power.py.pid)
-        echo "-----------------------------------------------------------"
-        echo "Power Capture Done"
-        echo "-----------------------------------------------------------"
-    else
-        echo $(cat /tmp/record_power.py.pid) "not found"
-    fi
-    """
+power_cap_sh_postfix = """if [[ -e /tmp/record_power.py.pid ]]; then
+    kill $(cat /tmp/record_power.py.pid)
+    echo "-----------------------------------------------------------"
+    echo "Power Capture Done"
+    echo "-----------------------------------------------------------"
+    echo "Processing Power Data"
+    echo "-----------------------------------------------------------"
+
+    python3 scripts/process_power.py $name $length
+    echo "Power Processing Done"
+    echo "-----------------------------------------------------------"
+else
+    echo $(cat /tmp/record_power.py.pid) "not found"
+fi
+"""
+
+# power_cap_sh_prefix = """echo '-----------------------------------------------------------'
+# echo 'Initializing Power Capture'
+# python3 scripts/power_script.py $name
+# echo '-----------------------------------------------------------'
+# """
+
+# power_cap_sh_postfix = """echo "-----------------------------------------------------------"
+# echo "Power Capture Done"
+# python3 scripts/power_script.py $name
+# echo "-----------------------------------------------------------"
+# """
 
 # power_cap_sh_postfix = """
 #     if [[ -e /tmp/record_power.py.pid ]]; then
@@ -1391,7 +1407,7 @@ def run_benchmarking_suite(
     log_out(f"Skip Bench: {skip_bench}")
     log_out(f"Bin Gen: {bin_gen}")
     log_out(f"Skip Inf Diff: {skip_inf_diff}")
-    # log_out(f"Collect Power: {collect_power}")
+    log_out(f"Collect Power: {collect_power}")
     log_out(f"Generate Run Script: {gen_script}")
     log_out(f"Test Run: {test_run}")
     log_out(f"Time Out: {time_out}")
@@ -1512,6 +1528,12 @@ def run_benchmarking_suite(
                 with open(script_path, "w") as script_file:
                     script_file.write("#!/bin/bash\n")
                     script_file.write(f"name=" + name + "\n")
+                    length = 0
+                    for board in selected_boards:
+                        if board in experiment_configs:
+                            length += len(experiment_configs[board])
+                    if collect_power:
+                        script_file.write(f"length=" + str(length) + "\n")
                     script_file.write(f"pushd {sc['secda_tflite_path']}/src/benchmark_suite\n")
 
                 os.chmod(script_path, 0o775)

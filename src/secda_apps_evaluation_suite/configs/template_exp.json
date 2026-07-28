@@ -1,0 +1,80 @@
+{
+    "hardware": [
+        "VMv5_0",
+        "VMv5_0_KRIA"
+    ],
+    "apps": {
+        "eval_model": {
+            "tflite_model": [
+                "$(d)/imagenet/models/mobilenetv2",
+                "$(d)/imagenet/models/inceptionv1",
+                "$(d)/imagenet/models/resnet18v1"
+            ],
+            "labels": "$(d)/imagenet/labels/model_output_labels_1000.txt",
+            "image": "$(d)/imagenet/otherImages/grace_hopper.bmp",
+            "threads": [
+                "4"
+            ]
+        },
+        "eval_model_accuracy": {
+            "tflite_model": [
+                "$(d)/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100",
+                "$(d)/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100"
+            ],
+            "threads": [
+                "4"
+            ],
+            "labels": "$(d)/cifar10/labels/model_output_labels_10.txt",
+            "image": "$(d)/cifar10/testData/testX_000010.bmp",
+            "test_dataset_location": "$(d)/cifar10/testData/",
+            "ground_truth_labels_file_name": "$(d)/cifar10/labels/groundTruth_testData_labels.txt",
+            "output_file_name": "",
+            "no_of_images": "10000"
+        },
+        "benchmark_model": {
+            "graph": [
+                "$(d)/imagenet/models/mobilenetv2",
+                "$(d)/imagenet/models/inceptionv1",
+                "$(d)/imagenet/models/inceptionv3",
+                "$(d)/imagenet/models/resnet18v1",
+                "$(d)/imagenet/models/resnet50v2",
+                "$(d)/imagenet/models/efficientnet_lite",
+                "$(d)/otherModels/vit_tiny_patch16_224",
+                "$(d)/otherModels/vit_small_patch16_224",
+                "$(d)/otherModels/vit_base_patch16_224",
+                "$(d)/otherModels/deit_tiny_patch16_224",
+                "$(d)/otherModels/deit_small_patch16_224",
+                "$(d)/otherModels/deit_base_patch16_224",
+                "$(d)/otherModels/edgenext_small_keras_quant_int8"
+            ],
+            "num_threads": [
+                "1",
+                "4"
+            ],
+            "num_runs": "100",
+            "enable_op_profiling": "true",
+            "profiling_output_csv_file": "\"layer.csv\""
+        },
+        "inference_diff": {
+            "model_file": [
+                "$(d)/imagenet/models/mobilenetv2",
+                "$(d)/imagenet/models/inceptionv1",
+                "$(d)/imagenet/models/inceptionv3",
+                "$(d)/imagenet/models/resnet18v1",
+                "$(d)/imagenet/models/resnet50v2",
+                "$(d)/imagenet/models/efficientnet_lite",
+                "$(d)/otherModels/vit_tiny_patch16_224",
+                "$(d)/otherModels/vit_small_patch16_224",
+                "$(d)/otherModels/vit_base_patch16_224",
+                "$(d)/otherModels/deit_tiny_patch16_224",
+                "$(d)/otherModels/deit_small_patch16_224",
+                "$(d)/otherModels/deit_base_patch16_224",
+                "$(d)/otherModels/edgenext_small_keras_quant_int8"
+            ],
+            "num_interpreter_threads": [
+                "4"
+            ],
+            "num_runs": "1"
+        }
+    }
+}

@@ -10,6 +10,51 @@
       ]
     },
     {
+      "name": "mobilevit-small",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D",
+        "FULLY_CONNECTED"
+      ]
+    },
+    {
+      "name": "efficientvit_int8",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D",
+        "FULLY_CONNECTED"
+      ]
+    },
+    {
+      "name": "vit_tiny",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D",
+        "FULLY_CONNECTED"
+      ]
+    },
+    {
+      "name": "deit_tiny",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D",
+        "FULLY_CONNECTED"
+      ]
+    },
+    {
+      "name": "swin_t_int8",
+      "dataset": "imagenet",
+      "datatype": "int8",
+      "layers": [
+        "CONV_2D",
+        "FULLY_CONNECTED"
+      ]
+    },
+    {
       "name": "resnet18v1",
       "dataset": "imagenet",
       "datatype": "int8",

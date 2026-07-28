@@ -1,0 +1,21 @@
+{
+  "acc_name": "VM_KRIA",
+  "acc_version": 4,
+  "acc_sub_version": 0,
+  "version": "4_0",
+  "acc_test": false,
+  "acc_test_id": 0,
+  "acc_test_desc": "",
+  "acc_src": "vm_delegate/v4/accelerator",
+  "acc_link_folder": "vm_src_v4",
+  "hlx_tcl_script": "mdma_axilite_hlx_reconfig_4_kria.tcl",
+  "top": "VM_INT8_V4_0",
+  "board_script": "",
+  "del" : "vm_delegate",
+  "del_version": "4",
+  "hls_clock" : "4",
+  "hlx_Mhz": "250",
+  "axi_bitW": "32",
+  "axi_burstS": "32",
+  "board": "KRIA"
+}
