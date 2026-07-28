@@ -56,6 +56,8 @@ struct sbram {
              "-bus_bundle M_AXIS_DATA1" port_map = {                           \
                  {signame##_0 TDATA} {signame##_1 TLAST}})
 
+#define HWC_SIG(X, VAL) X##_si.write(VAL)
+
 #ifndef __SYNTHESIS__
 #define DEFINE_SC_SIGNAL(type, name) sc_signal<type, SC_MANY_WRITERS> name;
 #else

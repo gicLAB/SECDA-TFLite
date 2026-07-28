@@ -1,0 +1,30 @@
+{
+    "DSE": {
+        "groups": [
+            {"1": ["X_buffer_size", "Y_buffer_size", "Z_buffer_size"]},
+            {"2": ["VEC_LENGTH"]}
+        ],
+        "parameters": [
+            {"X_buffer_size": [1024, 2048, 4096]},
+            {"Y_buffer_size": [1024, 2048, 4096]},
+            {"Z_buffer_size": [1024, 2048, 4096]},
+            {"VEC_LENGTH": [16, 32, 64, 128, 256]}
+        ]
+    },
+    "hardware_gen": {
+        "acc_name": "VADD_EXP_Z1",
+        "acc_version": 1,
+        "acc_sub_version": 0,
+        "acc_src": "vadd_exp/v1/accelerator",
+        "acc_link_folder": "vadd_exp_src_v1",
+        "hlx_tcl_script": "Z1/Z1_dma_1_hp_1_ctrl_hwc.tcl",
+        "top": "VADD_ACC",
+        "del": "vadd_exp",
+        "del_version": "1",
+        "hls_clock": "5",
+        "hlx_Mhz": "200",
+        "axi_bitW": "32",
+        "axi_burstS": "32",
+        "board": "Z1"
+    }
+}
