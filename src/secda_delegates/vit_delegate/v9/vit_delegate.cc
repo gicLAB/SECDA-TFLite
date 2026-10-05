@@ -610,6 +610,7 @@ public:
       int input_depth = input->dims->data[3];
       int filter_input_depth = filter->dims->data[3];
       int groups = input_depth / filter_input_depth;
+      if (groups > 1) delegated_node = false;
     }
 
     int output_tid = node->outputs->data[0];

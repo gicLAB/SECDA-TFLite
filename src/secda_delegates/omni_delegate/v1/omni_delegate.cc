@@ -364,6 +364,7 @@ public:
         // CONV2D Implementation algorithm
         int32_t input_offset = op_params.input_offset;
         int32_t output_offset = op_params.output_offset;
+        int32_t filter_offset = -filter->params.zero_point; // ADD THIS
         int stride_height = params->stride_height;
         int stride_width = params->stride_width;
         int filter_height = filter->dims->data[1];
@@ -416,8 +417,7 @@ public:
                       int8_t input_val = input_data[input_index];
                       int8_t filter_val = filter_data[filter_index];
 
-                      acc += (input_data[input_index] + input_offset) *
-                             filter_data[filter_index];
+                     acc += (input_data[input_index] + input_offset) * (filter_data[filter_index] + filter_offset);
                     }
                   }
                 }
@@ -521,32 +521,28 @@ public:
           for (int m = 0; m < M; m++) {
             int sum = 0;
             for (int k = 0; k < K; k++) {
-              int in = input_data[n * K + k];
-              int wt = filter_data[m * K + k];
-              if (!is_per_channel) {
-                in += input_offset;
-                wt += weight_offset;
-              }
-              int mul = in * wt;
+              // Apply offsets directly to every element
+              int in = input_data[n * K + k] + input_offset;
+              int wt = filter_data[m * K + k] + weight_offset;
               sum += in * wt;
             }
-
+            
             int out_shift = output_shift;
             int out_mult = output_multiplier;
             if (is_per_channel) {
               out_shift = data->per_channel_output_shift.data()[m];
               out_mult = data->per_channel_output_multiplier.data()[m];
-              sum += (wt_sum[i][m] * (input_offset));
             }
-            if (bias != nullptr) sum += bias->data.i32[m];
-
+            
+            if (bias != nullptr) sum += bias_data[m]; 
+            
             int out_offset = op_params.output_offset;
             int out_min = op_params.quantized_activation_min;
             int out_max = op_params.quantized_activation_max;
-            sum = Quantised_Multiplier_V2(sum, out_mult, out_shift, out_offset,
-                                          out_min, out_max);
-
-            output_data[n * M + m] = sum;
+            
+            // CRITICAL FIX: Use V1 instead of V2 to prevent 32-bit overflow
+            sum = Quantised_Multiplier_V1(sum, out_mult, out_shift, out_offset, out_min, out_max);
+            output_data[n * M + m] = static_cast<int8_t>(sum);
           }
         }
       } else if (builtin_code_[i] == kTfLiteBuiltinDepthwiseConv2d) { // DWCONV
@@ -1424,8 +1420,8 @@ public:
     bool isDEQUANTIZE = IsNode_DEQUANTIZE_INT8(registration, node, context);
 
     // Node will be delegated if inside supported_nodes
-    // std::vector<bool> supported_nodes = {isCONV2D,isDWCONV2D,isADD,isFC,isTCONV,isSHAPE,isSOFTMAX,isPAD,isMEAN,isQUANTIZE,isDEQUANTIZE};
-    std::vector<bool> supported_nodes = {isCONV2D};
+    std::vector<bool> supported_nodes = {isCONV2D,isDWCONV2D,isADD,isFC,isTCONV,isSHAPE,isSOFTMAX,isPAD,isMEAN,isQUANTIZE,isDEQUANTIZE};
+    // std::vector<bool> supported_nodes = {isCONV2D};
 
 
     bool delegated_node = false;

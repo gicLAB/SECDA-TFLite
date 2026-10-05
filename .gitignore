@@ -90,3 +90,7 @@ todo.md
 src/secda_apps_evaluation_suite/results
 src/secda_apps_evaluation_suite/generated
 data/
+
+src/secda_delegates/.checkpoints
+src/secda_delegates/.checkpoints_old
+src/secda_delegates/omni_delegate/checkpoints
